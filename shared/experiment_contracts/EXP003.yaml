@@ -1,0 +1,211 @@
+# ============================================================================
+# EXP003 contract -- Control of MIMO Systems: Control Effort (Suspended Mode)
+# Source: Tutorial 3.  Parameter set: PS-EDUKIT01-v1
+# ============================================================================
+
+experiment_id: EXP003
+title: "Control of MIMO Systems: Control Effort (Suspended Mode)"
+source: course material Tutorial_3_Control_of_MIMO_Systems_and_Control_Effort_Suspended_Mode.pdf
+status: unlocked
+parameter_set_id: PS-EDUKIT01-v1
+
+objective: >
+  Extend from a single rotor loop to two coupled loops controlling both pendulum angle
+  and rotor angle with one actuator, and design the outer rotor controller to meet
+  settling-time and overshoot limits while MINIMISING control effort.
+
+physical_question: >
+  Two outputs, one actuator: what does the performance actually cost in actuator
+  amplitude, power and energy, and how much of that cost can be removed without
+  violating the performance limits?
+
+prerequisites: [EXP001, EXP002]
+
+scope:
+  mode: suspended            # inverted is EXP005
+  loops: 2                   # inner pendulum, outer rotor
+  firmware: true
+  numerical_analysis: true
+  matlab: true
+  hardware: true
+  state_feedback: false      # not required by Tutorial 3
+  integral_action: false     # not required by Tutorial 3
+
+# ---------------------------------------------------------------------------
+plants:
+  rotor:
+    transfer_function: 1/s^2
+    provenance: COURSE_REFERENCE       # Tutorial 1 section 2
+    verified_on_rig: false             # OI-7
+  pendulum_suspended:
+    transfer_function: "wr2*s^2 / (s^2 + (wg/Q)*s + wg2)"
+    provenance: COURSE_REFERENCE       # Tutorial 12 section 2
+    verified_on_rig: false             # OI-9 -- reference rig values, not this rig
+    parameters:
+      wr2: { value: 0.803,  unit: "(rad/s)^2", status: ASSUMED }
+      wg2: { value: 57.01,  unit: "(rad/s)^2", status: ASSUMED }
+      Q:   { value: 27.0,   unit: "-",         status: ASSUMED }
+      gamma: { value: 0.279648, unit: rad/s, status: DERIVED, note: "wg/Q" }
+    note: >
+      The s^2 numerator is physics: the pendulum responds to rotor ACCELERATION, not
+      position. It cancels the rotor double integrator exactly, giving
+      theta'' + gamma*theta' + wg2*theta = wr2*u.
+
+controllers:
+  pendulum_inner:
+    form: "Kp_pend + Kd_pend*s"
+    kp: 10.0
+    td: 0.5
+    kd: 5.0
+    status: SUPPLIED_AND_FIXED_BY_TUTORIAL_3
+    note: >
+      Tutorial 3 supplies this and defers its design. It is NOT a free parameter and the
+      firmware hard-codes it so it cannot drift between runs.
+  rotor_outer:
+    form: "Kp_rotor + Kd_rotor*s"
+    status: TO_BE_DESIGNED               # this Tutorial's objective
+    design1_defaults: { kp: 6.0, td: 0.8, kd: 4.8 }
+
+loop_structure:
+  inner_closed_loop: "T_rotor(s) = G_rotor / (1 + G_pend*K_pend*G_rotor)"
+  outer_closed_loop: "T_rotor_tracking(s) = T_rotor*K_rotor / (1 + T_rotor*K_rotor)"
+  firmware_form: "u = K_rotor*(phi_cmd - phi) + K_pend*(theta_cmd - theta)"
+  corroboration: >
+    The summation reading is independently confirmed by the UCLA reference project's own
+    description of its Dual PID mode.
+  inner_damping_effect: >
+    With the supplied inner gains the inner characteristic polynomial becomes
+    s^2 + 4.29465 s + 65.04, i.e. zeta = 0.266 against the open-loop zeta = 0.0185
+    (Q = 27). The inner loop damps the pendulum resonance by a factor of 14.
+
+# ---------------------------------------------------------------------------
+control_effort:
+  definition: "CE(s) = u(s)/phi_command(s) = K_rotor / (1 + T_rotor*K_rotor)"
+  also_equals: noise_sensitivity_function      # Tutorial 3 section 5
+  metrics:
+    ce_max_amplitude: "max |u(t)|"
+    ce_max_power: "max u(t)^2"
+    ce_total: "integral |u| dt"
+  SOURCE_CONFLICT_RESOLVED:
+    conflict: >
+      Tutorial 3 section 5 writes CE_Total as the SIGNED integral of u, but its results
+      table labels it "Control Effort Total Energy" with the value 11.0 for Design 1.
+    evidence:
+      signed_integral_u: 0.0        # CE has zero DC gain; confirmed numerically
+      integral_u_squared: 1.17e3    # not 11.0
+      integral_abs_u: 10.88         # MATCHES 11.0
+    decision: "CE_Total = integral |u| dt. The source formula omits the absolute value."
+  IMPROPERNESS_NOTE:
+    issue: >
+      CE(s) is IMPROPER, so its step response contains a Dirac delta and any finite
+      CE_Max depends on how the derivative is realised.
+    resolution: >
+      A derivative filter K_rotor -> (Kp + Kd s)*N/(s+N) makes CE proper. CE_Max scales
+      linearly with N; CE_Total, settling and overshoot vary < 5 % over N in [50,1000].
+      Tutorial 3's CE_Max = 477 is reproduced at N = 99.4 rad/s (dt ~ 0.0101 s).
+    adopted_N: { value: 100.0, unit: rad/s }
+    rule: "Every CE_Max / CE_Max_Power figure MUST be quoted with its N."
+
+# ---------------------------------------------------------------------------
+validation_against_source:      # INDEPENDENT SOFTWARE NUMERICAL CHECK, executed
+  design1: { kp: 6.0, td: 0.8, kd: 4.8 }
+  comparison:
+    settling_s:      { tutorial: 2.1,      computed: 2.095,     rel_err_pct: -0.2 }
+    overshoot_pct:   { tutorial: 31.4,     computed: 32.43,     rel_err_pct: 3.3 }
+    ce_max:          { tutorial: 477.0,    computed: 480.0,     rel_err_pct: 0.6 }
+    ce_max_power:    { tutorial: 2.27e5,   computed: 2.304e5,   rel_err_pct: 1.5 }
+    ce_total:        { tutorial: 11.0,     computed: 10.904,    rel_err_pct: -0.9 }
+  verdict: >
+    All five within 3.3 %. This simultaneously validates G_pend, G_rotor, K_pend, the
+    inner/outer loop algebra, the CE definition and the integral-|u| reading of CE_Total.
+  self_consistency: "477^2 = 2.276e5 matches the published CE_Max_Power."
+
+design_objectives:
+  step2: { settling_max_s: 4.0,  overshoot_max_pct: 30.0, ce_total_target: 5.0 }
+  step4: { settling_max_s: 10.0, overshoot_max_pct: 30.0, ce_total_target: 2.5 }
+  note: >
+    Design 1's overshoot (31.4 %) already EXCEEDS the 30 % limit that applies from Step 2
+    onward, so Design 1 is a starting point, not a compliant design.
+
+results_numerical:
+  design2:
+    kp: 1.50
+    td: 1.15
+    kd: 1.725
+    settling_s: 3.985
+    overshoot_pct: 26.00
+    ce_max: 172.5
+    ce_max_power: 2.976e4
+    ce_total: 3.782
+    reduction_factor_vs_design1: 2.88
+    meets_objectives: true
+  design3:
+    kp: 0.30
+    td: 2.50
+    kd: 0.75
+    settling_s: 9.145
+    overshoot_pct: 24.53
+    ce_max: 75.0
+    ce_max_power: 5.625e3
+    ce_total: 1.654
+    reduction_factor_vs_design1: 6.59
+    meets_objectives: true
+  search_grid_note: >
+    Coarse sweep 20 x 15 at dt = 10 ms, then local refinement. A finer sweep changes the
+    optimum by less than the simulation-vs-hardware disagreement Tutorial 3 anticipates.
+
+# ---------------------------------------------------------------------------
+signals:
+  phi_command: { unit: deg, note: rotor reference }
+  theta_command: { unit: deg, note: "held at zero throughout Tutorial 3" }
+  phi: { unit: deg, note: "rotor angle -- COMMANDED, no sensor exists" }
+  theta: { unit: deg, note: "pendulum angle -- measured by encoder" }
+  u_rotor: { unit: plant-input, note: K_rotor output }
+  u_pend: { unit: plant-input, note: K_pend output }
+  u: { unit: plant-input, note: "sat(u_rotor + u_pend), single saturation on the SUM" }
+
+sampling: { period_s: 0.002, rate_hz: 500, verified: false }
+
+acceptance:
+  software:
+    - { id: AC3-1, claim: "reproduces Tutorial 3 Design 1 within 5 %", status: SATISFIED }
+    - { id: AC3-2, claim: "CE_Total metric definition resolved by evidence", status: SATISFIED }
+    - { id: AC3-3, claim: "dual-PID summation with single saturation on the sum", status: SATISFIED }
+    - { id: AC3-4, claim: "inner controller fixed to Tutorial 3 supplied values", status: SATISFIED }
+    - { id: AC3-5, claim: "closed-loop MIMO simulation tracks and settles", status: SATISFIED }
+    - { id: AC3-6, claim: "lower gain demonstrably costs less control effort", status: SATISFIED }
+    - { id: AC3-7, claim: "all abort paths exercised", status: SATISFIED }
+    - { id: AC3-8, claim: "cross-compiles for target, zero warnings", status: SATISFIED }
+    - { id: AC3-9, claim: "Designs 2 and 3 meet Tutorial 3 targets", status: SATISFIED }
+  hardware:
+    - { id: H3-1, claim: "measured Design 1 metrics match simulation", status: NOT_EXECUTED }
+    - { id: H3-2, claim: "measured factor-2 CE_Total reduction for Design 2 (Step 3)", status: NOT_EXECUTED }
+    - { id: H3-3, claim: "measured factor-2 CE_Total reduction for Design 3 (Step 5)", status: NOT_EXECUTED }
+    - { id: H3-4, claim: "single-loop rotor drift observed (Tutorial 3 Figure 3)", status: NOT_EXECUTED }
+
+data_format:
+  telemetry_csv_header: >
+    tick,t_s,phase,rotor_ref_deg,pend_ref_deg,rotor_deg,pend_deg,u_rotor,u_pend,u,abort_reason
+  raw_dir: data/raw/EXP003/
+  processed_dir: data/processed/EXP003/
+  metadata_dir: data/metadata/EXP003/
+
+execution:
+  numerical_analysis: EXECUTED
+  host_unit_tests: EXECUTED
+  target_compilation: EXECUTED
+  matlab: DEFERRED_UNTIL_MATLAB_WORKSTATION
+  hardware: NOT_EXECUTED
+
+open_items:
+  OI-2: sign conventions undetermined
+  OI-3: no board-support layer
+  OI-7: rotor plant 1/s^2 unverified
+  OI-9: pendulum parameters wr2/wg2/Q are REFERENCE values, not measured on this rig
+
+gate:
+  exp004_may_begin: true
+  reason: >
+    EXP004 (Tutorial 4) applies sensitivity-function analysis to the MIMO system EXP003
+    establishes. The MIMO structure, plants and control-effort machinery are now complete
+    and validated in software, which is what EXP004 consumes.

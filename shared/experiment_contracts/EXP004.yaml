@@ -1,0 +1,184 @@
+# ============================================================================
+# EXP004 contract -- MIMO Performance Analysis with Sensitivity Functions
+# Source: Tutorial 4.  Parameter set: PS-EDUKIT01-v1
+# ============================================================================
+
+experiment_id: EXP004
+title: MIMO Performance Analysis with Sensitivity Functions
+source: course material Tutorial_4_MIMO_Sensitivity_Function_Performance.pdf
+status: unlocked
+parameter_set_id: PS-EDUKIT01-v1
+
+objective: >
+  Constrain the maximum sensitivity M_S -- the robustness of closed-loop behaviour to
+  plant and controller variation -- while minimising settling time, and meet settling
+  objectives on BOTH outputs rather than the rotor alone.
+
+physical_question: >
+  How much does closed-loop behaviour change when the plant changes, and what does
+  buying that immunity cost in speed?
+
+prerequisites: [EXP001, EXP002, EXP003]
+
+scope:
+  mode: suspended
+  loops: 2
+  firmware: true               # only a dual-output metrics accumulator; see below
+  numerical_analysis: true
+  matlab: true
+  hardware: true
+  new_control_structure: false # EXP004 reuses EXP003's dual PID unchanged
+
+# ---------------------------------------------------------------------------
+sensitivity:
+  definition_source: Tutorial 4 section 5
+  derivation: >
+    S = lim(delta->0) [dT/T]/[dP/P] = (P/T)(dT/dP) = 1/(1 + P C).
+    S is literally the factor by which a FRACTIONAL plant error is transmitted to
+    closed-loop behaviour: |S| = 0.5 means a 10 % plant error gives a 5 % behaviour change.
+  applied_to:
+    P: T_rotor        # inner closed loop from EXP003
+    C: K_rotor
+  metrics:
+    M_S:  "max over omega of |S(j omega)|, reported in dB as 20*log10(M_S)"
+    w_SC: "frequency where |S(j omega)| = 1 (sensitivity crossover)"
+  objectives: ["reduce M_S", "increase w_SC"]
+  nyquist_identity:
+    statement: "M_S = 1 / min|1 + L(j omega)|"
+    meaning: >
+      1/S = 1 + PC is the vector from (-1,0) to L(j omega). |S| < 1 outside the unit
+      circle about (-1,0), > 1 inside. Large M_S and small stability margin are the same
+      fact seen two ways.
+    verified_numerically: true
+    residual: 1.1e-16
+
+realisation:
+  derivative_filter: none
+  justification: >
+    M_S and w_SC are FREQUENCY-domain metrics of a PROPER transfer function and need no
+    discretisation. Evidence: ideal controller gives 2.794 dB vs Tutorial 4's published
+    2.7 dB; N = 100 gives 3.121 dB and N = 50 gives 3.457 dB, both further from the
+    source. This is a deliberate, evidenced difference from EXP003, whose CE_Max is a
+    TIME-domain metric of an IMPROPER transfer function and therefore does need one.
+
+validation_against_source:
+  ms_db_simulation: { tutorial: 2.7, computed: 2.794, diff_db: 0.094 }
+  ms_db_experiment: { tutorial: 2.4, computed: null, note: "hardware -- not reproduced, no rig" }
+  tutorial_sim_vs_exp_gap_db: 0.3
+  nyquist_identity_residual: 1.1e-16
+
+design_objectives:            # Tutorial 4 section 8
+  search_range: { kp: [0.25, 5.0], kd: [0.25, 5.0] }
+  step1: { ms_db_max: 1.0, overshoot_max_pct: 30.0, minimise: settling_time }
+  step2: { ms_db_max: 3.0, overshoot_max_pct: 30.0, minimise: settling_time }
+
+results_numerical:
+  reference:
+    kp: 6.00
+    kd: 4.80
+    ms_db: 2.794
+    w_sc_rad_s: 3.635
+    rotor_settling_s: 2.085
+    rotor_overshoot_pct: 30.72
+    pendulum_peak: 0.2583
+    pendulum_settling_s: 2.600
+  designA:
+    kp: 1.20
+    td: 1.25
+    kd: 1.50
+    ms_db: 0.995
+    w_sc_rad_s: 1.294
+    rotor_settling_s: 4.492
+    rotor_overshoot_pct: 25.65
+    pendulum_peak: 0.0995
+    pendulum_settling_s: 2.555
+    meets_step1: true
+  designB:
+    kp: 0.25
+    td: 19.2
+    kd: 4.80
+    ms_db: 1.857
+    w_sc_rad_s: 4.603
+    rotor_settling_s: 1.887
+    rotor_overshoot_pct: 9.00
+    pendulum_peak: 0.2366
+    pendulum_settling_s: 2.595
+    meets_step2: true
+    caveat: >
+      Td = 19.2 s is a nearly pure-derivative controller. It is inside Tutorial 4's stated
+      Kp/Kd range but has high control effort and, since the control-effort transfer
+      function IS the noise sensitivity function, amplifies measurement noise heavily.
+
+CROSS_EXPERIMENT_FINDING:
+  statement: >
+    Tutorial 4's objectives contain NO control-effort constraint, and the two tutorials'
+    objectives are not automatically compatible.
+  evidence:              # EXP003 metrics at N = 100 rad/s
+    reference: { ce_max: 480.0, ce_total: 10.904 }
+    exp003_design2: { ce_max: 172.5, ce_total: 3.756 }
+    designA: { ce_max: 150.0, ce_total: 3.296 }
+    designB: { ce_max: 480.0, ce_total: 10.266 }
+  conclusion: >
+    Design A is simultaneously the MOST ROBUST and the CHEAPEST -- low M_S and low control
+    effort are aligned there. Design B satisfies M_S < 3 dB with the best settling and
+    overshoot of any design, yet costs as much as the unconstrained reference. Neither
+    tutorial alone reveals this.
+  realisation_caveat: >
+    Design A's rotor settling is 4.49 s under EXP004's ideal controller and 6.03 s under
+    EXP003's N = 100 filter. The filter genuinely slows the loop; metrics must always be
+    quoted with their realisation.
+
+# ---------------------------------------------------------------------------
+firmware_additions:
+  new_modules: [enr312_metrics.c, enr312_metrics.h]
+  rationale: >
+    Tutorial 4 requires settling objectives on BOTH outputs, so the step-metric
+    accumulator was factored out of EXP003 and applied to the pendulum channel as well as
+    the rotor. Two settling conventions are needed: the rotor settles to a non-zero final
+    value, the pendulum returns towards zero and is measured against a band around zero
+    scaled to its own peak. Applying the rotor convention to the pendulum divides by ~0.
+  explicitly_not_added:
+    - on-target frequency-response / M_S computation
+  not_added_rationale: >
+    Tutorial 4's analysis is performed offline on step-response data the EXP003 telemetry
+    already carries -- which is what the Tutorial's own tools do. An on-target FFT would
+    cost flash and RAM for something the host does better.
+  control_structure_change: none
+
+acceptance:
+  software:
+    - { id: AC4-1, claim: "reproduces Tutorial 4 M_S = 2.7 dB within 0.1 dB", status: SATISFIED }
+    - { id: AC4-2, claim: "Nyquist identity M_S = 1/min|1+L| verified numerically", status: SATISFIED }
+    - { id: AC4-3, claim: "sensitivity derived from the fractional-change definition", status: SATISFIED }
+    - { id: AC4-4, claim: "both outputs measured with correct settling conventions", status: SATISFIED }
+    - { id: AC4-5, claim: "designs meeting Step 1 and Step 2 identified", status: SATISFIED }
+    - { id: AC4-6, claim: "cross-compiles, zero warnings", status: SATISFIED }
+    - { id: AC4-7, claim: "control-effort cost of the M_S-optimal designs quantified", status: SATISFIED }
+  hardware:
+    - { id: H4-1, claim: "measured M_S matches simulation within ~0.3 dB", status: NOT_EXECUTED }
+    - { id: H4-2, claim: "measured w_SC matches simulation", status: NOT_EXECUTED }
+    - { id: H4-3, claim: "both outputs meet their settling objectives", status: NOT_EXECUTED }
+    - { id: H4-4, claim: "measured Nyquist closest approach equals 1/M_S", status: NOT_EXECUTED }
+
+data_format:
+  telemetry_csv_header: >
+    tick,t_s,phase,rotor_ref_deg,pend_ref_deg,rotor_deg,pend_deg,u_rotor,u_pend,u,abort_reason
+  note: "Identical to EXP003 -- EXP004 changes the ANALYSIS, not the acquisition."
+  raw_dir: data/raw/EXP004/
+  processed_dir: data/processed/EXP004/
+  metadata_dir: data/metadata/EXP004/
+
+execution:
+  numerical_analysis: EXECUTED
+  host_unit_tests: EXECUTED
+  target_compilation: EXECUTED
+  matlab: DEFERRED_UNTIL_MATLAB_WORKSTATION
+  hardware: NOT_EXECUTED
+
+open_items: [OI-2, OI-3, OI-7, OI-9]
+
+gate:
+  exp005_may_begin: true
+  reason: >
+    EXP005 (Tutorial 5) moves to the unstable inverted configuration. The MIMO structure,
+    sensitivity machinery and both-output metrics EXP005 needs are complete in software.

@@ -1,0 +1,260 @@
+# ============================================================================
+# Parameter set: PS-EDUKIT01-v1
+# Rig: STEVAL-EDUKIT01 rotary inverted pendulum (ENR312)
+# Created: 2026-08-19
+# Source revision: 44bda39
+# ============================================================================
+#
+# PROVENANCE IS MANDATORY. Every value carries a `provenance` field:
+#
+#   COURSE_DOCUMENT     Stated by an ENR312 course document. Authoritative for
+#                       rig identity and issued equipment.
+#   DATASHEET_NOMINAL   Manufacturer nominal for the named part. Authoritative
+#                       for the part, NOT proof that part is installed.
+#   DERIVED             Computed from other entries in this file. Exact.
+#   REFERENCE_UNVERIFIED Taken from the UCLA reference project. It is evidence
+#                       of a conventional wiring of the same shield to the same
+#                       MCU. It is NOT verified against this rig.
+#   MEASURED            Obtained from this rig. None yet exist.
+#
+# NOTHING in this file is MEASURED. Until EXP001 and EXP002 execute on hardware,
+# every entry is a PREDICTION. Do not cite these as results.
+# ============================================================================
+
+parameter_set_id: PS-EDUKIT01-v1
+status: UNVERIFIED_AGAINST_HARDWARE
+
+platform:
+  rig_name: STEVAL-EDUKIT01
+  provenance: COURSE_DOCUMENT
+  source: course material Edukit_Student_Lab_Handout.pdf
+  components:
+    mcu_board: NUCLEO-F401RE
+    motor_shield: X-NUCLEO-IHM01A1
+    motor: NEMA17 stepper
+    sensor: incremental rotary encoder
+    supply: 12 V
+
+mcu:
+  part: STM32F401RETx
+  provenance: LOCAL_FIRMWARE           # authoritative: Core/ + .ioc + linker script
+  core: Cortex-M4F
+  fpu: fpv4-sp-d16, hard float ABI
+  sysclk_hz: 84000000
+  sysclk_source: HSI 16 MHz -> PLL (PLLM=8, PLLN=84, PLLP=2)
+  apb1_timer_clock_hz: 84000000
+  apb2_timer_clock_hz: 84000000
+  flash_bytes: 524288
+  ram_bytes: 98304
+  note: >
+    Clock tree verified from Core/Src/main.c SystemClock_Config and .ioc RCC block.
+    The Edukit rig uses the same MCU, so this clock configuration is directly reusable.
+
+# ---------------------------------------------------------------------------
+# SENSOR: pendulum angle, incremental quadrature encoder
+# ---------------------------------------------------------------------------
+encoder:
+  part: LPD3806-600BM-G5-24C
+  provenance: REFERENCE_UNVERIFIED
+  source: <UCLA Edukit project>/.../IHM01A1_ExampleFor1Motor/Src/main.c:76
+
+  pulses_per_rev:
+    value: 600
+    unit: pulses/rev
+    provenance: DATASHEET_NOMINAL
+    note: "600 PPR is in the part number (-600BM-)."
+
+  decode_mode:
+    value: X4
+    provenance: REFERENCE_UNVERIFIED
+    note: >
+      TIM_ENCODERMODE_TI12 counts both edges of both channels. Reference sets this
+      in MX_TIM3_Init. X4 is a property of the TIMER configuration, not the encoder,
+      so it is a firmware decision this project makes and can verify in EXP002.
+
+  counts_per_rev:
+    value: 2400
+    unit: counts/rev
+    provenance: DERIVED               # 600 * 4
+  counts_per_degree:
+    value: 6.666666666666667
+    unit: counts/deg
+    provenance: DERIVED
+    cross_check: "Reference ENCODER_READ_ANGLE_SCALE = 6.666667 — agrees."
+  degrees_per_count:
+    value: 0.15
+    unit: deg/count
+    provenance: DERIVED
+  radians_per_count:
+    value: 0.002617993877991494
+    unit: rad/count
+    provenance: DERIVED               # 2*pi/2400
+
+  electrical:
+    output_type: open-collector
+    pull_up_required: true
+    provenance: REFERENCE_UNVERIFIED
+    note: >
+      Reference sets GPIO_PULLUP on the encoder pins in HAL_TIM_Encoder_MspInit and
+      comments that this encoder needs an open-collector pull-up. If the internal
+      ~40 kohm pull-up proves too weak at speed, an external pull-up is required.
+      This is a documented EXP001 failure mode, not a settled fact.
+
+  polarity:
+    value: -1.0
+    provenance: REFERENCE_UNVERIFIED
+    source: "Reference ENCODER_ANGLE_POLARITY = -1.0"
+    note: >
+      SIGN IS NOT INHERITED. This value records only that the reference rig required
+      an inversion. The sign convention for THIS rig is established by measurement in
+      EXP001 step 3 (hand rotation) and fixed in EXP002. Never copy this into firmware
+      as settled.
+    measured_this_rig: -1     # 2026-10-12, EXP001 P2b: first pendulum swing opposite to
+                              # the arm move in 8/8 moves with +1 (rig_20261012-160027.log)
+
+  counter_width_bits:
+    value: 16
+    provenance: REFERENCE_UNVERIFIED
+    note: "TIM3 on STM32F401 is a 16-bit timer; ARR set to 65535 in the reference."
+
+# ---------------------------------------------------------------------------
+# ACTUATOR: rotor arm, stepper via L6474
+# ---------------------------------------------------------------------------
+actuator:
+  motor_part: NEMA-17 17HS19-2004S
+  driver: L6474 (on X-NUCLEO-IHM01A1)
+  provenance: REFERENCE_UNVERIFIED
+  source: <UCLA Edukit project>/.../Src/main.c:77
+
+  full_steps_per_rev:
+    value: 200
+    unit: full-steps/rev
+    provenance: DATASHEET_NOMINAL
+    note: "1.8 deg/full step, standard NEMA-17."
+
+  microstep_divisor:
+    value: 16
+    provenance: REFERENCE_UNVERIFIED
+    source: "L6474_CONF_PARAM_STEP_SEL_DEVICE_0 = L6474_STEP_SEL_1_16"
+
+  microsteps_per_rev:
+    value: 3200
+    unit: microsteps/rev
+    provenance: DERIVED               # 200 * 16
+  microsteps_per_degree:
+    value: 8.88888888888889
+    unit: microsteps/deg
+    provenance: DERIVED
+    cross_check: "Reference STEPPER_READ_POSITION_STEPS_PER_DEGREE = 8.888889 — agrees."
+  degrees_per_microstep:
+    value: 0.1125
+    unit: deg/microstep
+    provenance: DERIVED
+  radians_per_microstep:
+    value: 0.001963495408493621
+    unit: rad/microstep
+    provenance: DERIVED               # 2*pi/3200
+
+  current_limits:
+    tval_ma:
+      value: 800
+      unit: mA
+      provenance: REFERENCE_UNVERIFIED
+      source: L6474_CONF_PARAM_TVAL_DEVICE_0
+    overcurrent_threshold_ma:
+      value: 2250
+      unit: mA
+      provenance: REFERENCE_UNVERIFIED
+      source: L6474_CONF_PARAM_OCD_TH_DEVICE_0
+    note: >
+      The motor is rated 2.0 A/phase; the reference runs it at 0.8 A. Do not raise
+      TVAL without a thermal justification. This is a safety-relevant parameter.
+
+  step_clock:
+    mechanism: software-toggled GPIO paced by a timer update interrupt
+    provenance: REFERENCE_UNVERIFIED
+    note: >
+      IMPORTANT and easy to get wrong: in the reference the STCK pin is initialised as
+      GPIO_MODE_OUTPUT_PP with the Alternate-function line commented out
+      (stm32f4xx_hal_msp.c:149-152). The pin is therefore NOT driven by timer hardware.
+      The timer runs in PWM+IT mode purely as a periodic interrupt source and the ISR
+      toggles the pin. Every step edge costs an interrupt.
+    timer_prescaler:
+      value: 1024
+      provenance: REFERENCE_UNVERIFIED
+    period_formula: "ARR = sysclk / (1024 * f_step) - 1"
+    period_formula_note: >
+      ARR is an integer, so the achievable step rate is quantised. With sysclk = 84 MHz
+      the tick rate is 82031.25 Hz. Relative rate error is <= 0.04 % at or below
+      2000 steps/s but grows to +2.54 % at 10000 steps/s (ARR = 7). See EXP001
+      prediction P5.
+
+# ---------------------------------------------------------------------------
+# TIMING
+# ---------------------------------------------------------------------------
+sampling:
+  control_period_s:
+    value: 0.002
+    unit: s
+    provenance: COURSE_DOCUMENT
+    source: "Student handout: 'The board runs a control loop 500 times per second (every 2 ms).'"
+  control_rate_hz:
+    value: 500
+    unit: Hz
+    provenance: DERIVED
+  nyquist_hz:
+    value: 250
+    unit: Hz
+    provenance: DERIVED
+
+# ---------------------------------------------------------------------------
+# SAFETY / TRAVEL LIMITS
+# ---------------------------------------------------------------------------
+limits:
+  rotor_angle_deg:
+    min: -240
+    max: +240
+    provenance: REFERENCE_UNVERIFIED
+    source: "ROTOR_POSITION_{NEGATIVE,POSITIVE}_LIMIT"
+    note: "Limits cable wrap. Must be confirmed against this rig's cabling in EXP001."
+  pendulum_angle_deg:
+    min: -120
+    max: +120
+    provenance: REFERENCE_UNVERIFIED
+    source: "ENCODER_POSITION_{NEGATIVE,POSITIVE}_LIMIT"
+    note: "Used by the reference as a loss-of-control abort threshold."
+
+# ---------------------------------------------------------------------------
+# PIN MAP — REFERENCE ONLY, NOT VERIFIED ON THIS RIG
+# ---------------------------------------------------------------------------
+pin_map:
+  provenance: REFERENCE_UNVERIFIED
+  warning: >
+    These pins come from the UCLA reference and the ST BSP for the IHM01A1 on an
+    F4 Nucleo. They are a strong prior because the shield and MCU are identical.
+    They are NOT confirmed for this rig and MUST be checked before any firmware is
+    flashed. Several conflict with the vehicle firmware in Core/ (see
+    the 2026-08-19 bring-up survey (internal notes, not published), section 3).
+  encoder_a:   { pin: PB4, function: TIM3_CH1, af: AF2 }
+  encoder_b:   { pin: PB5, function: TIM3_CH2, af: AF2 }
+  l6474_stck:  { pin: PC7, function: GPIO output, paced_by: TIM2 update IRQ }
+  l6474_dir:   { pin: PA8, function: GPIO output }
+  l6474_reset: { pin: PA9, function: GPIO output, active_low: true }
+  l6474_flag:  { pin: PA10, function: GPIO input, active_low: true }
+  l6474_cs:    { pin: PB6, function: GPIO output }
+  spi_sck:     { pin: PA5, function: SPI1_SCK, af: AF5 }
+  spi_miso:    { pin: PA6, function: SPI1_MISO, af: AF5 }
+  spi_mosi:    { pin: PA7, function: SPI1_MOSI, af: AF5 }
+
+# ---------------------------------------------------------------------------
+# PHYSICAL / MECHANICAL PARAMETERS
+# ---------------------------------------------------------------------------
+mechanical:
+  status: NOT_AVAILABLE
+  note: >
+    Pendulum mass, arm length, pendulum length, centre-of-mass position, inertias and
+    friction coefficients are NOT recorded anywhere in this repository and have NOT been
+    measured. They are NOT required by EXP001, which concerns only the actuator command
+    chain and the angle measurement chain. They become required at EXP004. They must be
+    obtained by direct measurement of the rig, not copied from any reference model.
+  required_by: [EXP004, EXP005]

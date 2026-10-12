@@ -1,0 +1,11 @@
+experiment_id: EXP002
+data_class: HARDWARE
+raw_data_file: data/raw/EXP002/EXP002_20261012_172601_fcba006.csv
+date_utc: 2026-10-12 17:26:01
+operator: ""   # FILL IN
+firmware_protocol: 2
+repository_rev: fcba006
+config: {kp: 9.275, kd: 3.9, kpp: 0, kdp: 0, step_deg: 2, dist: 1, ulim: 400}
+serial_port: /dev/ttyACM0
+sampling: 50 Hz stream of the 500 Hz loop (MCU ticks)
+units: {t: s, rotor: deg, psi: deg (encoder, 0 = hanging datum), u: deg/s^2, ref: deg}

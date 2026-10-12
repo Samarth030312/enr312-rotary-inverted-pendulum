@@ -1,0 +1,99 @@
+# ============================================================================
+# Experiment metadata sidecar — TEMPLATE
+#
+# One per raw data file, same stem, in data/metadata/EXP00N/.
+# Copy, fill completely, and commit alongside the raw file.
+#
+# A raw file without a complete sidecar is not evidence: it cannot be traced to
+# the firmware that produced it or the parameters it assumed.
+# ============================================================================
+
+# --- Identity ---------------------------------------------------------------
+experiment_id: ""                 # EXP001 | EXP002 | EXP003 | EXP004 | EXP005
+raw_data_file: ""                 # data/raw/EXP00N/EXP00N_<date>_<time>_<rev>.csv
+date: ""                          # YYYY-MM-DD
+time_utc: ""                      # HH:MM
+operator: ""
+second_person: ""                 # REQUIRED for EXP005 (inverted mode)
+
+# --- Provenance: exactly what produced this data ----------------------------
+firmware:
+  commit: ""                      # git rev-parse HEAD      -- full SHA
+  short_commit: ""                # git rev-parse --short HEAD
+  tag: ""                         # e.g. exp003-verified-software, or "" if untagged
+  dirty: null                     # true if the tree had uncommitted changes -- BE HONEST
+  elf_sha256: ""                  # sha256sum of the flashed .elf
+  toolchain: "arm-none-eabi-gcc 13.2.1"
+  build_command: 'export PATH="$HOME/.local/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin:$PATH" && make clean && make -j"$(nproc)"'
+
+parameter_set:
+  id: ""                          # PS-EDUKIT01-v1, or a -MEASURED successor
+  file: shared/parameters/edukit01_rig.yaml
+  physical_parameters_version: "" # revision of docs/hardware/PHYSICAL_PARAMETERS.md used
+  any_value_measured: false       # true once ANY parameter came from this rig
+
+# --- Hardware configuration -------------------------------------------------
+hardware:
+  rig: STEVAL-EDUKIT01
+  rig_confirmed_by_inspection: false   # OI-1 -- MUST become true before any powered run
+  configuration: ""               # suspended | inverted | pendulum-removed (EXP002)
+  pendulum_fitted: null
+  mcu_board: ""                   # as read from the silkscreen
+  motor_shield: ""
+  motor_part_number: ""           # full label
+  encoder_part_number: ""         # full label
+  psu_output_v: null
+  psu_current_rating_a: null      # UNKNOWN until read from the label
+  encoder_pull_up: ""             # "internal" | "external <value> ohm to <rail>"
+  encoder_idle_high_v: null       # MEASURED with the MCU disconnected -- POWER_SAFETY section 4
+  common_ground_confirmed: null
+
+# --- Calibration actually in force ------------------------------------------
+calibration:
+  encoder_counts_per_rev: null    # MEASURED (EXP001 P2), not assumed
+  encoder_polarity: null          # MEASURED (EXP001 P2b)
+  encoder_polarity_prose: ""      # e.g. "counts increase when the tip moves toward the operator"
+  rotor_polarity: null            # MEASURED (EXP001 P1)
+  rotor_control_gain_steps_per_deg: null   # resolves the manual-vs-code x2 conflict
+  rotor_gain_conflict_resolved: null       # true once measured by protractor
+
+# --- Controller (EXP002 onward) ---------------------------------------------
+controllers:
+  pendulum: { kp: null, ki: null, kd: null }   # FIXED per tutorial; 10/0/5 susp, 300/0/30 inv
+  rotor:    { kp: null, td: null, kd: null, sign: null }
+  derivative_lowpass_hz: null
+  output_limit: null
+  realisation: ""                 # "ideal" | "filtered at <N> rad/s" -- CE_Max/M_S depend on it
+
+# --- Acquisition ------------------------------------------------------------
+sampling:
+  nominal_period_s: 0.002
+  nominal_rate_hz: 500
+  timing_verified: false          # OI-10 -- MUST be true before EXP005
+  timing_method: ""               # requires an INDEPENDENT time source
+  measured_period_s: null
+  jitter_std_s: null
+
+excitation:
+  type: ""                        # rotor_step | load_disturbance | hand_rotation | none
+  amplitude: null
+  unit: ""
+  predicted_u_peak: null          # A*(Kp + Kd*alpha/Ts) -- must be inside output_limit
+  saturated_samples: null         # MUST be 0 for a valid linear measurement
+
+# --- Conditions and outcome -------------------------------------------------
+conditions:
+  ambient_temperature_c: null
+  notes: ""
+
+outcome:
+  completed: null
+  abort_reason: null              # 0 none; see the experiment's raw README for codes
+  anomalies: ""
+
+processing:
+  script: ""                      # scripts/exp00N_process_measurements.py
+  script_revision: ""
+
+# --- Status -- never mark a category YES unless it actually happened --------
+execution_status: NOT_EXECUTED    # NOT_EXECUTED | EXECUTED | VALIDATED | FAILED

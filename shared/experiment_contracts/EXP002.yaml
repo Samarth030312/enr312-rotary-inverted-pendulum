@@ -1,0 +1,201 @@
+# ============================================================================
+# EXP002 contract -- Performance Analysis by Sensitivity Function Measurement
+# Source: Tutorial 2. Renumbered 2026-08-19 (Tutorial N = EXP00N).
+# Parameter set: PS-EDUKIT01-v1
+# ============================================================================
+
+experiment_id: EXP002
+title: Performance Analysis by Sensitivity Function Measurement
+source: course material Tutorial_2_Performance_Analysis_by_Sensitivity_Function.pdf
+status: unlocked
+parameter_set_id: PS-EDUKIT01-v1
+numbering_note: >
+  Renumbered 2026-08-19. Previously titled "Sensor Calibration and Sign Conventions".
+  See docs/ENGINEERING_STANDARDS.md §5.
+
+objective: >
+  Measure and design against BOTH reference tracking (complementary sensitivity) and
+  load-disturbance rejection (load-disturbance sensitivity) for the rotor loop, and
+  demonstrate that a controller good at one is not automatically good at the other.
+
+physical_question: >
+  With the loop closed, how well does the rotor follow a command -- and how well does it
+  reject a load it cannot see?
+
+prerequisites:
+  - id: EXP001-A
+    what: measurement foundation (actuator scale, encoder scale, sign conventions)
+    status: COMPLETE
+    checkpoint: exp001-verified
+  - id: EXP001-B
+    what: rotor PD design (Kp = 5, Td = 0.5, Kd = 2.5) and complementary sensitivity
+    status: BLOCKED
+    note: >
+      Tutorial 1 produces these with Edukit_PID_Motor_Control_Design.m. MATLAB is absent,
+      so the design is carried out here as an INDEPENDENT SOFTWARE NUMERICAL CHECK
+      (scripts/exp002_sensitivity_design.py). MATLAB equivalents exist and are NOT_EXECUTED.
+
+scope:
+  loop: rotor_only              # pendulum plant and MIMO structure are EXP003
+  firmware: true
+  numerical_analysis: true
+  matlab: true
+  hardware: true
+
+# ---------------------------------------------------------------------------
+plant:
+  transfer_function: 1/s^2
+  provenance: COURSE_REFERENCE   # Tutorial 1 section 2
+  verified_on_rig: false         # open item OI-7
+  note: double integrator; marginally stable; derivative is the only damping source
+
+controller:
+  form: C(s) = Kp + Kd*s
+  kd_definition: Kd = Kp*Td
+  derivative_acts_on: error      # keeps T(s)'s zero; required by Tutorial 2
+  derivative_lowpass:
+    corner_hz: 10.0
+    alpha: 0.11808862            # 1 - exp(-2*pi*fc*Ts)
+    noise_gain: 0.2506           # sqrt(a/(2-a))
+    justification: >
+      EXP001 equations 13-14: raw backward-difference velocity has sigma = 0.534 rad/s at
+      Ts = 2 ms. The filter reduces this to 0.134 rad/s. Derived, not inherited.
+  output_saturation:
+    default: 50.0
+    role: SAFETY_LIMIT           # not a tuning parameter
+
+# ---------------------------------------------------------------------------
+signals:
+  R:  { name: reference,   entry_point: comparator,   unit: deg }
+  D:  { name: disturbance, entry_point: plant_input,  unit: plant-input units }
+  N:  { name: noise,       entry_point: sensor,       unit: deg }
+  e:  { name: error,       definition: "R - (Y + N)", unit: deg }
+  U:  { name: plant_input, definition: "sat(u) + D",  unit: plant-input units }
+  Y:  { name: rotor_angle, unit: deg }
+injection_rule: >
+  Exactly one of R and D is non-zero at any instant. Exciting both simultaneously makes
+  T(s) and SD(s) inseparable from a single record. Enforced in firmware and unit-tested.
+
+sampling:
+  period_s: 0.002
+  rate_hz: 500
+  verified: false                # timing verification is EXP003
+
+# ---------------------------------------------------------------------------
+transfer_functions:
+  S:  "1/(1+PC)     = s^2/(s^2 + Kd s + Kp)"
+  T:  "PC/(1+PC)    = (Kd s + Kp)/(s^2 + Kd s + Kp)"
+  SD: "P/(1+PC)     = 1/(s^2 + Kd s + Kp)"
+  identity: "S + T = 1"
+  omega_n: sqrt(Kp)
+  zeta: "Kd/(2*sqrt(Kp))"
+
+metric_conventions:
+  T_final_value: 1.0
+  SD_final_value: "1/Kp"
+  overshoot: "relative to the system's OWN final value"
+  settling: "2 % of the system's OWN final value"
+  critical_note: >
+    SD settles to 1/Kp, NOT to zero. A PD controller has no integral action, so a constant
+    load leaves a PERMANENT offset. Measured against zero, SD never settles at all. This
+    is the "extended settling time" Tutorial 2 warns about and the motivation for
+    integral action in Tutorial 6. Both conventions are computed and reported.
+
+# ---------------------------------------------------------------------------
+design_objectives:          # Tutorial 2 section 3
+  rotor_angle_step:
+    peak_time_max_s: 2.0
+    overshoot_max_pct: 30.0
+    settling_2pct_max_s: 4.0
+  load_disturbance_step:
+    peak_time_max_s: 3.0
+    overshoot_max_pct: 15.0
+    settling_2pct_max_s: 4.0
+  admissible_region:
+    kd: { min: 0.0, max: 4.0 }
+    kp: { min: 0.5, max: 10.0 }
+
+results_numerical:          # INDEPENDENT SOFTWARE NUMERICAL CHECK, executed
+  tutorial1_design:
+    kp: 5.0
+    td: 0.5
+    kd: 2.5
+    omega_n: 2.2361
+    zeta: 0.5590
+    T:  { peak: 1.2676, peak_time_s: 1.055, overshoot_pct: 26.76, settling_s: 3.239 }
+    SD: { final: 0.2000, peak: 0.2241, peak_time_s: 1.694, overshoot_pct: 12.03, settling_s: 2.617 }
+    meets_all_objectives: true
+  selected_design:
+    kp: 6.55
+    td: 0.6107
+    kd: 4.0
+    omega_n: 2.5593
+    zeta: 0.7815
+    T:  { peak: 1.1849, peak_time_s: 0.844, overshoot_pct: 18.49, settling_s: 1.961 }
+    SD: { final: 0.1527, peak: 0.1557, peak_time_s: 1.967, overshoot_pct: 1.96, settling_s: 1.412 }
+    meets_all_objectives: true
+    note: Kd = 4.0 lies ON the admissible boundary; the constraint is active.
+  feasible_design_count: 3595
+
+# ---------------------------------------------------------------------------
+acceptance:
+  software:
+    - id: AC2-1
+      claim: PD controller implements C(s) = Kp + Kd*s with correct signal topology
+      status: SATISFIED
+    - id: AC2-2
+      claim: D enters at plant input, N enters at sensor; both unit-tested
+      status: SATISFIED
+    - id: AC2-3
+      claim: closed-loop firmware reproduces the analytic T(s) and SD(s)
+      status: SATISFIED
+    - id: AC2-4
+      claim: SD steady state equals 1/Kp exactly
+      status: SATISFIED
+    - id: AC2-5
+      claim: sequencer phase order, exclusivity of R and D, all abort paths exercised
+      status: SATISFIED
+    - id: AC2-6
+      claim: cross-compiles for target with zero warnings
+      status: SATISFIED
+    - id: AC2-7
+      claim: design meeting all six objectives identified
+      status: SATISFIED
+  hardware:
+    - id: H2-1
+      claim: measured complementary sensitivity matches the model
+      status: NOT_EXECUTED
+    - id: H2-2
+      claim: measured load-disturbance sensitivity matches the model
+      status: NOT_EXECUTED
+    - id: H2-3
+      claim: measured steady-state offset under load equals 1/Kp
+      status: NOT_EXECUTED
+    - id: H2-4
+      claim: measured omega_n = sqrt(Kp), confirming the 1/s^2 plant (OI-7)
+      status: NOT_EXECUTED
+
+data_format:
+  telemetry_csv_header: >
+    tick,t_s,phase,reference_deg,disturbance,noise_deg,error_deg,u,rotor_deg,abort_reason
+  raw_dir: data/raw/EXP002/
+  processed_dir: data/processed/EXP002/
+  metadata_dir: data/metadata/EXP002/
+
+execution:
+  numerical_analysis: EXECUTED
+  host_unit_tests: EXECUTED        # 61 EXP002 checks; 180 total with EXP001
+  target_compilation: EXECUTED
+  matlab: DEFERRED_UNTIL_MATLAB_WORKSTATION
+  hardware: NOT_EXECUTED           # st-info --probe: 0 programmers
+
+open_items:
+  OI-2: rotor and encoder sign conventions undetermined (from EXP001)
+  OI-3: no board-support layer exists
+  OI-7: plant model 1/s^2 unverified on this rig
+
+gate:
+  exp003_may_begin: false
+  reason: >
+    EXP003 (Tutorial 3) adds the pendulum plant and a second loop. It requires EXP002's
+    measured sensitivity results, which are hardware-blocked. Do not begin.

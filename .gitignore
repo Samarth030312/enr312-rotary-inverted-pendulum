@@ -1,0 +1,46 @@
+# Build output
+build/
+firmware/*/build/
+*.o
+*.d
+*.map
+
+# MATLAB
+*.asv
+*.autosave
+*.m~
+*.mlx.autosave
+slprj/
+codegen/
+*.mex*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Editors / OS
+.vscode/
+.idea/
+.metadata/
+.settings/
+*.launch
+.DS_Store
+Thumbs.db
+*~
+*.swp
+
+# Session logs written by the MATLAB apps (curated copies: results/evidence/rig_sessions/)
+results/evidence/logs/
+
+# Synthetic data from the emulator and self-tests: never mixed with hardware data
+matlab/data/synthetic/
+data/processed/*_selftest_synthetic.csv
+results/figures/*_selftest_synthetic.png
+
+# Third-party reference material (fetch with scripts/clone_ucla_reference.sh)
+docs/references/
+
+# Local configuration
+.env
+.env.*

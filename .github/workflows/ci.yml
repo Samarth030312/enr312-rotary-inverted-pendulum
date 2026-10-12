@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  host:
+    name: Host unit tests and emulator
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit tests (control cores, runner, command parser)
+        run: make -C firmware/enr312 test
+      - name: Build the rig emulator
+        run: make -C firmware/enr312 host-rig
+      - name: Emulator smoke test (Tutorial 5 must balance through the sequence)
+        run: |
+          firmware/enr312/build/enr312_host_rig --batch exp=5 seconds=20 release=0.5 > t5.csv
+          tail -n 1 t5.csv
+          awk -F, 'NR>1 && $8!="NONE" {print "aborted:", $8; exit 1}' t5.csv
+          awk -F, 'NR>1 && $6>=3 {ok=1} END {exit !ok}' t5.csv
+
+  firmware:
+    name: Firmware build (Arm GNU Toolchain 13.2.Rel1)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: |
+          curl -sSL -o tc.tar.xz https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz
+          mkdir -p "$HOME/.local" && tar -xf tc.tar.xz -C "$HOME/.local"
+          echo "$HOME/.local/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin" >> "$GITHUB_PATH"
+      - name: Build
+        run: make -C firmware/enr312/target
+      - name: No RTOS or middleware symbols in the image
+        run: make -C firmware/enr312/target isolation | tee /dev/stderr | grep -q 'ISOLATION CLEAN'
+      - name: Pin configuration (.ioc) agrees with the init code
+        run: make -C firmware/enr312/target ioc-check | tee /dev/stderr | grep -q 'IOC AND CODE AGREE'
+      - name: Build reproduces the committed release image
+        run: |
+          built=$(sha256sum firmware/enr312/target/build/enr312_pendulum.elf | cut -d' ' -f1)
+          echo "built:    $built"
+          grep enr312_pendulum.elf firmware/enr312/release/MANIFEST.txt
+          grep -q "$built  enr312_pendulum.elf" firmware/enr312/release/MANIFEST.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: enr312_pendulum
+          path: firmware/enr312/target/build/enr312_pendulum.*

@@ -1,0 +1,179 @@
+# ============================================================================
+# EXP001 contract -- Actuator and Angle Sensing
+# Updated 2026-08-19 from placeholders to verified/derived values.
+# Parameter set: PS-EDUKIT01-v1 (shared/parameters/edukit01_rig.yaml)
+# ============================================================================
+
+experiment_id: EXP001
+title: Introduction to Control System Design Tools and Performance Analysis with Digital Actuators
+source: course material Tutorial_1_Introduction_to_Control_System_Design.pdf
+status: unlocked
+numbering_note: >
+  Renumbered 2026-08-19 to Tutorial N = EXP00N. Previously titled "Actuator and Angle
+  Sensing", which is EXP001 Part A below. See docs/ENGINEERING_STANDARDS.md §5.
+  The tag `exp001-verified` (commit 4c96948) captures Part A and remains immutable.
+
+parts:
+  A_measurement_foundation:
+    content: >
+      Actuator command chain, angle sensing chain, sign conventions, resolution,
+      quantisation and velocity-noise limits. The physical/measurement layer Tutorial 1
+      assumes but does not derive.
+    status: COMPLETE
+    checkpoint: exp001-verified
+  B_rotor_control_design:
+    content: >
+      G_Rotor(s) = 1/s^2; PD controller K_P = 5, T_d = 0.5, K_d = 2.5; complementary
+      sensitivity function; step-response metrics (peak time, peak value, settling time,
+      overshoot).
+    status: BLOCKED
+    blocked_by: [MATLAB_UNAVAILABLE, HARDWARE_UNAVAILABLE]
+    note: >
+      Tutorial 1 performs this with Edukit_PID_Motor_Control_Design.m. EXP002 consumes
+      its output, so the analytical work is carried out under EXP002 as an INDEPENDENT
+      SOFTWARE NUMERICAL CHECK with MATLAB equivalents written and NOT_EXECUTED.
+parameter_set_id: PS-EDUKIT01-v1
+source_revision: 44bda39
+
+objective: >
+  Establish the relationship between actuator command and physical rotary motion,
+  while verifying that the angle measurement represents the actual mechanical coordinate.
+
+physical_question: >
+  When the software commands 45 degrees, does the arm move 45 degrees -- and when the
+  pendulum moves, does the reported angle mean what we think it means?
+
+rig:
+  name: STEVAL-EDUKIT01
+  provenance: COURSE_DOCUMENT
+  source: course material Edukit_Student_Lab_Handout.pdf
+  confirmed_by_physical_inspection: false     # open item OI-1
+
+scope:
+  firmware: true
+  numerical_analysis: true
+  matlab_simulation: true
+  hardware: true
+  plant_dynamics: false      # deliberately out of scope for EXP001
+
+# ---------------------------------------------------------------------------
+signals:
+  actuation:
+    name: rotor_command
+    type: net commanded microsteps (integer, signed)
+    unit: microsteps
+    scale: 0.1125 deg/microstep    # 360/3200
+    sensor: NONE
+    note: >
+      The rotor has no position sensor. Its position is commanded and remembered.
+      Valid only while no step is lost -- assumption A2, tested by P3, with no
+      error signal anywhere in the system.
+  sensing:
+    name: pendulum_angle
+    source: incremental quadrature encoder on TIM3, X4 decode
+    unit: rad (deg for display)
+    scale: 0.0026179938779915 rad/count   # 2*pi/2400
+    origin: latched at firmware start; arbitrary until EXP002
+    equation: theta_p = polarity * (accumulated_counts - origin) * rad_per_count
+
+sampling:
+  nominal_period_s: 0.002
+  nominal_rate_hz: 500
+  provenance: COURSE_DOCUMENT
+  verified: false            # timing verification is EXP003, not EXP001
+
+# ---------------------------------------------------------------------------
+parameters:
+  status: DERIVED_AND_CROSS_CHECKED_BUT_NOT_MEASURED
+  encoder_counts_per_rev: 2400
+  encoder_rad_per_count: 0.0026179938779915
+  encoder_deg_per_count: 0.15
+  rotor_microsteps_per_rev: 3200
+  rotor_rad_per_microstep: 0.0019634954084936
+  rotor_deg_per_microstep: 0.1125
+  encoder_polarity: -1               # MEASURED 2026-10-12 (P2b), rig_20261012-160027.log
+  rotor_polarity: +1                 # MEASURED 2026-10-12 (P1), protractor 5 deg
+  cross_check: >
+    Derived counts/deg (6.666667) and microsteps/deg (8.888889) reproduce the UCLA
+    reference constants exactly, by an independent route.
+
+derived_quantities:
+  sigma_theta_rad: 0.00075574973509759      # eq. 11
+  velocity_granularity_rad_s: 1.308996938995747   # eq. 13
+  sigma_omega_rad_s: 0.5343957625674435     # eq. 14
+  sigma_omega_10hz_filtered_rad_s: 0.1358
+  wrap_aliasing_threshold_rev_s: 6826.666666666667  # eq. 10
+  monte_carlo_agreement: 0.9997             # Python, 4e6 samples
+
+safety:
+  rotor_travel_limit_deg: 240        # REFERENCE_UNVERIFIED, confirm per rig
+  pendulum_abort_deg: 120
+  max_step_rate_hz_exp001: 1000      # self-imposed; 0.038 % rate error
+  motor_current_ma: 800              # motor rated 2000 mA; do not raise
+  dry_run_first: true                # armed=false must pass before powering
+
+# ---------------------------------------------------------------------------
+acceptance:
+  status: DEFINED
+  criteria_file: experiments/EXP001/VALIDATION.md
+  software:
+    - id: AC-6
+      claim: wrap-safe decoding exhaustively correct
+      status: SATISFIED
+    - id: AC-7
+      claim: command model correct, limits enforced
+      status: SATISFIED
+    - id: AC-8
+      claim: sequencer and all abort paths exercised
+      status: SATISFIED
+    - id: AC-9
+      claim: cross-compiles for target, zero warnings
+      status: SATISFIED
+    - id: AC-10
+      claim: analytic results confirmed by Monte-Carlo
+      status: SATISFIED
+  hardware:
+    - id: P1
+      claim: commanded vs achieved arm angle within +/-1.8 deg
+      status: NOT_EXECUTED
+    - id: P2
+      claim: one revolution = 2400 +/-4 counts
+      status: NOT_EXECUTED
+    - id: P2b
+      claim: sign convention determined and recorded in prose
+      status: NOT_EXECUTED
+    - id: P3
+      claim: 10 zero-net cycles leave residual within +/-1.8 deg
+      status: NOT_EXECUTED
+    - id: P4
+      claim: no missed edges over 10 hand rotations
+      status: NOT_EXECUTED
+    - id: P5
+      claim: step rate within +/-0.1 % at <= 2000 steps/s
+      status: DEFERRED       # requires an oscilloscope/logic analyser
+
+# ---------------------------------------------------------------------------
+execution:
+  matlab: DEFERRED_UNTIL_MATLAB_WORKSTATION
+  numerical_analysis: EXECUTED
+  host_unit_tests: EXECUTED       # 119 checks, 0 failures
+  target_compilation: EXECUTED
+  hardware: NOT_EXECUTED          # st-info --probe: 0 programmers
+
+artifacts:
+  firmware: firmware/enr312/
+  parameters: shared/parameters/edukit01_rig.yaml
+  analysis: scripts/exp001_sensing_analysis.py
+  data_pipeline: scripts/exp001_process_measurements.py
+  matlab: matlab/README_EXP001.md
+  figures: results/figures/EXP001_fig1..4_*.png
+  tables: results/tables/EXP001_sensing_analysis.csv
+
+open_items: [OI-1, OI-2, OI-3, OI-4, OI-5, OI-6]
+
+gate:
+  exp002_may_begin: false
+  reason: >
+    EXP002 (Sensor Calibration and Sign Conventions) consumes P2, P2b and P4, all of
+    which are blocked on hardware. Beginning it would mean calibrating against assumed
+    constants and inherited signs -- the exact failure mode EXP001 exists to prevent.

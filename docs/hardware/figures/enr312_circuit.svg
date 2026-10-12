@@ -1,0 +1,180 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 990" width="1500" height="990" font-family="Helvetica, Arial, sans-serif">
+  <title>ENR312 pendulum rig: signal and power wiring</title>
+  <defs>
+    <style>
+      .box{fill:#f7f9fc;stroke:#1b2a44;stroke-width:2;rx:10}
+      .chip{fill:#e4ebf5;stroke:#1b2a44;stroke-width:1.5}
+      .t{font-size:15px;fill:#1b2a44}
+      .h{font-size:20px;font-weight:bold;fill:#1b2a44}
+      .s{font-size:12.5px;fill:#33404f}
+      .pin{font-size:13px;font-family:Menlo,Consolas,monospace;fill:#1b2a44}
+      .warn{font-size:13px;fill:#b3261e;font-weight:bold}
+      .w{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+      .spi{stroke:#2a62c9}.ctl{stroke:#7a3fb0}.enc{stroke:#1d8a4a}.pwr{stroke:#d12f2f}
+      .gnd{stroke:#222}.mot{stroke:#e07a10}.usb{stroke:#555;stroke-dasharray:8 5}
+      .dot{fill:#1b2a44}
+    </style>
+  </defs>
+  <rect width="1500" height="990" fill="#ffffff"/>
+  <text x="30" y="40" class="h" font-size="24">ENR312 rotary pendulum: wiring (STEVAL-EDUKIT01)</text>
+  <text x="30" y="64" class="s">Kit wiring: ST UM2717 Rev 1. Shield signals: UM1857. MCU pins: firmware/enr312/target/inc/enr312_board.h. Encoder wiring as built (UCLA main.c). Physically verified: NOT YET.</text>
+
+  <!-- PC -->
+  <rect x="30" y="110" width="210" height="120" class="box"/>
+  <text x="50" y="140" class="h">PC / MATLAB</text>
+  <text x="50" y="165" class="s">enr312_lab app</text>
+  <text x="50" y="183" class="s">flash: SWD via ST-LINK</text>
+  <text x="50" y="201" class="s">data: VCP 115200 8N1</text>
+  <text x="50" y="219" class="s">USB also powers the logic</text>
+  <path d="M240 170 H330" class="w usb"/>
+  <text x="252" y="160" class="s">USB mini-B</text>
+
+  <!-- Nucleo -->
+  <rect x="330" y="100" width="380" height="560" class="box"/>
+  <text x="350" y="130" class="h">NUCLEO-F401RE</text>
+  <rect x="350" y="145" width="160" height="70" class="chip"/>
+  <text x="362" y="170" class="t">ST-LINK/V2-1</text>
+  <text x="362" y="190" class="s">CN2 jumpers ON</text>
+  <text x="362" y="206" class="s">JP5 = U5V (USB power)</text>
+  <rect x="350" y="240" width="160" height="110" class="chip"/>
+  <text x="362" y="265" class="t">STM32F401RET6</text>
+  <text x="362" y="285" class="s">84 MHz, 3.3 V I/O</text>
+  <text x="362" y="303" class="s">USART2 PA2/PA3 = VCP</text>
+  <text x="362" y="321" class="s">TIM3 encoder, SPI1,</text>
+  <text x="362" y="337" class="s">TIM4 500 Hz loop</text>
+  <text x="350" y="380" class="t" font-weight="bold">Arduino headers</text>
+  <text x="350" y="398" class="s">(the IHM01A1 plugs onto these)</text>
+
+  <!-- header pin column -->
+  <g class="pin">
+    <text x="560" y="250">D13 PA5  SCK</text>
+    <text x="560" y="280">D12 PA6  MISO</text>
+    <text x="560" y="310">D11 PA7  MOSI</text>
+    <text x="560" y="340">D10 PB6  nCS</text>
+    <text x="560" y="370">D9  PC7  STCK</text>
+    <text x="560" y="400">D8  PA9  nRST</text>
+    <text x="560" y="430">D7  PA8  DIR</text>
+    <text x="560" y="460">D2  PA10 FLAG</text>
+    <text x="560" y="520">D5  PB4  DIR3</text>
+    <text x="560" y="550">D4  PB5  DIR2</text>
+    <text x="560" y="590">5V</text>
+    <text x="560" y="625">GND</text>
+  </g>
+  <g fill="#1b2a44">
+    <circle cx="710" cy="246" r="4"/><circle cx="710" cy="276" r="4"/><circle cx="710" cy="306" r="4"/>
+    <circle cx="710" cy="336" r="4"/><circle cx="710" cy="366" r="4"/><circle cx="710" cy="396" r="4"/>
+    <circle cx="710" cy="426" r="4"/><circle cx="710" cy="456" r="4"/><circle cx="710" cy="516" r="4"/>
+    <circle cx="710" cy="546" r="4"/><circle cx="710" cy="586" r="4"/><circle cx="710" cy="621" r="4"/>
+  </g>
+
+  <!-- stacked-header bus to shield -->
+  <path d="M710 246 H820" class="w spi"/><path d="M710 276 H820" class="w spi"/>
+  <path d="M710 306 H820" class="w spi"/><path d="M710 336 H820" class="w spi"/>
+  <path d="M710 366 H820" class="w ctl"/><path d="M710 396 H820" class="w ctl"/>
+  <path d="M710 426 H820" class="w ctl"/><path d="M710 456 H820" class="w ctl"/>
+  <text x="728" y="232" class="s">stacked headers</text>
+
+  <!-- IHM01A1 -->
+  <rect x="820" y="200" width="300" height="300" class="box"/>
+  <text x="840" y="230" class="h">X-NUCLEO-IHM01A1</text>
+  <g class="pin" font-size="12">
+    <text x="830" y="250">CN5-6 SCK*</text><text x="830" y="280">CN5-5 MISO</text>
+    <text x="830" y="310">CN5-4 MOSI</text><text x="830" y="340">CN5-3 CS*</text>
+    <text x="830" y="370">CN5-2 PWM1</text><text x="830" y="400">CN5-1 STBY/RST</text>
+    <text x="830" y="430">CN9-8 DIR1</text><text x="830" y="460">CN9-3 FLAG</text>
+  </g>
+  <rect x="975" y="240" width="130" height="118" class="chip"/>
+  <text x="1008" y="268" class="h">L6474</text>
+  <text x="986" y="290" class="s">stepper driver</text>
+  <text x="986" y="308" class="s">1/16 microstep</text>
+  <text x="986" y="326" class="s">8-45 V, 3 A rms</text>
+  <text x="986" y="344" class="s">TVAL 0.8 A (fw)</text>
+  <text x="830" y="485" class="s">* selectable: R15/R25, R23/R24 (check)</text>
+
+  <!-- 12 V supply -->
+  <rect x="1200" y="100" width="260" height="120" class="box"/>
+  <text x="1220" y="130" class="h">12 V DC supply</text>
+  <text x="1220" y="152" class="warn">+12 V = BLACK WITH WHITE STRIPE</text>
+  <text x="1220" y="170" class="s">ground = plain black (UM2717); 12 V 1 A</text>
+  <path d="M1250 220 V260 H1180" class="w pwr"/>
+  <rect x="1150" y="250" width="30" height="20" fill="#fff" stroke="#d12f2f" stroke-width="2"/>
+  <text x="1128" y="246" class="s">fuse 2 A T</text>
+  <path d="M1150 260 H1135 V280" class="w pwr"/>
+  <path d="M1135 280 L1155 295" class="w pwr"/>
+  <circle cx="1135" cy="280" r="3" class="dot"/><circle cx="1135" cy="300" r="3" class="dot"/>
+  <text x="1160" y="300" class="warn">switch = E-STOP (within reach)</text>
+  <path d="M1135 300 V380 H1120" class="w pwr"/>
+  <text x="1112" y="384" class="pin" font-size="12" text-anchor="end">Vin (+12 V)</text>
+  <path d="M1400 220 V350 H1160 V400 H1120" class="w gnd"/>
+  <text x="1112" y="404" class="pin" font-size="12" text-anchor="end">GND</text>
+
+  <!-- Motor -->
+  <rect x="1200" y="390" width="260" height="190" class="box"/>
+  <text x="1220" y="420" class="h">NEMA17 stepper</text>
+  <text x="1220" y="442" class="s">2 coils, 200 steps/rev</text>
+  <text x="1220" y="460" class="s">coil = 2 leads with a few ohms</text>
+  <text x="1220" y="478" class="s">between them. Pair by</text>
+  <text x="1220" y="496" class="s">MEASURING, not by colour.</text>
+  <g class="w mot">
+    <path d="M1120 425 H1200"/><path d="M1120 445 H1200"/>
+    <path d="M1120 465 H1200"/><path d="M1120 485 H1200"/>
+  </g>
+  <g class="pin" font-size="12" text-anchor="end">
+    <text x="1112" y="429">-A</text><text x="1112" y="449">+A</text>
+    <text x="1112" y="469">-B</text><text x="1112" y="489">+B</text>
+  </g>
+  <text x="1210" y="530" class="s">UM2717 Fig.15: -A red, +A yellow</text>
+  <text x="1210" y="548" class="s">-B blue, +B orange</text>
+  <text x="1210" y="566" class="s">12 V, 0.8 A (= firmware TVAL)</text>
+
+  <!-- Encoder -->
+  <rect x="820" y="610" width="300" height="250" class="box"/>
+  <g class="pin" font-size="10" text-anchor="middle"><text x="865" y="628">red</text><text x="905" y="628">blk</text><text x="945" y="628">wht</text><text x="985" y="628">grn</text></g>
+  <text x="840" y="660" class="h">Rotary encoder</text>
+  <text x="840" y="682" class="s">600 PPR assumed (check P3), x4 = 2400/rev</text>
+  <text x="840" y="700" class="s">supply from E1; outputs OPEN COLLECTOR</text>
+  <text x="840" y="718" class="s">pendulum shaft at the arm tip</text>
+  <g class="pin" font-size="12">
+    <text x="840" y="748">E1 red   +   E2 black GND</text>
+    <text x="840" y="768">E3 white phase 1</text><text x="840" y="788">E4 green phase 2</text>
+  </g>
+  <!-- encoder: jumper wires to the shield header DIR3/DIR2/5V/GND (as built; UCLA main.c) -->
+  <path d="M710 516 H770 V776 H820" class="w" stroke="#9aa0a6"/>
+  <path d="M710 546 H755 V801 H820" class="w enc"/>
+  <path d="M710 586 H740 V726 H820" class="w pwr"/>
+  <path d="M710 621 H725 V751 H820" class="w gnd"/>
+  <rect x="820" y="610" width="300" height="250" class="box"/>
+  <text x="840" y="640" class="h">Rotary encoder</text>
+  <text x="840" y="662" class="s">600 PPR assumed (check P3), x4 = 2400/rev</text>
+  <text x="840" y="680" class="s">supply 5 V; outputs OPEN COLLECTOR</text>
+  <text x="840" y="698" class="s">pendulum shaft at the arm tip</text>
+  <g class="pin" font-size="12">
+    <text x="840" y="730">Red   -&gt; 5V</text><text x="840" y="755">Black -&gt; GND</text>
+    <text x="840" y="780">White -&gt; DIR3 (D5)</text><text x="840" y="805">Green -&gt; DIR2 (D4)</text>
+  </g>
+  <text x="840" y="830" class="s">UM2717 Fig.15: E1 5V, E2 GND, E3 DIR3, E4 DIR2</text>
+  <text x="840" y="847" class="s">(UCLA main.c:95-99; photos 2026-10-12)</text>
+
+  <!-- encoder safety callout -->
+  <rect x="30" y="700" width="660" height="140" fill="#fff4f2" stroke="#b3261e" stroke-width="2" rx="10"/>
+  <text x="50" y="728" class="warn" font-size="16">Encoder outputs must never reach 5 V at PB4/PB5</text>
+  <text x="50" y="752" class="s">The outputs are open collector: they only pull LOW. The firmware enables the STM32's internal</text>
+  <text x="50" y="770" class="s">pull-ups (to 3.3 V). There must be NO pull-up to 5 V in the encoder or harness.</text>
+  <text x="50" y="788" class="s">Check A3 (unpowered): white→red and green→red &gt; 100 kΩ. Check B2 (powered):</text>
+  <text x="50" y="806" class="s">D5/D4 never above 3.6 V. Otherwise STOP: divider or 3.3 V pull-ups.</text>
+  <text x="50" y="824" class="s">PB4/PB5 5 V tolerance is NOT recorded in this repository; do not rely on it.</text>
+
+  <!-- legend -->
+  <g transform="translate(30,885)">
+    <text x="0" y="0" class="t" font-weight="bold">Legend</text>
+    <path d="M0 20 H40" class="w spi"/><text x="48" y="25" class="s">SPI</text>
+    <path d="M110 20 H150" class="w ctl"/><text x="158" y="25" class="s">driver control</text>
+    <path d="M280 20 H320" class="w enc"/><text x="328" y="25" class="s">encoder signal</text>
+    <path d="M450 20 H490" class="w pwr"/><text x="498" y="25" class="s">supply</text>
+    <path d="M560 20 H600" class="w gnd"/><text x="608" y="25" class="s">ground</text>
+    <path d="M680 20 H720" class="w mot"/><text x="728" y="25" class="s">motor phase</text>
+    <path d="M840 20 H880" class="w usb"/><text x="888" y="25" class="s">USB</text>
+    <text x="0" y="60" class="s">Ground: the 12 V return, the IHM01A1 and the Nucleo share GND through the stacked headers. Confirm continuity (power off) before any signal is connected.</text>
+    <text x="0" y="80" class="s">Never flash build/odyssix_stm32_core.elf (vehicle firmware) with the shield fitted: it drives PA9 (L6474 reset) as a UART. MATLAB's flash() refuses it.</text>
+  </g>
+</svg>

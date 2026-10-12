@@ -1,0 +1,256 @@
+# ============================================================================
+# EXP005 contract -- MIMO Unstable System Control (INVERTED mode)
+# Source: Tutorial 5.  Parameter set: PS-EDUKIT01-v1
+# ============================================================================
+
+experiment_id: EXP005
+title: MIMO Unstable System Control (Inverted Mode)
+source: course material Tutorial_5_Unstable_MIMO_Systems.pdf
+status: unlocked
+parameter_set_id: PS-EDUKIT01-v1
+
+SAFETY_CLASS: HIGH
+safety_note: >
+  FIRST experiment with no benign failure mode. Open-loop RHP pole at +7.2888 rad/s
+  (137 ms fall time constant). If the loop opens the pendulum falls and the arm slams.
+  All safety bounds are tighter than EXP003's.
+
+objective: >
+  Stabilise the inverted (unstable) rotary pendulum as a MIMO system and design the outer
+  rotor controller to meet settling, overshoot, gain-margin, phase-margin and maximum-
+  sensitivity objectives simultaneously.
+
+prerequisites: [EXP001, EXP002, EXP003, EXP004]
+
+scope:
+  mode: inverted
+  loops: 2
+  firmware: true
+  numerical_analysis: true
+  matlab: true
+  hardware: true
+  state_feedback: false      # NOT required by Tutorial 5
+  lqr: false
+  kalman: false
+  observers: false
+  integral_action: false
+
+# ---------------------------------------------------------------------------
+plant:
+  rotor: { transfer_function: "1/s^2", provenance: COURSE_REFERENCE }
+  pendulum_inverted:
+    transfer_function: "wr2*s^2 / (s^2 + (wg/Q)*s - wg2)"
+    sign_note: "MINUS on wg2 -- gravity destabilises a standing pendulum"
+    provenance: COURSE_REFERENCE          # Tutorial 5 section 8
+    verified_on_rig: false                # OI-9
+    parameters:
+      wr2: { value: 0.803, unit: "(rad/s)^2", status: ASSUMED }
+      wg2: { value: 55.85, unit: "(rad/s)^2", status: ASSUMED, note: "differs from suspended 57.01" }
+      Q:   { value: 20.0,  unit: "-",         status: ASSUMED, note: "differs from suspended 27" }
+      gamma: { value: 0.373664, unit: rad/s, status: DERIVED }
+    open_loop_poles: [-7.6625, 7.2888]
+    rhp_pole: { value: 7.2888, unit: rad/s, fall_time_constant_ms: 137 }
+
+controllers:
+  pendulum_inner:
+    form: "Kp_pend + Kd_pend*s"
+    kp: 300.0
+    kd: 30.0
+    td_implied: 0.1
+    status: SUPPLIED_AND_FIXED_BY_TUTORIAL_5
+    SOURCE_CONFLICT_RESOLVED:
+      conflict: "Tutorial 5 section 8 states Kp=300, Td=0.5, Kd=Kp*Td=30. But 300*0.5=150."
+      evidence:
+        - "Tutorial 5's own serial transcript enters Differential Gain: 30.00"
+        - "UCLA reference firmware pairs PRIMARY_PROPORTIONAL_MODE_1=300 with PRIMARY_DERIVATIVE_MODE_1=30"
+      decision: "Kd = 30 is operative; the implied Td is 0.1 s, not the stated 0.5 s."
+    effect: >
+      Inner closed loop becomes s^2 + 24.4637 s + 185.05, poles -12.232 +/- 5.953j,
+      zeta = 0.899. It STABILISES an unstable plant rather than damping a stable one --
+      a categorically different job from EXP003's inner loop, hence 30x the gain.
+  rotor_outer:
+    form: "Kp_rotor + Kd_rotor*s"
+    status: TO_BE_DESIGNED
+    sign: -1
+    SIGN_INVERSION:
+      reason: >
+        T_rotor has NEGATIVE DC gain in inverted mode (numerator den_pend, constant term
+        -wg2 = -55.85, so T_rotor ~ -0.3018/s^2). A positive Kp closes POSITIVE feedback.
+      evidence: >
+        With the non-inverted sign BOTH of Tutorial 5's published designs are unstable
+        (max Re(pole) +2.4613 and +1.8915). With the inversion both are stable
+        (-1.7915 and -0.3497), and their relative stability reproduces the Tutorial's own
+        naming of them as "Stable" and "Quasi-Stable".
+      corroboration: >
+        UCLA reference firmware uses NEGATIVE gains for suspended mode (-10.0, -2.0) and
+        positive for inverted -- the same inversion applied at gain entry.
+
+FUNDAMENTAL_LIMITATION:
+  statement: >
+    T_rotor's numerator is den_pend, so the plant's unstable POLE becomes a
+    NON-MINIMUM-PHASE ZERO of T_rotor at +7.2888 rad/s. Stabilising an unstable pole does
+    not remove it -- it converts it into a RHP zero of the loop the outer controller must
+    then work with.
+  bandwidth_ceiling: { value: 3.644, unit: rad/s, note: "~z/2; no Kp/Kd can exceed it" }
+  observable_signature: >
+    The step response dips the WRONG WAY first (undershoot -11 % to -40 %): the arm must
+    move away from the target to get under the pendulum before carrying it.
+  consequence: >
+    This is why Tutorial 5's settling/overshoot targets are far looser than Tutorial 3's,
+    and why gain and phase margins rather than speed become the binding constraints.
+
+# ---------------------------------------------------------------------------
+metrics:
+  w_GC:  "gain crossover, |L| = 1"
+  phi_M: "phase margin = 180 deg + angle L(j w_GC)"
+  w_PC:  "phase crossover, angle L = -180 deg"
+  GM:    "gain margin = 1/|L(j w_PC)|, dB = -20 log10 |L|"
+  M_S:   "max |S|, at w_MS"
+  w_SC:  "sensitivity crossover, |S| = 1"
+  unifying_note: >
+    All three margin families measure distance from -1 on the Nyquist diagram along
+    different directions: GM radially, phi_M angularly, M_S as closest approach in any
+    direction. M_S is therefore the most complete single number.
+
+introduction_step_designs:      # Tutorial 5 section 13
+  stable_system_1:
+    kp: 9.0
+    td: 1.0
+    kd: 9.0
+    settling_s: 2.748
+    overshoot_pct: 23.63
+    undershoot_pct: -33.23
+    phi_M_deg: 47.31
+    w_GC: 3.2642
+    GM_db: 6.01
+    w_PC: 12.4017
+    Ms_db: 6.365
+    w_SC: 2.3987
+  quasi_stable_system_2:
+    kp: 10.0
+    td: 0.333
+    kd: 3.33
+    settling_s: 11.735
+    overshoot_pct: 70.81
+    undershoot_pct: -11.58
+    phi_M_deg: 17.54
+    w_GC: 1.9476
+    GM_db: 13.68
+    w_PC: 10.2496
+    Ms_db: 10.322
+    w_SC: 1.3173
+    assessment: "phi_M 17.5 deg and Ms 10.3 dB -- clearly NOT meeting stability margins, as Tutorial 5 says"
+  SOURCE_CONFLICT_KD:
+    conflict: "Section 13 table gives Kd = 3.33 (= 10*0.333); its serial transcript enters 3.00."
+    decision: "3.33 used (self-consistent with Kd = Kp*Td). 3.00 also evaluated."
+    kd_3p00_result: { phi_M_deg: 14.70, Ms_db: 11.842, settling_s: 13.765 }
+  UNRESOLVED_DISCREPANCY:
+    issue: >
+      Tutorial 5 section 13 describes System 2 as having "improved performance" relative
+      to System 1. The model shows the opposite: System 2 settles in 11.7 s with 70.8 %
+      overshoot against System 1's 2.75 s and 23.6 %.
+    status: NOT_RESOLVED
+    hypotheses:
+      - "'Performance' may refer to something not tabulated (e.g. disturbance response)."
+      - "It may describe observed hardware behaviour rather than the model."
+    action: "Flagged for the hardware run. Do not assume either reading."
+
+design_objectives:              # Tutorial 5 section 14
+  constraints: { kd_max: 15.0, kp_max_suggested: 18.0 }
+  system1: { settling_max_s: 4.0, overshoot_max_pct: 25.0, gm_db_min: 8.0, pm_deg_min: 50.0, ms_db_max: 5.0 }
+  system2: { settling_max_s: 2.0, overshoot_max_pct: 35.0, gm_db_min: 4.0, pm_deg_min: 30.0, ms_db_max: 10.0 }
+
+results_numerical:
+  system1_design:
+    kp: 6.25
+    td: 1.12
+    kd: 7.00
+    settling_s: 3.250
+    overshoot_pct: 24.78
+    undershoot_pct: -24.16
+    phi_M_deg: 50.62
+    GM_db: 8.23
+    Ms_db: 4.515
+    w_SC: 1.9012
+    meets_all: true
+  system2_design:
+    kp: 0.50
+    td: 21.5
+    kd: 10.75
+    settling_s: 0.828
+    overshoot_pct: 6.41
+    undershoot_pct: -39.54
+    phi_M_deg: 58.57
+    GM_db: 4.76
+    Ms_db: 7.856
+    w_SC: 3.8252
+    meets_all: true
+    caveat: >
+      Td = 21.5 s is almost purely derivative -- the same pattern as EXP004's Design B.
+      The search minimises settling time and derivative-dominant designs win, while
+      amplifying measurement noise and demanding large control effort. Tutorial 5 imposes
+      no control-effort or noise constraint; a practical implementation should check both.
+
+# ---------------------------------------------------------------------------
+safety_limits:
+  pendulum_abort_deg:
+    value: 15.0
+    rationale: >
+      Beyond this the small-angle linearisation the whole design rests on no longer
+      describes the system (sin error 1.2 % at 15 deg), so continuing to drive the
+      actuator cannot recover it and only worsens the impact.
+    comparison: "EXP003 suspended bound is 120 deg -- eight times looser"
+  pendulum_warning_deg: { value: 10.0, hold_ms: 100, action: abort }
+  capture_gate: { deg: 2.0, hold_ms: 1000 }
+  capture_rationale: >
+    The sequencer will not begin balancing until the operator has held the pendulum
+    upright and steady. Closing the loop on a pendulum that is already falling just
+    throws the arm at a travel limit.
+  saturation_abort_ms: 200
+  u_limit: 1500.0
+
+acceptance:
+  software:
+    - { id: AC5-1, claim: "open-loop model verified unstable before claiming stabilisation", status: SATISFIED }
+    - { id: AC5-2, claim: "supplied inner controller stabilises the unstable plant in closed loop", status: SATISFIED }
+    - { id: AC5-3, claim: "outer-loop sign inversion established from Tutorial 5's own designs", status: SATISFIED }
+    - { id: AC5-4, claim: "NMP zero and bandwidth ceiling identified", status: SATISFIED }
+    - { id: AC5-5, claim: "capture gate prevents balancing a non-upright pendulum", status: SATISFIED }
+    - { id: AC5-6, claim: "safety bounds tighter than EXP003 and warning band inside hard bound", status: SATISFIED }
+    - { id: AC5-7, claim: "designs meeting System 1 and System 2 objectives found", status: SATISFIED }
+    - { id: AC5-8, claim: "two source conflicts documented and resolved by evidence", status: SATISFIED }
+    - { id: AC5-9, claim: "cross-compiles, zero warnings", status: SATISFIED }
+  hardware:
+    - { id: H5-1, claim: "pendulum balances in inverted mode", status: NOT_EXECUTED }
+    - { id: H5-2, claim: "measured undershoot confirms the NMP zero", status: NOT_EXECUTED }
+    - { id: H5-3, claim: "measured phi_M, GM, M_S match the model", status: NOT_EXECUTED }
+    - { id: H5-4, claim: "System 2 (quasi-stable) observably closer to instability", status: NOT_EXECUTED }
+    - { id: H5-5, claim: "resolve the section 13 performance discrepancy", status: NOT_EXECUTED }
+
+data_format:
+  telemetry_csv_header: >
+    tick,t_s,phase,rotor_ref_deg,rotor_deg,pend_deg,u_rotor,u_pend,u,abort_reason
+  raw_dir: data/raw/EXP005/
+  processed_dir: data/processed/EXP005/
+  metadata_dir: data/metadata/EXP005/
+
+execution:
+  numerical_analysis: EXECUTED
+  host_unit_tests: EXECUTED
+  target_compilation: EXECUTED
+  matlab: DEFERRED_UNTIL_MATLAB_WORKSTATION
+  hardware: NOT_EXECUTED
+
+open_items:
+  OI-2: sign conventions undetermined
+  OI-3: no board-support layer
+  OI-7: rotor plant unverified
+  OI-9: pendulum parameters are another rig's -- now doubly so, since inverted and suspended sets differ
+  OI-10: >
+    Assumption E6 -- loop timing has NEVER been measured, and EXP005 is the first
+    experiment where inadequate or jittery timing causes a fall rather than a poor
+    response. This is the most dangerous untested assumption in the laboratory.
+
+gate:
+  exp006_may_begin: false
+  reason: "EXP006+ is outside the scope of this release (docs/ENGINEERING_STANDARDS.md section 5)."
