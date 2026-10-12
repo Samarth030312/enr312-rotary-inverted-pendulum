@@ -61,9 +61,11 @@ and runs in CI.
 
 `odyssix.stm32.build()` (or `make -C firmware/enr312/target`) compiles with
 `arm-none-eabi-gcc` 13.2.1. The build passes `-ffile-prefix-map` and
-`-fdebug-prefix-map` so that the absolute checkout path never enters the ELF:
-two builds of the same source produce the same SHA-256 on any machine with the
-same compiler. `scripts/stm32/make_release.sh` builds from a clean tree, runs the
+`-fdebug-prefix-map` so that the absolute checkout path never enters the ELF.
+The flash image (`.bin`) is therefore identical on any machine with the same
+compiler (CI checks this against the release). The `.elf` additionally contains
+the toolchain's install path in its debug information, so its hash matches only
+where the toolchain is unpacked at the same path. `scripts/stm32/make_release.sh` builds from a clean tree, runs the
 link-map isolation check and the IOC check, and writes the image with its hashes
 to `firmware/enr312/release/MANIFEST.txt`.
 

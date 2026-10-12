@@ -104,8 +104,9 @@ More diagrams (firmware state machine, Tutorial 5 sequence, flashing path) in
 `scripts/flash_ready_check.sh` runs every check that does not need the rig
 (about 10 minutes with MATLAB, `--quick` skips the real-time tests):
 
-* firmware builds with no warnings in project code, and is **byte-reproducible**;
-  the committed release image must match its SHA-256 in `release/MANIFEST.txt`
+* firmware builds with no warnings in project code and is reproducible: the
+  flash image built from source must match the SHA-256 of the committed release
+  in `release/MANIFEST.txt`
 * link-map check that the image contains no RTOS or middleware symbols
 * 330+ host unit tests of the control cores, runner and command parser (C)
 * physics-model validation, simulation-equals-firmware test, end-to-end tests of

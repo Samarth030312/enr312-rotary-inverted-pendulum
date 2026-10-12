@@ -37,12 +37,15 @@ jobs:
         run: make -C firmware/enr312/target isolation | tee /dev/stderr | grep -q 'ISOLATION CLEAN'
       - name: Pin configuration (.ioc) agrees with the init code
         run: make -C firmware/enr312/target ioc-check | tee /dev/stderr | grep -q 'IOC AND CODE AGREE'
-      - name: Build reproduces the committed release image
+      - name: Build reproduces the committed release image (flash image .bin)
+        # The .bin is exactly what is written to flash. The .elf also carries debug
+        # paths of the toolchain install directory, so its hash depends on where the
+        # toolchain is unpacked; it matches only on a machine with the same layout.
         run: |
-          built=$(sha256sum firmware/enr312/target/build/enr312_pendulum.elf | cut -d' ' -f1)
+          built=$(sha256sum firmware/enr312/target/build/enr312_pendulum.bin | cut -d' ' -f1)
           echo "built:    $built"
-          grep enr312_pendulum.elf firmware/enr312/release/MANIFEST.txt
-          grep -q "$built  enr312_pendulum.elf" firmware/enr312/release/MANIFEST.txt
+          grep enr312_pendulum.bin firmware/enr312/release/MANIFEST.txt
+          grep -q "$built  enr312_pendulum.bin" firmware/enr312/release/MANIFEST.txt
       - uses: actions/upload-artifact@v4
         with:
           name: enr312_pendulum

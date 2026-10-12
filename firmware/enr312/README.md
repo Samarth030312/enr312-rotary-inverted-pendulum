@@ -44,8 +44,9 @@ scripts/stm32/make_release.sh        # clean build → release/ + MANIFEST.txt
 
 The portable code is compiled with `-Wall -Wextra -Wpedantic -Wshadow -Wconversion
 -Wsign-conversion` and more, and must build without warnings.
-The target build is byte-reproducible (`-ffile-prefix-map`), so CI can check that
-the source produces exactly the committed release image.
+The target build is reproducible (`-ffile-prefix-map`): CI checks that the source
+produces exactly the committed flash image (`.bin`). The `.elf` hash also depends
+on where the toolchain is installed, through its debug information.
 
 ## Flashing
 
