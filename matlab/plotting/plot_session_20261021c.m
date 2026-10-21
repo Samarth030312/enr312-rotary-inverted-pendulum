@@ -44,10 +44,10 @@ function plot_session_20261021c(outDir)
     title(ax, 'Swing-up on the rig, firmware 2.3.2 told the measured \omega_g^2 = 48.5: caught at the first try');
     ax = nexttile(tl); prep(ax);
     plot(ax, D.t, up(D.psi), 'Color', C.pend, 'LineWidth', 1.1); yline(ax, 0, ':');
-    xline(ax, 19.62, '-', 'kick 1 (recovered)', 'Color', [0.9 0.6 0.1], 'LabelVerticalAlignment', 'bottom');
-    xline(ax, 22.66, '-', 'kick 2 (lost)', 'Color', C.bad, 'LabelVerticalAlignment', 'bottom');
+    xline(ax, 19.62, '-', 'push 1 (recovered)', 'Color', [0.9 0.6 0.1], 'LabelVerticalAlignment', 'bottom');
+    xline(ax, 22.66, '-', 'push 2 (lost)', 'Color', C.bad, 'LabelVerticalAlignment', 'bottom');
     ylim(ax, [-8 8]); xlim(ax, [D.t(kR) - 0.5, D.t(end)]); ylabel(ax, '\alpha from upright (deg)');
-    title(ax, 'Balancing 18.8 s, \alpha rms 0.66°: a sudden kick at 19.6 s was recovered, a larger one at 22.7 s was not (|u| at its 1500 deg/s^2 limit)');
+    title(ax, 'Balancing 18.8 s, \alpha rms 0.66°, then two deliberate pushes by hand: the first recovered, the second (larger, sustained) not');
     ax = nexttile(tl); prep(ax);
     plot(ax, D.t, D.rotor, 'Color', C.rig, 'LineWidth', 1.2); plot(ax, D.t, D.ref, '--', 'Color', [0.3 0.3 0.3]);
     xlim(ax, [D.t(kR) - 0.5, D.t(end)]); ylabel(ax, 'arm \theta (deg)'); xlabel(ax, 't (s)');
@@ -55,14 +55,47 @@ function plot_session_20261021c(outDir)
     title(ax, 'Arm: held where it caught for 2 s, then walked home while the upright trim learnt the offset');
     save_(f, outDir, '2026-10-21c_swingup_232_rig.png');
 
-    % ---- 3. the kick, sample by sample ------------------------------------------------
-    w = D.t > 22.3 & D.t < 23.1; a = up(D.psi);
-    f = fig(1100, 420); ax = axes(f); prep(ax);
-    yyaxis(ax, 'left'); plot(ax, D.t(w), a(w), '.-', 'Color', C.pend, 'MarkerSize', 10); ylabel(ax, '\alpha (deg)');
-    yyaxis(ax, 'right'); plot(ax, D.t(w), D.u(w), '.-', 'Color', C.rig, 'MarkerSize', 8); ylabel(ax, 'u (deg/s^2)');
-    xline(ax, 22.66, ':'); xlabel(ax, 't (s)');
-    title(ax, '\alpha goes from -0.15° to -7.35° in 0.14 s: about 60 rad/s^2, while gravity at that tilt gives < 1 rad/s^2. Smooth, so not an encoder glitch.');
-    save_(f, outDir, '2026-10-21c_kick_detail.png');
+    % ---- 3. the pushes against the simulated recovery limit ---------------------------
+    % simulation: the same firmware (2.3.2, exp 24 HOLD LQR) on the identified pendulum,
+    % an instantaneous tap added to the pendulum rate 12 s after the catch
+    p2 = odyssix.sim.plant(5); p2.wg2 = 48.4; p2.Q = 60; p2.coulomb = 0.37;
+    c2 = odyssix.sim.defaults(24); c2.wg2 = 48.5; c2.seconds = 30;
+    S0 = odyssix.sim.runCtrl(c2, p2); tc = S0.t(find(S0.phase == 8, 1));
+    vs = 10:10:150; [pk, arm, kept] = deal(nan(size(vs)));
+    for i = 1:numel(vs)
+        Sx = odyssix.sim.runCtrl(c2, p2, struct('taps', [tc + 12, -vs(i)]));
+        w = Sx.t > tc + 12; kept(i) = Sx.phase(end) == 8;
+        pk(i) = max(abs(Sx.alpha(w))); arm(i) = max(Sx.rotor(w)) - min(Sx.rotor(w));
+    end
+    writetable(table(vs(:), kept(:), pk(:), arm(:), 'VariableNames', {'tap_deg_per_s', 'still_balancing', 'alpha_peak_deg', 'arm_excursion_deg'}), ...
+        fullfile(fileparts(outDir), 'tables', 'PEND_sim_taps_swingup_lqr.csv'));
+    a = up(D.psi); ad = gradient(a, D.t);
+    P = [19.55 22.62]; rate = zeros(1, 2); apk = rate; armx = rate;
+    for i = 1:2
+        w = D.t >= P(i) & D.t <= P(i) + 0.3; rate(i) = max(abs(ad(w)));
+        w = D.t >= P(i) & D.t <= P(i) + 3; apk(i) = max(abs(a(w))); armx(i) = max(D.rotor(w)) - min(D.rotor(w));
+    end
+    f = fig(1400, 520); tl = tiledlayout(f, 2, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
+    ax = nexttile(tl, 1, [2 1]); prep(ax);
+    ok = kept == 1; lim = max(vs(ok));
+    plot(ax, vs(ok), pk(ok), '-o', 'Color', C.sim, 'LineWidth', 1.6, 'MarkerFaceColor', C.sim);
+    xregion(ax, lim + 5, 160, 'FaceColor', [1 0.9 0.9], 'HandleVisibility', 'off');
+    text(ax, lim + 8, 2, {'simulation:', 'pendulum lost'}, 'Color', C.bad, 'FontSize', 9);
+    plot(ax, rate(1), apk(1), 'o', 'MarkerSize', 11, 'LineWidth', 2, 'Color', C.ok, 'MarkerFaceColor', C.ok);
+    plot(ax, rate(2), min(apk(2), 15), '^', 'MarkerSize', 11, 'LineWidth', 2, 'Color', C.bad, 'MarkerFaceColor', C.bad);
+    text(ax, rate(1) + 3, apk(1), 'push 1: recovered', 'FontSize', 9, 'Color', C.ok);
+    text(ax, rate(2) - 3, min(apk(2), 15), 'push 2: sustained 0.14 s, lost ', 'FontSize', 9, 'Color', C.bad, 'HorizontalAlignment', 'right');
+    xlim(ax, [0 160]); ylim(ax, [0 16]); xlabel(ax, 'pendulum rate given by the push (deg/s)'); ylabel(ax, 'peak \alpha (deg)');
+    legend(ax, {'simulation: instantaneous tap, same firmware and pendulum'}, 'Location', 'northwest');
+    title(ax, sprintf('The balancing LQR recovers taps up to %d deg/s in simulation', lim));
+    w = D.t > 19.3 & D.t < 23.1;
+    ax = nexttile(tl, 2); prep(ax);
+    plot(ax, D.t(w), a(w), '.-', 'Color', C.pend, 'MarkerSize', 8); ylabel(ax, '\alpha (deg)'); xlim(ax, [19.3 23.1]);
+    title(ax, 'The two pushes on the rig, 50 Hz stream (2.3.3 records such events at 500 Hz)');
+    ax = nexttile(tl, 4); prep(ax);
+    plot(ax, D.t(w), D.u(w), '.-', 'Color', C.rig, 'MarkerSize', 6); yline(ax, [-1500 1500], ':');
+    ylabel(ax, 'u (deg/s^2)'); xlabel(ax, 't (s)'); xlim(ax, [19.3 23.1]);
+    save_(f, outDir, '2026-10-21c_pushes.png');
 end
 
 function f = fig(w, h)

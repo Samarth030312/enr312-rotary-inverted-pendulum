@@ -100,5 +100,8 @@ gains are unchanged. In the app the LQR is the recommended upright controller.
 
 ## Open
 - Cause of the kicks (external contact, cable or lost steps): to be checked as above.
+  *(Added 2026-10-22: in the late session the operators pushed the pendulum on purpose to
+  test the balance. Whether the kicks here were also deliberate was not logged at the
+  time. From firmware 2.3.3 the app's PUSH MARK records every deliberate push, at 500 Hz.)*
 - No free-swing measurement yet: the simulation still uses the Tutorial ωg² and Q.
 - Firmware 2.3.0 has not run on the rig yet.

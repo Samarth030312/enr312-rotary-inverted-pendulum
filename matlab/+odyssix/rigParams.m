@@ -58,9 +58,14 @@ function p = rigParams()
     p.pendulum.QLargeSwing   = [57 63];       % viscous Q that closes the energy balance at 92 deg
     p.pendulum.source        = 'MEASURED 2026-10-21 (free swings EXP001 R03/R06; EXP010 R01; EXP024 R05)';
     p.pendulum.tutorialWg2   = 57.01;         % [COURSE] from the Tutorial geometry; what the rig ran with
+    % Arm coupling. For a rod pendulum on an arm of length r (Tutorial 12, both
+    % hanging and inverted forms) wr2 / wg2 = r / g exactly, whatever the rod.
+    p.rotor.armLength        = 0.14;          % m [DATASHEET] STEVAL-EDUKIT01 manual, Table 2
+    p.pendulum.wr2           = p.rotor.armLength * p.pendulum.wg2 / 9.81;   % 0.692 (Tutorial: 0.803)
+    p.pendulum.rodEquivalent = 3 * 9.81 / (2 * p.pendulum.wg2);             % m, uniform rod with this wg2: 0.30
 
     % --- Masses, lengths, inertias: NOT MEASURED ------------------------------
-    % Only their combinations wg2 and wr2 enter the models. wr2 is still the
-    % Tutorial value (0.803).
+    % Only their combinations wg2 and wr2 enter the models; wr2 follows from wg2
+    % and the documented arm length (above).
     p.mechanical.status      = 'NOT_MEASURED';
 end

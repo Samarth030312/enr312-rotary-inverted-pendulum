@@ -13,6 +13,9 @@ and the board answered `enr312-target-2.3.2`, state SAFE, no faults. Runs from
 
 Figures: `matlab/plotting/plot_session_20261021c.m`, from those raw files.
 
+The pushes at the end of R08 were made on purpose by the operators, to test how much
+disturbance the balance takes (section 3).
+
 This session tests the two conclusions of the [evening report](2026-10-21b_rig_session.md):
 
 1. the pendulum constant is ωg² ≈ 48, not the 57 the firmware had been given;
@@ -24,7 +27,7 @@ This session tests the two conclusions of the [evening report](2026-10-21b_rig_s
 |---|---|---|
 | EXP001 R02, R04, R05 | T1, +5° open-loop move | 4.95° each time: 44 microsteps × 0.1125° |
 | EXP001 R03, R06 | free swing, motor off | ωg² 48 ± 1, dry friction 0.33–0.40 rad/s² (below) |
-| EXP024 R08 | swing-up, firmware told ωg² 48.5 | **caught at 3.88 s**, balanced 18.8 s, lost to a sudden kick |
+| EXP024 R08 | swing-up, firmware told ωg² 48.5, then two pushes by hand | **caught at 3.88 s**, balanced 18.8 s; recovered from push 1, lost to the larger push 2 |
 
 ## 1. The free swing confirms ωg² ≈ 48
 
@@ -86,37 +89,35 @@ viscous part at these amplitudes, which agrees with the evening's finding.
   - α stayed at −0.53° on average, rms 0.66°.
   - The arm was held where it caught (−45°) for 2 s and then walked home. It was
     within 5° of home by 18 s, while the upright trim learnt the offset.
-- **Kick 1, at 19.6 s.** α jumped by 1.4° in 60 ms. The controller saturated briefly,
-  swung the arm to +17°, and recovered.
-- **Kick 2, at 22.66 s.** A larger one, and the pendulum was lost.
+- **Two pushes, on purpose.** The operators then pushed the pendulum by hand to test
+  the balance: a small push at 19.6 s, which it recovered from, and a larger one at
+  22.66 s, which it did not.
 
-## 3. The kicks
+## 3. Pushing it: how much disturbance the balance takes
 
-![kick detail](../figures/2026-10-21c_kick_detail.png)
+![pushes](../figures/2026-10-21c_pushes.png)
 
-At 22.64 s everything was quiet: α −0.15°, the arm still, u a few hundred deg/s². In
-the next 0.14 s α ran to −7.35°.
+Left panel:
 
-- **Not gravity.** The jump needs about 60 rad/s² of angular acceleration of the
-  pendulum. Gravity at 1° of tilt supplies less than 1 rad/s².
-- **Not an encoder glitch.** α moves smoothly through every sample, where a glitch
-  would jump by whole counts.
-- **Not the controller.** It saturated at its 1500 deg/s² limit trying to catch the fall.
+- **The prediction.** The same firmware (2.3.2, the LQR that holds the pendulum after a
+  catch), simulated on the identified pendulum. An instantaneous tap is added to the
+  pendulum's angular rate. The controller recovers taps up to **100 deg/s** and loses the
+  pendulum at 110 (`results/tables/PEND_sim_taps_swingup_lqr.csv`).
+- **Push 1** gave the pendulum 49 deg/s. On the rig, α peaked at 2.4° and the arm swung
+  21°. The simulation of a 50 deg/s tap gives 2.9° and 27°. It recovered, as predicted.
+- **Push 2** reached 86 deg/s, which is inside the recoverable range for a tap. But it
+  was not a tap: the hand kept pushing for about 0.14 s.
+  - The pendulum accelerated at about 60 rad/s², against less than 1 rad/s² from gravity
+    at that tilt, and reached −7.35° before the controller had any effect.
+  - The controller ran at its 1500 deg/s² limit both ways, and the arm swung 95°.
+  - α passed the 15° bound, and the firmware stopped the run (PENDULUM_LOST).
 
-It is the same signature as the losses of balance in the morning session (cause open
-there too). This is now the most important open problem on this rig. Three
-explanations fit and the data cannot separate them:
+  A sustained push like this is outside what the tap study covers. Its true size is not
+  in the 50 Hz data. Firmware 2.3.3 adds a 500 Hz crash recorder and the app a
+  **PUSH MARK** button for exactly this; see below.
 
-1. something touched the pendulum or the cable;
-2. the encoder cable pulls on the pendulum as the arm turns;
-3. the stepper lost steps, so the arm jerked while the commanded position, which is
-   all we log, stayed smooth.
-
-The tests that would separate them:
-
-- mark the arm, and compare its end position with the commanded one after a kick;
-- film a run at 60 fps or faster;
-- route the encoder cable with more slack.
+**Right panels.** α and the controller's command u around the two pushes. After push 1,
+u saturates for about 0.1 s each way and settles within a second.
 
 ## 4. What this session settles, and what it does not
 
@@ -128,10 +129,26 @@ The tests that would separate them:
   catch works, not how reliable it is.
 - **The free-swing analysis works on real records.** It finds the release and fits the
   dry friction.
+- **The balance rejects a push of about 50 deg/s** with the response the simulation
+  predicts.
 
 **Not settled:**
 
-- The swing-up's reliability. Three more runs, with the pendulum untouched after the
-  catch.
-- The kicks (section 3).
+- The swing-up's reliability: three more runs.
+- The largest push it survives on the rig. The next test: pushes of increasing size,
+  each marked with PUSH MARK, so that every one comes with a 500 Hz record.
 - Everything else in the evening report's open list.
+
+## 5. Added after this session: 500 Hz crash recorder (firmware 2.3.3)
+
+The 50 Hz stream shows one sample per 10 control ticks, too coarse to see how a push
+develops. Firmware 2.3.3:
+
+- keeps every 500 Hz tick of the last 2 s in RAM
+  (`firmware/enr312/src/enr312_crashrec.c`, 16 kB);
+- sends 1.5 s before and 0.5 s after an event: after any run abort, or when the app's
+  **PUSH MARK** is pressed (the `k` key);
+- the app saves the record as `<run id>_500Hz_<n>.csv` next to the run, and logs the
+  push in the run's events.
+
+It has host tests and an end-to-end test on the emulator; it has not yet run on the rig.

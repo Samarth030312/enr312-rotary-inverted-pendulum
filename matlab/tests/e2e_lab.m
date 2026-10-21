@@ -60,10 +60,20 @@ function ok = e2e_lab()
     R(end+1, :) = {'LAB hanging: live gain echoed', isfield(L.cfg, 'kdp') && L.cfg.kdp == 8, sprintf('kdp %g', L.cfg.kdp)};
     H = app.rigData();
     R(end+1, :) = {'LAB hanging: arm holds 20 deg', abs(mean(H.rotor(end-25:end)) - 20) < 0.5, sprintf('%.3f deg', mean(H.rotor(end-25:end)))};
+    % PUSH MARK: the firmware's 500 Hz crash record (2.3.3) comes back and is kept with the run
+    app.pushMark(); pauseUI(3);
     app.stopRun(); waitFor(@() ~strcmp(app.lastSaved(), before), 6);
     [~, M] = odyssix.data.loadRun(app.lastSaved());
     ev = M.events; if isstruct(ev), ev = {ev.what}; end
-    R(end+1, :) = {'LAB hanging: saved with its events', any(strcmp(ev, 'goto')) && any(strcmp(ev, 'live kdp')), strjoin(ev, ', ')};
+    R(end+1, :) = {'LAB hanging: saved with its events', any(strcmp(ev, 'goto')) && any(strcmp(ev, 'live kdp')) && any(strcmp(ev, 'push (operator)')), strjoin(ev, ', ')};
+    kf = dir(fullfile(odyssix.repoRoot(), 'matlab', 'data', 'synthetic', 'EXP021', [app.lastSaved() '_500Hz_*.csv']));
+    okK = numel(kf) == 1; msgK = 'no 500 Hz file';
+    if okK
+        K = readtable(fullfile(kf(1).folder, kf(1).name));
+        okK = height(K) == 1000 && all(diff(K.tick) == 1) && abs(K.t_s(1) + 1.498) < 1e-9 && abs(K.t_s(end) - 0.5) < 1e-9;
+        msgK = sprintf('%d samples, %.3f .. %.3f s', height(K), K.t_s(1), K.t_s(end));
+    end
+    R(end+1, :) = {'PUSH MARK: 500 Hz record, -1.5..0.5 s, saved with the run', okK, msgK};
 
     % pendulum target: swing to 90, then live target 0 stops it
     waitFor(@() abs(L.table().psi_deg(end)) < 3 && abs(L.table().psi_deg(end - 25)) < 3, 40);

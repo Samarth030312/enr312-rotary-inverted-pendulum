@@ -33,7 +33,7 @@ function app = enr312_lab()
     S = []; lp = []; H = []; replay = [];
     hwRun = idleRun();
     fitRes = []; recording = struct('on', false, 'i0', 0, 'tEnd', 0);
-    lastSaved = ''; session = struct('step', 0); drawCount = 0; swingPanel = false;
+    lastSaved = ''; savedT = tic; session = struct('step', 0); drawCount = 0; swingPanel = false;
     feedT = tic;                                   % last watchdog feed from inside a simulation
     NEW = {'ki', 'fdr', 'fdp', 'k1', 'k2', 'k3', 'k4', 'bv', 'imp', 'uon', 'db', 'div', 'ma'};
     tr = struct();
@@ -187,7 +187,7 @@ function app = enr312_lab()
     ui.stepBtn = uibutton(ag, 'Text', 'STEP', 'FontWeight', 'bold', 'ButtonPushedFcn', @(~, ~) onGoto(ui.target.Value, true), ...
         'Tooltip', 'instant set-point jump to the typed angle');
     ui.home = uibutton(ag, 'Text', 'HOME  0°', 'ButtonPushedFcn', @(~, ~) onGoto(0, false));
-    pg_ = uigridlayout(B2, [1 4], 'ColumnWidth', {90, 70, '2x', '1x'}, 'Padding', [0 0 0 0], ...
+    pg_ = uigridlayout(B2, [1 5], 'ColumnWidth', {90, 70, '2x', '1x', '1x'}, 'Padding', [0 0 0 0], ...
         'ColumnSpacing', 6, 'BackgroundColor', K.panel);
     lbl(pg_, 'PENDULUM', 11, K.orange, 'bold');
     ui.ptarget = uieditfield(pg_, 'numeric', 'Value', 180, 'Limits', [0 180], 'ValueDisplayFormat', '%.0f°', ...
@@ -197,6 +197,8 @@ function app = enr312_lab()
         'FontColor', 'w', 'ButtonPushedFcn', @(~, ~) onPendulumTarget(ui.ptarget.Value, false));
     ui.ptarget.ValueChangedFcn = @(~, ~) pendTargetChanged();
     ui.pstop = uibutton(pg_, 'Text', 'STOP SWING', 'ButtonPushedFcn', @(~, ~) onPendulumTarget(0, false));
+    ui.push = uibutton(pg_, 'Text', 'PUSH MARK', 'ButtonPushedFcn', @(~, ~) onPushMark(), ...
+        'Tooltip', 'Press right after pushing the pendulum on purpose: the push is logged with the run and the firmware sends the last 1.5 s at 500 Hz');
 
     B3 = uigridlayout(G, [3 4], 'RowHeight', {'1x', 28, 28}, 'ColumnWidth', {150, 100, '1x', 70}, ...
         'Padding', [10 8 10 8], 'RowSpacing', 5, 'ColumnSpacing', 6, 'BackgroundColor', K.panel);
@@ -230,7 +232,7 @@ function app = enr312_lab()
     app = struct('fig', fig, 'ui', ui, 'link', link, 'select', @selectMission, 'lab', @selectLab, ...
                  'preset', @setPreset, 'set', @setParam, 'simulate', @() animate(S, 'sim'), 'result', @() getS(), ...
                  'startEmulator', @onEmulator, 'connect', @onConnect, 'send', @send, 'armNoPrompt', @armNow, ...
-                 'runRig', @onRunRig, 'stopRun', @onStopRun, 'rigData', @() getH(), 'abort', @doAbort, ...
+                 'runRig', @onRunRig, 'stopRun', @onStopRun, 'rigData', @() getH(), 'abort', @doAbort, 'pushMark', @onPushMark, ...
                  'gotoAngle', @(v) onGoto(v, false), 'step', @(v) onGoto(v, true), ...
                  'swingUp', @(varargin) onPendulumTarget(180, varargin{:}), ...
                  'pendulumTarget', @(a, varargin) onPendulumTarget(a, varargin{:}), ...
@@ -901,6 +903,39 @@ function app = enr312_lab()
         hwRun.events(end+1) = struct('t', t, 'what', what, 'value', val);
     end
 
+    function onCrashes(C)
+        % 500 Hz crash records (firmware 2.3.3): with the run while it lasts, else
+        % with the run saved in the last 30 s (an abort's record arrives after the save)
+        for ci = 1:numel(C)
+            if hwRun.on
+                hwRun.crashes{end+1} = C{ci};
+                logEvent(['500 Hz record: ' C{ci}.reason], C{ci}.triggerTick);
+            elseif ~isempty(lastSaved) && toc(savedT) < 30
+                keepCrash(C{ci});
+            else
+                say('A 500 Hz record arrived outside a run; not saved.', 'warn');
+            end
+        end
+    end
+
+    function keepCrash(c)
+        try
+            R = odyssix.data.saveCrash(lastSaved, c, struct('firmware', firmwareLine(), 'rawLog', link.logFile));
+            say(sprintf('500 Hz RECORD  %s  ·  %s', c.reason, R.id), 'ok');
+        catch err
+            say(['500 Hz record not saved: ' err.message], 'warn');
+        end
+    end
+
+    function onPushMark()
+        % the operator pushes the pendulum on purpose: mark it in the run and ask
+        % the firmware for the 500 Hz record around it
+        if ~link.isOpen(), say('PUSH MARK needs the rig.', 'warn'); return; end
+        if hwRun.on, logEvent('push (operator)', 1); end
+        try, link.markPush(); catch err, say(err.message, 'warn'); return; end
+        say('PUSH MARKED  ·  500 Hz record of the last 1.5 s follows', 'ok');
+    end
+
     function finishRun(result)
         if ~hwRun.on, return; end
         hwRun.on = false; ui.rec.Visible = 'off';
@@ -910,7 +945,8 @@ function app = enr312_lab()
             'cfg', hwRun.cfg, 'plant', pl, 'events', hwRun.events, 'metrics', m, 'result', result, ...
             'firmware', firmwareLine(), 'protocol', link.protocol, 'port', link.port, 'rawLog', link.logFile);
         try
-            R = odyssix.data.saveRun(H, info); lastSaved = R.id;
+            R = odyssix.data.saveRun(H, info); lastSaved = R.id; savedT = tic;
+            for ci = 1:numel(hwRun.crashes), keepCrash(hwRun.crashes{ci}); end
             say(sprintf('SAVED  %s  ·  %s', R.id, result), 'ok');
         catch err
             say(['SAVE FAILED: ' err.message], 'warn');
@@ -951,6 +987,7 @@ function app = enr312_lab()
                 say(['Link lost: ' err.message], 'warn'); if hwRun.on, finishRun('LINK LOST'); end
                 link.close();
             end
+            if link.isOpen() && link.crashPending > 0, onCrashes(link.takeCrashes()); end
             if link.n ~= lastN, lastN = link.n; dataT = tic;
             elseif toc(dataT) > 2, ui.stateChip.Text = 'NO DATA'; ui.stateChip.BackgroundColor = K.amber; return;
             end
@@ -1040,7 +1077,7 @@ function app = enr312_lab()
         en(ui.goto, live); en(ui.stepBtn, live); en(ui.home, live);
         pend = ~hwRun.on || (isfield(hwRun.cfg, 'exp') && hwRun.cfg.exp == 24);
         en(ui.swing, pend); en(ui.pstop, pend); en(ui.ptarget, pend); en(ui.fitBtn, on && any(strcmp(st, {'SAFE', 'FAULT'})) && ~recording.on);
-        en(ui.useFit, ~isempty(fitRes));
+        en(ui.useFit, true);                                        % fresh fit, else the rig's measured values
         ui.sessionLbl.Text = ternary(session.step > 0, sprintf('STEP %d / %d', session.step, size(sessionPlan(), 1)), '');
     end
 
@@ -1081,9 +1118,13 @@ function app = enr312_lab()
     function onUseFit()
         % wg2 and the dry friction from the free swing. A small swing cannot see the
         % viscous part when dry friction dominates (fit Q very large): then Q stays.
-        if isempty(fitRes), return; end
-        measured = struct('wg2', fitRes.wg2, 'coulomb', getf(fitRes, 'coulomb'), 'Q', NaN);
-        if isfinite(fitRes.Q) && fitRes.Q < 200, measured.Q = fitRes.Q; end
+        if isempty(fitRes)                                          % no fresh free swing: the documented one
+            rp = odyssix.rigParams().pendulum;
+            measured = struct('wg2', rp.wg2, 'coulomb', rp.coulomb, 'Q', mean(rp.QLargeSwing));
+        else
+            measured = struct('wg2', fitRes.wg2, 'coulomb', getf(fitRes, 'coulomb'), 'Q', NaN);
+            if isfinite(fitRes.Q) && fitRes.Q < 200, measured.Q = fitRes.Q; end
+        end
         pl = basePlant(max(MIS(mis).exp, 2)); physicsToSliders();
         update(); say(sprintf('Simulation and swing-up now use the measured pendulum: ωg² %.2f, dry friction %.2f rad/s².', ...
             measured.wg2, measured.coulomb), 'ok');
@@ -1121,8 +1162,12 @@ function app = enr312_lab()
                 Tn = Tn(keep, :);
             case 'hardware only', Tn = Tn(Tn.data_class == "HARDWARE", :);
         end
-        Tn = Tn(1:min(height(Tn), 80), :);
-        ui.runs.Data = [cellstr(Tn.run_id), cellstr(Tn.result), cellstr(Tn.key_metrics)];
+        % rig runs first (newest first), then emulator runs, which are marked
+        hw = Tn.data_class == "HARDWARE"; Tn = [Tn(hw, :); Tn(~hw, :)];
+        Tn = Tn(1:min(height(Tn), 120), :);
+        res = cellstr(Tn.result); syn = Tn.data_class ~= "HARDWARE";
+        res(syn) = strcat('EMULATOR · ', res(syn));
+        ui.runs.Data = [cellstr(Tn.run_id), res, cellstr(Tn.key_metrics)];
         ui.runs.UserData = cellstr(Tn.run_id);
     end
 
@@ -1144,10 +1189,13 @@ function app = enr312_lab()
         end
         c = cfg; if isfield(M, 'config') && isstruct(M.config) && isfield(M.config, 'exp'), c = M.config; end
         D.Properties.UserData = struct('cfg', c, 'phaseNames', {phaseList(getf(c, 'exp'))});
+        if startsWith(getf(M, 'label', ''), 'free-swing')          % fit it now (the stored numbers may predate the current fit)
+            try, fitRes = pendulum_free_swing_fit(D.t, D.psi); catch, end
+        end
         replay = D; drawTrace(D, 'replay'); fillTable(); drawAnalysis();
         player.D = D; player.kind = 'replay'; player.t = D.t(1); player.playing = false; ui.play.Text = '▶  PLAY';
         ui.scrub.Limits = [D.t(1), max(D.t(end), D.t(1) + 0.01)]; ui.scrub.Value = D.t(1);
-        say(sprintf('Overlaid %s  ·  %s  ·  ▶ PLAY to replay it on the rig view', id, getf(M, 'result', '')), 'ok');
+        say(sprintf('Overlaid %s  ·  %s  ·  ▶ PLAY', regexprep(id, '^EXP\d+_\d{8}-(\d{2})(\d{2})\d{2}_', '$1:$2 '), getf(M, 'result', '')), 'ok');
     end
 
     function plan = sessionPlan()
@@ -1331,7 +1379,7 @@ end
 
 function h = idleRun()
     h = struct('on', false, 'i0', 0, 'cfg', struct(), 'seq', 0, 't0', tic, 'label', '', ...
-               'events', struct('t', {}, 'what', {}, 'value', {}), 'beeped', false);
+               'events', struct('t', {}, 'what', {}, 'value', {}), 'beeped', false, 'crashes', {{}});
 end
 
 function n = phaseList(exp)

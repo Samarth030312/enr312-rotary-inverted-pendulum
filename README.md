@@ -28,8 +28,8 @@ pendulum upright, integral action, root locus, state feedback and LQR.
   ([evening report](results/reports/2026-10-21b_rig_session.md)). A free swing confirmed
   the value. Firmware 2.3.2, told the measured ωg², **caught the pendulum upright at the
   first try, in 3.9 s** ([late report](results/reports/2026-10-21c_rig_session.md)).
-- Still open: three times now, balance has been lost to a sudden kick whose cause is
-  not yet known.
+- Pushed by hand while balancing, it recovered from a push of about 50 deg/s, as the
+  simulation predicts. A larger, sustained push ended the run.
 - Numbers marked as predictions are predictions.
 
 <p align="center">
@@ -53,7 +53,7 @@ pendulum upright, integral action, root locus, state feedback and LQR.
 
 | Part | What it does | Where |
 |---|---|---|
-| Firmware | 500 Hz control loop, L6474 stepper driver over SPI, quadrature encoder on TIM3, safety supervisor, serial command protocol | [`firmware/enr312/`](firmware/enr312/) |
+| Firmware | 500 Hz control loop, L6474 stepper driver over SPI, quadrature encoder on TIM3, safety supervisor, serial command protocol, a 500 Hz crash recorder for aborts and marked pushes | [`firmware/enr312/`](firmware/enr312/) |
 | Lab app | One MATLAB window: missions T1–T10 and a free LAB mode (hanging or upright; PID, LQR, state feedback, on-off). Simulate, run the same configuration on the rig, drive it live (arm to any angle, pendulum swing height, swing-up, gains), with **every run recorded automatically**, overlaid on the simulation and played back on the 3-D rig (play, pause, scrub, speed) | [`matlab/apps/enr312_lab.m`](matlab/apps/enr312_lab.m) |
 | Simulation | Line-by-line port of the firmware control path driving a nonlinear pendulum model; tested equal to the C code | [`matlab/+odyssix/+sim/`](matlab/+odyssix/+sim/) |
 | Emulator | The firmware's own C control code compiled for the PC behind the same serial protocol, so the app runs without hardware | [`firmware/enr312/host/`](firmware/enr312/host/) |
@@ -92,7 +92,7 @@ Full analysis, including what does **not** yet match the model:
 
 | Experiment | Result on the rig |
 |---|---|
-| Energy swing-up | Caught upright **3 of 3** at 7.1 / 7.1 / 8.0 s; the swing builds up like the simulation. Balance later lost to sudden external kicks (cause open). |
+| Energy swing-up | Caught upright **3 of 3** at 7.1 / 7.1 / 8.0 s; the swing builds up like the simulation. Balance later lost to external pushes. |
 | Upright offset | Balancing, the mean pendulum angle was +0.63° and the arm sat at **+23.3°**. The LQR predicts −k₃/k₁·α = **+24.0°**: the encoder's "upright" is 0.6° off the balance point. Firmware 2.3.0 learns and removes it. In the evening it balanced 33 s with the same offset (α +0.68°) and the arm back home: −0.3° to −2.3° over the last 11 s. |
 | Tutorial 7 | Impulse response (median over the impulses): pendulum −1.55° vs −1.35° simulated, arm 5.1° vs 4.7°. |
 | LAB state feedback | Step to 90°: 89.66° on the rig, 89.77° in simulation, same trajectory. |
@@ -178,13 +178,20 @@ the same night.
 | swing-up, firmware 2.3.2, ωg² 48.5 | caught in 4.23 s (simulation of this configuration) | **caught in 3.88 s, first try** |
 
 <p align="center"><img src="results/figures/2026-10-21c_swingup_232_rig.png" width="900"
-alt="Top: pendulum height on the rig and in simulation, caught at 3.88 s and 4.23 s. Middle: alpha while balancing, rms 0.66 deg, two sudden kicks. Bottom: the arm walks home after the catch."></p>
+alt="Top: pendulum height on the rig and in simulation, caught at 3.88 s and 4.23 s. Middle: alpha while balancing, rms 0.66 deg, then two deliberate pushes. Bottom: the arm walks home after the catch."></p>
 
-It balanced for 18.8 s (α rms 0.66°) and recovered from one sudden kick. A second, larger
-kick 3 s later ended the run. In 0.14 s that kick drives the pendulum with about
-60 rad/s², where gravity at that tilt supplies less than 1. The cause is not yet known:
-a touch, the encoder cable, or lost motor steps. It is the first item on the
-[roadmap](ROADMAP.md).
+It balanced for 18.8 s (α rms 0.66°). Then we pushed it by hand.
+
+- The first push gave the pendulum 49 deg/s. It recovered with the peak angle and arm
+  swing the simulation predicts for such a tap. The simulation says this controller
+  takes taps up to 100 deg/s.
+- The second push kept acting for 0.14 s and ended the run.
+
+<p align="center"><img src="results/figures/2026-10-21c_pushes.png" width="900"
+alt="Left: simulated peak pendulum angle against the size of a tap, recoverable up to 100 deg/s, with the two rig pushes marked. Right: alpha and the control input around the two pushes."></p>
+
+To measure pushes properly, firmware 2.3.3 records the last 2 s at the full 500 Hz. The
+app's **PUSH MARK** button logs the push and saves that record with the run.
 
 The app's own free-swing fit failed on these real records at first: it assumed the
 release was at the start and the damping was viscous. It now finds the release itself

@@ -49,6 +49,7 @@ C_SOURCES += $(CORE)/src/enr312_encoder.c \
              $(CORE)/src/enr312_exp005.c  \
              $(CORE)/src/enr312_ctrl.c    \
              $(CORE)/src/enr312_runner.c  \
+             $(CORE)/src/enr312_crashrec.c \
              $(CORE)/src/enr312_cmd.c     \
              $(CORE)/src/enr312_metrics.c
 

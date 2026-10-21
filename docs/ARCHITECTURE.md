@@ -126,7 +126,7 @@ The arm angle is counted from the microsteps actually issued, not measured.
 Single-byte commands: `t` status, `r` toggle the 50 Hz stream, `a` arm, `s` start,
 `x` abort, `c` clear fault, `z` zero both datums, `+`/`-` move ±5°, `q` L6474
 STATUS, `p` SPI probe (SAFE only), `P` CS/SCK routing scan, `M` electrical
-self-test, `?` help, `.` keep-alive.
+self-test, `?` help, `.` keep-alive, `k` crash record (2.3.3).
 
 Line commands start with `$`: `exp=N`, `kp=`, `kd=`, `kpp=`, `kdp=`, `step=`,
 `dist=`, `ulim=`, `vmax=`, `defaults`, `cfg` (echo the configuration), `go`,
@@ -150,6 +150,19 @@ C,<exp>,<kp>,<kd>,<kpp>,<kdp>,<step>,<dist>,<ulim>,<vmax>          (reply to $cf
    ...,<seq>,<wg2>   (protocol 4)   ...,<amp>   (protocol 5: 26 values)
 REF <deg>                                                           (reply to $ref)
 ```
+
+Crash recorder (firmware 2.3.3, additive within protocol 5). The control interrupt
+keeps every 500 Hz tick of the last 2 s (`src/enr312_crashrec.c`). Any run abort, or
+the `k` key, freezes it 0.5 s later. The main loop then sends the record, a few lines
+per pass between stream lines:
+
+```
+K,BEGIN,<reason>,<n samples>,<trigger tick>,500
+k,<tick>,<rotor mdeg>,<pendulum mdeg>,<u deg/s², int16>,<phase>      (n lines, oldest first)
+K,END
+```
+
+The app's PUSH MARK sends `k` and stores the record as `data/raw/EXPnnn/<run>_500Hz_<n>.csv`.
 
 Before every closed-loop run the app sends the configuration, asks for the
 `C,` echo and starts only if every value matches: a corrupted byte on the

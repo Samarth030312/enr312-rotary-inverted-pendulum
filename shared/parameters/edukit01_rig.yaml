@@ -253,9 +253,10 @@ mechanical:
   status: NOT_MEASURED
   note: >
     Pendulum mass, lengths and inertias have not been measured. The models only need
-    their combinations: wg2 (gravity term) and wr2 (arm coupling). wr2 is still the
-    Tutorial value 0.803. wg2 and the pivot friction were identified from rig data
-    (below).
+    their combinations: wg2 (gravity term) and wr2 (arm coupling). wg2 and the pivot
+    friction were identified from rig data (below); wr2 follows from wg2 and the arm
+    length in the STEVAL-EDUKIT01 manual (Table 2: r = 0.14 m), because wr2/wg2 = r/g
+    for a rod pendulum (Tutorial 12).
 
 pendulum_dynamics:
   status: MEASURED
@@ -269,4 +270,7 @@ pendulum_dynamics:
   wg2_tutorial:        { value: 57.01, unit: rad^2/s^2, source: "Tutorial geometry; the value the rig ran with on 2026-10-21" }
   coulomb:             { value: 0.40, unit: rad/s^2, source: "free swings 0.33 (R03), 0.40 (R06); EXP010 R01 decay 0.48" }
   q_large_swing:       { value: [57, 63], source: "EXP024 R05 energy balance at 92 deg, after the Coulomb loss" }
-  open: "wr2 (arm coupling) is still the Tutorial value" 
+  arm_length:          { value: 0.14, unit: m, source: "STEVAL-EDUKIT01 manual (Edukit Rotary Inverted Pendulum Manual), Table 2" }
+  wr2:                 { value: 0.692, unit: rad^2/s^2, source: "r * wg2 / g = 0.14 * 48.5 / 9.81 (Tutorial 12: wr2/wg2 = r/g); Tutorial value 0.803" }
+  rod_equivalent:      { value: 0.30, unit: m, source: "uniform rod with wg2 48.5: 3g/(2 wg2); Tutorial 12's 57.01 implies 0.258 m" }
+  open: "check the rod length with a ruler (0.30 m expected for a uniform rod); level the base (Tutorial 12: a tilt delta gives a pendulum offset delta*sin(arm angle - beta))" 

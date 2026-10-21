@@ -4,6 +4,19 @@ Firmware releases (`firmware/enr312/release/`). Each release image is built from
 clean tree and pinned by SHA-256 in `MANIFEST.txt`; MATLAB refuses to flash an
 image whose hash does not match.
 
+## 2.3.3 (2026-10-22): 500 Hz crash recorder
+The 50 Hz stream shows one sample per 10 control ticks, too coarse to see how a push
+or a fall develops (`results/reports/2026-10-21c_rig_session.md`, section 3).
+**Not yet run on the rig.**
+* The control interrupt keeps every tick of the last 2 s in RAM (16 kB,
+  `src/enr312_crashrec.c`). Any run abort, or the new `k` key, freezes it 0.5 s
+  later, and the main loop sends `K,BEGIN / k,… / K,END`. Control is unchanged.
+* App: **PUSH MARK** logs a deliberate push in the run's events and asks for the record;
+  every record is saved next to its run as `<run id>_500Hz_<n>.csv`.
+* Host tests (ring order, wrap-around, trigger window, saturation) and an end-to-end
+  emulator test (PUSH MARK → 1000 samples, −1.498…0.500 s, saved with the run).
+* A declaration after a `case` label in `enr312_ctrl.c` is now in a block (strict C11).
+
 ## 2.3.2 (2026-10-22): swing-up robust to a wrong pendulum constant
 From the identification of the 2026-10-21 data
 (`matlab/identification/identify_pendulum_20261021.m`). The rig ran with ωg² 57.01, a
@@ -11,7 +24,8 @@ value derived from the Tutorial geometry, but it measures 47.6 (free decay) to 4
 (92° swings). With ωg² set too high, the energy estimate is low near the bottom and the
 pump overshoots the top. The learnt correction δ could not go below 0, so it could not
 take the excess back. **On the rig (2026-10-21, 19:22 UTC), told the free-swing value
-ωg² 48.5: caught at 3.88 s at the first try**, then lost 18.8 s later to a sudden kick
+ωg² 48.5: caught at 3.88 s at the first try**, balanced 18.8 s, recovered from a
+deliberate push of about 50 deg/s and fell to a larger one
 (`results/reports/2026-10-21c_rig_session.md`).
 * δ may go down to −0.3 in swing-up too (`CTRL_SW_DELTA_MIN`), as it already could for a
   pendulum target.

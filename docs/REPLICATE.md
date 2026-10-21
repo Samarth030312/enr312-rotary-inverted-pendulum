@@ -54,6 +54,18 @@ Then do the staged check in section 4 of the wiring page: nothing powered, then 
 only, then 12 V with the motor off. Each stage lists the expected reading and what to
 do if it is wrong.
 
+## 3b. Mechanics
+
+The controller can only be as good as the mechanics. Check these once, with the power off.
+
+| What | How | Why |
+|---|---|---|
+| Arm on the motor shaft | The M3 screw that holds the motor shaft in its flange (UM2717 step 8c) must sit on the shaft's flat, tight. With the motor holding (ARM), push the arm gently: arm and shaft move together or not at all. | a slipping arm is an arm jerk the firmware cannot see |
+| Pendulum rod on the encoder shaft | The rod's M3 screw (UM2717 step 11), tight. Draw a pen line across rod and shaft and check that it stays aligned. | the encoder must see every motion of the rod |
+| Base level | A spirit level on the base, in two directions. | a tilt δ shifts "upright" by δ·sin(arm angle − β) (Tutorial 12), so the balance point moves as the arm turns |
+| Base held | Clamp it to the table, or at least use the four rubber pads (UM2717 step 5). | at full arm acceleration the base pushes back |
+| Encoder cable | A loose loop from the arm hub, routed upward or away, never dragging on the base. | the arm sweeps ±100° in a swing-up |
+
 ## 4. Flash the firmware
 
 From MATLAB (this checks the image hash and the chip first):

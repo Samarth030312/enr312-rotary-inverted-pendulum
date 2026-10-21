@@ -18,10 +18,10 @@ OUT      := build
 
 CORE_SRCS := $(SRC)/enr312_encoder.c $(SRC)/enr312_rotor.c $(SRC)/enr312_exp001.c \
              $(SRC)/enr312_pd.c $(SRC)/enr312_exp002.c $(SRC)/enr312_exp003.c \
-             $(SRC)/enr312_metrics.c $(SRC)/enr312_exp005.c $(SRC)/enr312_ctrl.c $(SRC)/enr312_runner.c $(SRC)/enr312_cmd.c
+             $(SRC)/enr312_metrics.c $(SRC)/enr312_exp005.c $(SRC)/enr312_ctrl.c $(SRC)/enr312_runner.c $(SRC)/enr312_cmd.c $(SRC)/enr312_crashrec.c
 TESTS     := test_enr312_encoder test_enr312_rotor test_enr312_exp001 \
              test_enr312_pd test_enr312_exp002 test_enr312_exp003 \
-             test_enr312_metrics test_enr312_exp005 test_enr312_ctrl test_enr312_runner test_enr312_cmd
+             test_enr312_metrics test_enr312_exp005 test_enr312_ctrl test_enr312_runner test_enr312_cmd test_enr312_crashrec
 
 CC       ?= gcc
 CSTD     := -std=c11

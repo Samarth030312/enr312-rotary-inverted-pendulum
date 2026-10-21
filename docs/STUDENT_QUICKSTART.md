@@ -49,6 +49,9 @@ enr312_lab
   would need the arm to accelerate forever. That's why a target in between is a
   swing height.
 - **Gains** typed during a run act on the running controller at once and are recorded as events.
+- **PUSH MARK:** press it right after pushing the pendulum on purpose. The push is logged
+  with the run, and the firmware (2.3.3) sends the last 1.5 s at 500 Hz, saved beside the
+  run.
 - **LAB → hanging → Energy (swing / swing-up)** shows the energy controller's own
   parameters (pump, arm centring, catch LQR), not PID gains.
 

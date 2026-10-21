@@ -36,6 +36,9 @@ metadata/EXPnnn/<run>.yaml    gains, firmware, plant, live actions, metrics, res
 metadata/EXPnnn/<run>.json    the same, for scripts
 metadata/run_index.csv        one line per run
 processed/                    derived data (each file names its source run)
+raw/EXPnnn/<run>_500Hz_<n>.csv   from firmware 2.3.3: every control tick around an abort or a
+                                 PUSH MARK (t_s from the trigger, tick, rotor_deg, psi_deg,
+                                 alpha_deg, u, phase); metadata as <run>_500Hz_<n>.json
 ```
 
 Run names: `EXPnnn_<UTC date>-<time>_<label>_Rnn`, for example

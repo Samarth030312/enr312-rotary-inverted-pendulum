@@ -33,11 +33,13 @@ classdef RigLink < handle
         runEvent = ''               % last 'GO' / 'RUN ...' line
         lastRef = NaN               % last live set-point acknowledged ('REF x') [deg]
         firmware = ''               % the board's 'Firmware:' line (version and protocol)
+        crashPending = 0            % complete 500 Hz crash records not yet taken (takeCrashes)
     end
     properties (Access = private)
         sp = []; partial = ''; fid = -1
         busy = false                % a serial call is in progress (re-entrancy guard)
         T0 = []; tk; rot; pen; raw; flt; st; rexp; rph; ru; rref
+        crashHdr = []; crashBuf = zeros(0, 5); crashDone = {}    % firmware 2.3.3 crash recorder
     end
     properties (Constant)
         TICK_S = 0.002
@@ -185,10 +187,24 @@ classdef RigLink < handle
                 if L.fid > 0, fprintf(L.fid, '%s\n', s); end
                 if startsWith(s, 'D,')
                     k = k + L.parseData(s);
+                elseif startsWith(s, 'k,') || startsWith(s, 'K,')
+                    L.parseCrash(s);
                 else
                     L.parseText(s);
                 end
             end
+        end
+
+        function C = takeCrashes(L)
+        %TAKECRASHES  Complete 500 Hz crash records received since the last call.
+        %   Each: reason, triggerTick, received (UTC), and a table D with t_s
+        %   (0 = trigger), tick, rotor_deg, psi_deg, alpha_deg, u, phase.
+            C = L.crashDone; L.crashDone = {}; L.crashPending = 0;
+        end
+
+        function markPush(L)
+        %MARKPUSH  'k': the firmware sends the last 1.5 s and the next 0.5 s at 500 Hz.
+            L.key('k');
         end
 
         function clearData(L)
@@ -247,6 +263,27 @@ classdef RigLink < handle
             end
             L.state = char(f(7)); L.faults = v(5); L.streaming = true;
             ok = 1;
+        end
+
+        function parseCrash(L, s)
+            if startsWith(s, 'K,BEGIN')
+                f = split(string(s), ',');
+                L.crashHdr = struct('reason', char(f(3)), 'n', str2double(f(4)), 'triggerTick', str2double(f(5)));
+                L.crashBuf = zeros(0, 5);
+            elseif startsWith(s, 'k,') && ~isempty(L.crashHdr)
+                v = sscanf(s(3:end), '%f,%f,%f,%f,%f')';
+                if numel(v) == 5, L.crashBuf(end+1, :) = v; end
+            elseif startsWith(s, 'K,END') && ~isempty(L.crashHdr)
+                b = L.crashBuf; h = L.crashHdr; L.crashHdr = [];
+                if isempty(b), return; end
+                psi = b(:, 3) / 1000;
+                D = table((b(:, 1) - h.triggerTick) * L.TICK_S, b(:, 1), b(:, 2) / 1000, psi, ...
+                          mod(180 - psi + 180, 360) - 180, b(:, 4), b(:, 5), ...
+                    'VariableNames', {'t_s', 'tick', 'rotor_deg', 'psi_deg', 'alpha_deg', 'u', 'phase'});
+                L.crashDone{end+1} = struct('reason', h.reason, 'triggerTick', h.triggerTick, ...
+                    'complete', height(D) == h.n, 'received', datetime('now', 'TimeZone', 'UTC'), 'D', D);
+                L.crashPending = numel(L.crashDone);
+            end
         end
 
         function parseText(L, s)

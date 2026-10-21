@@ -391,7 +391,7 @@ double ENR312_Ctrl_Tick(ENR312_Ctrl_t *x, double theta, double thetadot, double 
             x->capture_run = 0u;
         }
         break;
-    case CTRL_PH_SWINGUP:
+    case CTRL_PH_SWINGUP: {
         /* catch: slow anywhere inside the window, or still approaching from its
          * edge (gravity is slowing it; the LQR completes the stop) */
         double adot_c = -x->dpsi;                                     /* alpha = 180 - psi */
@@ -409,6 +409,7 @@ double ENR312_Ctrl_Tick(ENR312_Ctrl_t *x, double theta, double thetadot, double 
             advance(x, CTRL_PH_DONE);
         }
         break;
+    }
     case CTRL_PH_HOLD:
         if (x->home_pending && x->phase_tick >= CTRL_SW_HOME_TICKS) {   /* swing-up: walk home */
             x->ref_live = 0.0; x->home_pending = false;

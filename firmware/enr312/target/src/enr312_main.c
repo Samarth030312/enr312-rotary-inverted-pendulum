@@ -27,6 +27,7 @@
 #include "enr312_encoder.h"
 #include "enr312_rotor.h"
 #include "enr312_runner.h"
+#include "enr312_crashrec.h"
 #include "enr312_cmd.h"
 
 #include <math.h>
@@ -63,6 +64,7 @@ static ENR312_Runner_t       g_run;
 static ENR312_RunnerConfig_t g_cfg;
 static volatile uint32_t     g_last_rx_tick   = 0;
 static volatile uint32_t     g_isr_cycles_max = 0;
+static CrashRec_t            g_crash;                  /* 2 s at 500 Hz, see enr312_crashrec.h */
 static char                  g_line[64];
 static int                   g_line_len = -1;          /* -1: not in a '$' line */
 
@@ -134,6 +136,17 @@ void ENR312_ControlTick(void)
         if (!ENR312_Runner_IsMoving(&g_run) && ENR312_Safety_MotionPermitted()) {
             (void)ENR312_StepGen_SetVelocity(0.0);
         }
+    }
+
+    /* crash recorder: every tick; a run that has just aborted freezes it 0.5 s later */
+    {
+        static ENR312_RunState_t prev = ENR312_RUN_IDLE;
+        ENR312_RunState_t st = g_run.state;
+        ENR312_CrashRec_Push(&g_crash, g_ctrl_ticks, rot, ang_deg, g_run.u, (uint8_t)g_run.phase);
+        if (st == ENR312_RUN_ABORTED && prev != ENR312_RUN_ABORTED) {
+            (void)ENR312_CrashRec_Trigger(&g_crash, ENR312_Runner_AbortName(&g_run));
+        }
+        prev = st;
     }
 
     uint32_t dc = DWT->CYCCNT - c0;
@@ -354,6 +367,7 @@ static void print_help(void)
         "  P  scan the 4 CS/SCK resistor routings (SAFE only, never energises)\r\n"
         "  M  electrical self-test: reset line, MISO, FLAG (SAFE only, never energises)\r\n"
         "  .  keep-alive (send at least once a second while an experiment runs)\r\n"
+        "  k  crash recorder: send the last 1.5 s and the next 0.5 s at 500 Hz (also on any abort)\r\n"
         "  $exp=N (2..10, 21..24)  $kp= $ki= $kd= $kpp= $kdp= $step= $dist= $ulim= $vmax=\r\n"
         "  $fdr= $fdp= $k1..$k4= $bv= $imp= $uon= $db= $rrate= $div= $ma= $seq=0|1 $wg2= $amp=\r\n"
         "  $cfg  $defaults  $go  $stop  $move=D  $ref=D (live set-point)\r\n"
@@ -369,6 +383,7 @@ int main(void)
     ENR312_Board_Init();          /* L6474 goes into reset inside here */
 
     ENR312_Telemetry_Init();
+    ENR312_CrashRec_Init(&g_crash);
     ENR312_L6474_SpiInit();
     ENR312_StepGen_Init();
 
@@ -433,6 +448,12 @@ int main(void)
 
         case 't':
             print_status();
+            break;
+
+        case 'k':
+            ENR312_Telemetry_Write(ENR312_CrashRec_Trigger(&g_crash, "OPERATOR")
+                ? "CRASHREC: 1.5 s before, 0.5 s after, at 500 Hz\r\n"
+                : "CRASHREC: busy (a dump is pending)\r\n");
             break;
 
         case 'r':
@@ -592,6 +613,13 @@ int main(void)
         }
 
         report_runner();
+
+        /* a frozen crash record goes out a few lines per pass, between stream lines */
+        for (int i = 0; i < 4; ++i) {
+            char kl[56];
+            if (!ENR312_CrashRec_NextLine(&g_crash, kl, sizeof kl)) { break; }
+            ENR312_Telemetry_Write(kl);
+        }
 
         if (g_stream && (uint32_t)(g_ctrl_ticks - g_stream_last_tick) >= STREAM_DIV) {
             g_stream_last_tick = g_ctrl_ticks;     /* no burst catch-up */

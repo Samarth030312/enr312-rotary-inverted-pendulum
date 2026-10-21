@@ -23,6 +23,7 @@
 #define _XOPEN_SOURCE 700
 #include "enr312_runner.h"
 #include "enr312_cmd.h"
+#include "enr312_crashrec.h"
 #include "enr312_plant.h"
 #include <math.h>
 #include <stdio.h>
@@ -63,6 +64,8 @@ typedef struct {
     int stream;
     char line[64]; int line_len;
     int fd;                       /* output; -1 = stdout batch */
+    CrashRec_t crash;             /* as the target: 2 s at 500 Hz */
+    int prev_run_state;
 } Rig;
 
 static void out(Rig *r, const char *fmt, ...)
@@ -141,6 +144,12 @@ static void control_tick(Rig *r)
             }
         }
     }
+    /* crash recorder, as enr312_main.c */
+    ENR312_CrashRec_Push(&r->crash, r->ticks, rot, ang, r->run.u, (uint8_t)r->run.phase);
+    if (r->run.state == ENR312_RUN_ABORTED && r->prev_run_state != (int)ENR312_RUN_ABORTED) {
+        (void)ENR312_CrashRec_Trigger(&r->crash, ENR312_Runner_AbortName(&r->run));
+    }
+    r->prev_run_state = (int)r->run.state;
 }
 
 static void stream_line(Rig *r)
@@ -197,10 +206,11 @@ static void process_line(Rig *r)
 
 static const char *HELP =
     "\r\n--- ENR312 commands ---------------------------------------\r\n"
-    " Firmware:      enr312-target-2.3.2 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)\r\n"
+    " Firmware:      enr312-target-2.3.3 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)\r\n"
     "  ?  help   t  status   a  ARM   s  START   x  ABORT   c  clear fault\r\n"
     "  z  zero datums   +/-  first motion 5 deg   q  L6474 STATUS   r  stream\r\n"
     "  .  keep-alive (send at least once a second while an experiment runs)\r\n"
+    "  k  crash recorder: send the last 1.5 s and the next 0.5 s at 500 Hz (also on any abort)\r\n"
     "  $exp=N (2..10, 21..24)  $kp= $ki= $kd= $kpp= $kdp= $step= $dist= $ulim= $vmax=\r\n"
     "  $fdr= $fdp= $k1..$k4= $bv= $imp= $uon= $db= $rrate= $div= $ma= $seq=0|1 $wg2= $amp=\r\n"
     "  $cfg  $defaults  $go  $stop  $move=D  $ref=D (live set-point)\r\n"
@@ -251,6 +261,10 @@ static void key(Rig *r, char c)
         else { r->move_left = 44; r->move_dir = (c == '+') ? 1 : -1; out(r, "  %d microsteps, dir %c, ARR 410 (200.07 Hz)\r\n", 44 * r->move_dir, c); }
         break;
     case 'q': out(r, "L6474 STATUS = 0x%04X\r\n", (r->state == ARMED || r->state == RUNNING) ? 0x7E03 : 0x7E02); break;
+    case 'k':
+        out(r, ENR312_CrashRec_Trigger(&r->crash, "OPERATOR") ? "CRASHREC: 1.5 s before, 0.5 s after, at 500 Hz\r\n"
+                                                             : "CRASHREC: busy (a dump is pending)\r\n");
+        break;
     case 'r': r->stream = !r->stream; out(r, r->stream ? "STREAM ON\r\n" : "STREAM OFF\r\n"); break;
     case '!': r->p.psi += 30.0 * 3.14159265358979323846 / 180.0; out(r, "EMULATOR: pendulum plucked 30 deg.\r\n"); break;
     case '~': r->p.psid += 60.0 * 3.14159265358979323846 / 180.0; out(r, "EMULATOR: pendulum tapped (+60 deg/s).\r\n"); break;
@@ -271,6 +285,7 @@ static void rig_init(Rig *r, int fd)
     ENR312_Runner_Defaults(&r->cfg, 5u);
     r->run.state = ENR312_RUN_IDLE;
     r->line_len = -1; r->fd = fd; r->state = SAFE;
+    ENR312_CrashRec_Init(&r->crash); r->prev_run_state = (int)ENR312_RUN_IDLE;
 }
 
 /* --parent PID: exit when that process (the MATLAB app) is gone. The emulator
@@ -288,7 +303,7 @@ static int run_pty(long parent)
     out(&r, "\r\n===========================================================\r\n"
             " *** ENR312 RIG EMULATOR -- firmware logic, NOT HARDWARE *** \r\n"
             " ENR312 ROTARY INVERTED PENDULUM -- target firmware\r\n"
-            " Firmware:      enr312-target-2.3.2 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)\r\n"
+            " Firmware:      enr312-target-2.3.3 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)\r\n"
             "\r\n THIS IS NOT THE VEHICLE FIRMWARE.\r\n"
             " State: SAFE. L6474 held in reset. No motion possible.\r\n"
             "===========================================================\r\n");
@@ -310,6 +325,11 @@ static int run_pty(long parent)
             if (r.stream && r.ticks - last_stream >= 10u) { last_stream = r.ticks; stream_line(&r); }
         }
         report_runner(&r);
+        for (int i = 0; i < 4; ++i) {                       /* frozen crash record, a few lines per pass */
+            char kl[56];
+            if (!ENR312_CrashRec_NextLine(&r.crash, kl, sizeof kl)) { break; }
+            out(&r, "%s", kl);
+        }
         if (parent > 0 && (r.ticks % 250u) == 0u && kill((pid_t)parent, 0) != 0 && errno == ESRCH) { break; }
     }
     return 0;
