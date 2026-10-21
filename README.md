@@ -198,6 +198,17 @@ release was at the start and the damping was viscous. It now finds the release i
 and fits dry friction. Report:
 [`results/reports/2026-10-21c_rig_session.md`](results/reports/2026-10-21c_rig_session.md).
 
+## Results on the hardware (2026-10-21, last session)
+
+Six free swings give **ωg² = 48.0 ± 0.5**. With it the swing-up caught **4 of 4** (3.9–5.8 s).
+Pushed by hand, the balance recovered 15 of 17 pushes of 30–83 deg/s, following the
+simulated curve; it was lost to a push held for 0.14 s and to a 115 deg/s push, beyond
+the simulated 100 deg/s limit. Report:
+[`results/reports/2026-10-21d_rig_session.md`](results/reports/2026-10-21d_rig_session.md).
+
+<p align="center"><img src="results/figures/2026-10-21d_pushes.png" width="900"
+alt="Peak pendulum angle against push size: rig pushes over the simulated tap curve; 15 recovered, 2 lost."></p>
+
 ## Predictions (simulation)
 
 From the firmware-exact simulation with the Tutorial plant values

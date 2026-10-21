@@ -1,0 +1,22 @@
+{
+  "record_id": "EXP024_20261021-210043_swing-up_R15_500Hz_5",
+  "run_id": "EXP024_20261021-210043_swing-up_R15",
+  "reason": "OPERATOR",
+  "trigger_tick": 409008,
+  "samples": 1000,
+  "sampling": "every 500 Hz control tick (firmware crash recorder, enr312_crashrec.c)",
+  "window": "1.5 s before the trigger, 0.5 s after (shorter if the recorder had just re-armed)",
+  "received_utc": "2026-10-21 21:00:44",
+  "firmware": "enr312-target-2.3.3 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)",
+  "raw_serial_log": "results/evidence/logs/rig_20261022-022011.log",
+  "notes": "",
+  "units": {
+    "t_s": "s from the trigger",
+    "tick": "500 Hz control ticks",
+    "rotor_deg": "deg (commanded)",
+    "psi_deg": "deg, encoder, 0 = hanging datum",
+    "alpha_deg": "deg from upright",
+    "u": "deg/s^2 (plant input)",
+    "phase": "controller phase"
+  }
+}

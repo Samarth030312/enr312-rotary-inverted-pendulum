@@ -1,0 +1,111 @@
+{
+  "run_id": "EXP024_20261021-205559_swing-up_R10",
+  "experiment_id": "EXP024",
+  "data_class": "HARDWARE",
+  "label": "swing-up",
+  "date_utc": "2026-10-21 20:55:59",
+  "result": "ABORTED: SATURATION",
+  "duration_s": 44.371999999999957,
+  "samples": 2142,
+  "sampling": "50 Hz stream of the 500 Hz control loop, MCU time stamps",
+  "raw_data_file": "data/raw/EXP024/EXP024_20261021-205559_swing-up_R10.csv",
+  "raw_serial_log": "results/evidence/logs/rig_20261022-022011.log",
+  "firmware": "enr312-target-2.3.3 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)",
+  "firmware_protocol": 5,
+  "board": "",
+  "serial_port": "/dev/ttyACM0",
+  "repository_rev": "499e2a6",
+  "repository_dirty": false,
+  "operator": "",
+  "notes": "",
+  "config": {
+    "exp": 24,
+    "kp": 4,
+    "kd": 4,
+    "kpp": 0,
+    "kdp": 0,
+    "step": 0,
+    "dist": 0,
+    "ulim": 1500,
+    "vmax": 720,
+    "seconds": 40,
+    "ki": 0,
+    "fdr": 50,
+    "fdp": 5,
+    "k1": -10,
+    "k2": -13.787,
+    "k3": 382.789,
+    "k4": 50.787,
+    "bv": 0,
+    "imp": 0,
+    "uon": 1000,
+    "db": 0,
+    "rrate": 90,
+    "div": 1,
+    "ma": 1,
+    "seq": 1,
+    "wg2": 48.5,
+    "amp": 180,
+    "target": null,
+    "target_t": null
+  },
+  "plant_model": {
+    "wg2": 54.814789787332849,
+    "Q": 45.21755561622119,
+    "wr2": 0.803,
+    "nonlinear": true,
+    "quant": true,
+    "coulomb": 0.013053473169618404
+  },
+  "events": [
+    {
+      "t": 0,
+      "what": "go",
+      "value": 24
+    },
+    {
+      "t": 31.419999999999959,
+      "what": "push (operator)",
+      "value": 1
+    },
+    {
+      "t": 34.19199999999995,
+      "what": "push (operator)",
+      "value": 1
+    },
+    {
+      "t": 35.203999999999951,
+      "what": "500 Hz record: OPERATOR",
+      "value": 261219
+    },
+    {
+      "t": 36.263999999999953,
+      "what": "push (operator)",
+      "value": 1
+    },
+    {
+      "t": 39.405999999999949,
+      "what": "500 Hz record: OPERATOR",
+      "value": 263635
+    },
+    {
+      "t": 42.345999999999947,
+      "what": "push (operator)",
+      "value": 1
+    }
+  ],
+  "metrics": {
+    "t_catch_s": 5.7999999999999545,
+    "arm_max_deg": 78.525,
+    "alpha_rms_up_deg": 0.94017383278474087,
+    "swing_amp_deg": 180
+  },
+  "units": {
+    "t": "s",
+    "rotor": "deg",
+    "psi": "deg, encoder, 0 = hanging datum",
+    "alpha": "deg from upright",
+    "u": "deg/s^2 (plant input)",
+    "ref": "deg"
+  }
+}

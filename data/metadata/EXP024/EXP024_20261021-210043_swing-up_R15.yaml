@@ -1,0 +1,88 @@
+run_id: "EXP024_20261021-210043_swing-up_R15"
+experiment_id: "EXP024"
+data_class: "HARDWARE"
+label: "swing-up"
+date_utc: "2026-10-21 21:00:43"
+result: "FINISHED"
+duration_s: 65.53
+samples: 3100
+sampling: "50 Hz stream of the 500 Hz control loop, MCU time stamps"
+raw_data_file: "data/raw/EXP024/EXP024_20261021-210043_swing-up_R15.csv"
+raw_serial_log: "results/evidence/logs/rig_20261022-022011.log"
+firmware: "enr312-target-2.3.3 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)"
+firmware_protocol: 5
+board: ""
+serial_port: "/dev/ttyACM0"
+repository_rev: "499e2a6"
+repository_dirty: false
+operator: ""
+notes: ""
+config:
+  exp: 24
+  kp: 4
+  kd: 4
+  kpp: 0
+  kdp: 0
+  step: 0
+  dist: 0
+  ulim: 1500
+  vmax: 720
+  seconds: 40
+  ki: 0
+  fdr: 50
+  fdp: 5
+  k1: -10
+  k2: -13.787
+  k3: 382.789
+  k4: 50.787
+  bv: 0
+  imp: 0
+  uon: 1000
+  db: 0
+  rrate: 90
+  div: 1
+  ma: 1
+  seq: 1
+  wg2: 48.5
+  amp: 180
+  target: null
+  target_t: null
+plant_model:
+  wg2: 36.03967671
+  Q: 27
+  wr2: 0.7347538575
+  nonlinear: true
+  quant: true
+  coulomb: 0.230400084
+events:
+  - {t: 0, what: "go", value: 24}
+  - {t: 34.36, what: "push (operator)", value: 1}
+  - {t: 36.096, what: "push (operator)", value: 1}
+  - {t: 37.516, what: "push (operator)", value: 1}
+  - {t: 38.216, what: "500 Hz record: OPERATOR", value: 395129}
+  - {t: 40.336, what: "push (operator)", value: 1}
+  - {t: 42.27, what: "push (operator)", value: 1}
+  - {t: 44.044, what: "push (operator)", value: 1}
+  - {t: 44.192, what: "500 Hz record: OPERATOR", value: 398146}
+  - {t: 45.432, what: "push (operator)", value: 1}
+  - {t: 47.068, what: "push (operator)", value: 1}
+  - {t: 48.738, what: "push (operator)", value: 1}
+  - {t: 49.12, what: "500 Hz record: OPERATOR", value: 400698}
+  - {t: 50.62, what: "push (operator)", value: 1}
+  - {t: 52.674, what: "push (operator)", value: 1}
+  - {t: 54.594, what: "500 Hz record: OPERATOR", value: 403294}
+  - {t: 62.054, what: "push (operator)", value: 1}
+  - {t: 62.916, what: "push (operator)", value: 1}
+  - {t: 65.298, what: "stop", value: 0}
+metrics:
+  t_catch_s: 5.64
+  arm_max_deg: 63.787
+  alpha_rms_up_deg: 0.8396031583
+  swing_amp_deg: 180
+units:
+  t: "s"
+  rotor: "deg"
+  psi: "deg, encoder, 0 = hanging datum"
+  alpha: "deg from upright"
+  u: "deg/s^2 (plant input)"
+  ref: "deg"
