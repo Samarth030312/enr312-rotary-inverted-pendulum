@@ -3,7 +3,7 @@
  * @brief   '$' line commands from the host (MATLAB). Hardware-independent.
  *
  * Grammar (one per line, CR or LF terminated, leading '$' already stripped):
- *   exp=N          select experiment 2..10 or 21..23 and load its defaults
+ *   exp=N          select experiment 2..10 or 21..24 and load its defaults
  *   kp= kd=        rotor (outer) PD gains
  *   kpp= kdp=      pendulum (inner) PD gains
  *   step=          rotor reference step [deg]

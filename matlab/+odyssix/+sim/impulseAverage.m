@@ -6,7 +6,8 @@ function r = impulseAverage(t, alpha, rotor, phase)
 %   4 ms at the end of every 5 s window of phase 7 (IMPULSES), 8 in all. The
 %   response windows [-0.5, 4.5] s around each impulse are aligned on the known
 %   timing and averaged (Tutorial 7, section 15: signal averaging), which works
-%   for 500 Hz simulation and 50 Hz rig data alike.
+%   for 500 Hz simulation and 50 Hz rig data alike. Robust: the median over
+%   the windows (r.alphaMean keeps the plain mean, r.windowPeak each window's peak).
 %   r.t, r.alpha, r.rotor: averaged responses (rotor relative to its value
 %   before the impulse); r.n; peaks and 2-%-of-peak settling times.
     r = struct('t', [], 'alpha', [], 'rotor', [], 'n', 0, 'pendPeak', NaN, ...
@@ -24,7 +25,11 @@ function r = impulseAverage(t, alpha, rotor, phase)
         R(:, end + 1) = rr - rr(find(tt < 0, 1, 'last')); %#ok<AGROW>
     end
     if isempty(A), return; end
-    r.t = tt; r.alpha = mean(A, 2); r.rotor = mean(R, 2); r.n = size(A, 2);
+    % median across the windows, not the mean: on the rig (2026-10-21) two of six
+    % windows held an external disturbance (alpha 5-6 deg, arm 56-58 deg against
+    % 1.4 / 9 for a clean impulse) and dominated a mean; on clean data the two agree
+    r.t = tt; r.alpha = median(A, 2); r.rotor = median(R, 2); r.n = size(A, 2);
+    r.alphaMean = mean(A, 2); r.windowPeak = max(abs(A - mean(A(tt < 0, :), 1)), [], 1);
     a = r.alpha - mean(r.alpha(tt < 0));
     [r.pendPeak, r.pendSettle] = peakSettle(tt, a);
     [r.rotorPeak, r.rotorSettle] = peakSettle(tt, r.rotor);

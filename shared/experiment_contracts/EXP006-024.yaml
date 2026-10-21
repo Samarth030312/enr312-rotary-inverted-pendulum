@@ -1,5 +1,5 @@
-# Contracts for EXP006-EXP010 and the PEND experiments EXP021-EXP023.
-# Defaults of firmware 2.1.0 (enr312_ctrl.c ENR312_Ctrl_Defaults), units: gains in
+# Contracts for EXP006-EXP010 and the PEND experiments EXP021-EXP024.
+# Defaults of firmware 2.3.0 (enr312_ctrl.c ENR312_Ctrl_Defaults), units: gains in
 # deg/s^2 per deg (per deg s, per deg/s), filters Hz, angles deg, u deg/s^2, rates deg/s.
 # matlab/tests/test_contracts.m checks this file against odyssix.sim.defaults and
 # against the firmware's own '$cfg' echo (C code, rig emulator).
@@ -33,6 +33,9 @@ EXP006:
     rrate: 90
     div: 1
     ma: 1
+    seq: 1
+    wg2: 55.85
+    amp: 180
 
 EXP007:
   title: "Pendulum-loop design, impulses (inverted)"
@@ -62,6 +65,9 @@ EXP007:
     rrate: 90
     div: 1
     ma: 1
+    seq: 1
+    wg2: 55.85
+    amp: 180
 
 EXP008:
   title: "Root locus, load disturbance (inverted)"
@@ -91,6 +97,9 @@ EXP008:
     rrate: 90
     div: 1
     ma: 1
+    seq: 1
+    wg2: 55.85
+    amp: 180
 
 EXP009:
   title: "Full-state feedback, pole placement (rotor)"
@@ -120,6 +129,9 @@ EXP009:
     rrate: 90
     div: 1
     ma: 1
+    seq: 1
+    wg2: 55.85
+    amp: 180
 
 EXP010:
   title: "LQR (rotor)"
@@ -149,6 +161,9 @@ EXP010:
     rrate: 90
     div: 1
     ma: 1
+    seq: 1
+    wg2: 55.85
+    amp: 180
 
 EXP021:
   title: "PEND: stop a swing, hold an angle"
@@ -178,6 +193,9 @@ EXP021:
     rrate: 90
     div: 1
     ma: 1
+    seq: 1
+    wg2: 55.85
+    amp: 180
 
 EXP022:
   title: "PEND: on-off control"
@@ -207,6 +225,9 @@ EXP022:
     rrate: 90
     div: 1
     ma: 1
+    seq: 1
+    wg2: 55.85
+    amp: 180
 
 EXP023:
   title: "PEND: 4-state LQR balancing (inverted)"
@@ -220,7 +241,7 @@ EXP023:
     kpp: 0
     kdp: 0
     fdr: 50
-    fdp: 10
+    fdp: 5
     k1: -10
     k2: -13.787
     k3: 382.789
@@ -236,3 +257,38 @@ EXP023:
     rrate: 90
     div: 1
     ma: 1
+    seq: 1
+    wg2: 55.85
+    amp: 180
+
+EXP024:
+  title: "PEND: energy control (pendulum target; 180 = swing-up, LQR catch)"
+  mode: hanging to upright
+  status: unlocked
+  hardware: NOT_EXECUTED
+  defaults:
+    kp: 4
+    ki: 0
+    kd: 4
+    kpp: 0
+    kdp: 0
+    fdr: 50
+    fdp: 5
+    k1: -10
+    k2: -13.787
+    k3: 382.789
+    k4: 50.787
+    bv: 0
+    step: 0
+    dist: 0
+    imp: 0
+    uon: 1000
+    db: 0
+    ulim: 1500
+    vmax: 720
+    rrate: 90
+    div: 1
+    ma: 1
+    seq: 1
+    wg2: 55.85
+    amp: 180

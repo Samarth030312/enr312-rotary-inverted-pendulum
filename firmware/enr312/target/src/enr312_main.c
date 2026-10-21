@@ -113,7 +113,7 @@ void ENR312_ControlTick(void)
      * suspended runs. Inverted runs (5, 6-8, 23) keep the pendulum near 180 deg
      * and have their own bound around upright inside the core. */
     if ((ENR312_StepGen_Busy() || ENR312_Runner_SuspendedLimit(&g_run)) &&
-        fabs(ang_deg) > ENR312_PENDULUM_ABORT_DEG) {
+        fabs(ENR312_Runner_HangingAngle(ang_deg)) > ENR312_PENDULUM_ABORT_DEG) {   /* 360 = hanging */
         ENR312_Safety_RaiseFault(ENR312_FAULT_PENDULUM_ABORT);
     }
     double rot = rotor_deg_now();
@@ -295,7 +295,7 @@ static void process_line(void)
             (void)ENR312_Cmd_FormatFixed(v, (int)sizeof v, mv);
             ENR312_Telemetry_Printf("REF %s\r\n", v);
         } else {
-            ENR312_Telemetry_Write("ERR ref needs a running experiment 6..23\r\n");
+            ENR312_Telemetry_Write("ERR ref needs a running experiment 6..24\r\n");
         }
         break;
     }
@@ -307,7 +307,8 @@ static void process_line(void)
             ENR312_Runner_ApplyLive(&g_run, &g_cfg);
             __enable_irq();
         }
-        ENR312_Telemetry_Printf("%s\r\n", reply);
+        /* Write, not Printf: the 25-value C line can exceed Printf's 192-byte buffer */
+        ENR312_Telemetry_Write(reply); ENR312_Telemetry_Write("\r\n");
         break;
     }
 }
@@ -353,8 +354,8 @@ static void print_help(void)
         "  P  scan the 4 CS/SCK resistor routings (SAFE only, never energises)\r\n"
         "  M  electrical self-test: reset line, MISO, FLAG (SAFE only, never energises)\r\n"
         "  .  keep-alive (send at least once a second while an experiment runs)\r\n"
-        "  $exp=N (2..10, 21..23)  $kp= $ki= $kd= $kpp= $kdp= $step= $dist= $ulim= $vmax=\r\n"
-        "  $fdr= $fdp= $k1..$k4= $bv= $imp= $uon= $db= $rrate= $div= $ma=\r\n"
+        "  $exp=N (2..10, 21..24)  $kp= $ki= $kd= $kpp= $kdp= $step= $dist= $ulim= $vmax=\r\n"
+        "  $fdr= $fdp= $k1..$k4= $bv= $imp= $uon= $db= $rrate= $div= $ma= $seq=0|1 $wg2= $amp=\r\n"
         "  $cfg  $defaults  $go  $stop  $move=D  $ref=D (live set-point)\r\n"
         "-----------------------------------------------------------\r\n");
 }

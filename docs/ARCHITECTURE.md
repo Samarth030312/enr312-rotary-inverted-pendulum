@@ -135,6 +135,11 @@ bv= imp= uon= db= rrate= div= ma=` for experiments 6–10 and 21–23, and `ref=
 live arm set-point (accepted while experiment 21 regulates or once 6/7/8/23 hold
 upright). A gain line sent during a run of those experiments is applied at once.
 The version line (and so the protocol) is printed in the boot banner and again by `?`.
+Protocol 4 (2.2.0) adds `seq=0|1` (0: lab mode, no tutorial sequence) and `wg2=` (the
+pendulum constant), and experiment 24 (energy control). Protocol 5 (2.3.0) adds `amp=`
+(pendulum target: 0 stop a swing, 0–179 swing to ±amp, ≥ 179 swing up and balance).
+A hanging pendulum's angle is wrapped to (−180, 180], so one at rest after a full turn
+reads 0.
 
 Telemetry (50 Hz):
 
@@ -142,6 +147,7 @@ Telemetry (50 Hz):
 D,<tick (2 ms)>,<rotor mdeg>,<pendulum mdeg>,<encoder raw>,<faults>,<state>,<run exp>,<phase>,<u deg/s²>,<ref mdeg>,<isr_max_us>
 C,<exp>,<kp>,<kd>,<kpp>,<kdp>,<step>,<dist>,<ulim>,<vmax>          (reply to $cfg, protocol 2)
    ...,<ki>,<fdr>,<fdp>,<k1>,<k2>,<k3>,<k4>,<bv>,<imp>,<uon>,<db>,<rrate>,<div>,<ma>   (protocol 3 appends)
+   ...,<seq>,<wg2>   (protocol 4)   ...,<amp>   (protocol 5: 26 values)
 REF <deg>                                                           (reply to $ref)
 ```
 

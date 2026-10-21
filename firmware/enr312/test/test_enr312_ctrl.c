@@ -28,10 +28,14 @@ static void test_tutorial_values(void)
     for (uint8_t e = 6; e <= 10; ++e) {
         CHECK(ENR312_Ctrl_Defaults(&c, e) && ENR312_Ctrl_Validate(&c) == NULL, "exp %u defaults valid", e);
     }
-    for (uint8_t e = 21; e <= 23; ++e) {
+    for (uint8_t e = 21; e <= 24; ++e) {
         CHECK(ENR312_Ctrl_Defaults(&c, e) && ENR312_Ctrl_Validate(&c) == NULL, "exp %u defaults valid", e);
     }
-    CHECK(!ENR312_Ctrl_Defaults(&c, 24), "exp 24 (swing-up) is not run on the rig");
+    CHECK(!ENR312_Ctrl_Defaults(&c, 25), "exp 25 does not exist");
+    ENR312_Ctrl_Defaults(&c, 24);
+    CHECK(c.seq == 1u && fabs(c.wg2 - 55.85) < 1e-12, "seq 1, wg2 = Tutorial 5 by default");
+    c.seq = 2u; CHECK(ENR312_Ctrl_Validate(&c) != NULL, "seq 2 rejected");
+    c.seq = 0u; c.wg2 = 10.0; CHECK(ENR312_Ctrl_Validate(&c) != NULL, "wg2 10 rejected");
     ENR312_Ctrl_Defaults(&c, 6);
     /* Tutorial 6 states Ki = Kp/Ti = 5 for Kp 15, Ti 5 s; that is 3 (its own table). */
     CHECK_NEAR(c.ki, c.kp / 5.0, 1e-12, "Tutorial 6: Ki = Kp/Ti = 15/5 = 3");
@@ -68,7 +72,8 @@ static void test_signs(void)
     ENR312_Ctrl_Init(&x, &c);
     x.phase = CTRL_PH_HOLD;
     u = ENR312_Ctrl_Tick(&x, 0.0, 0.0, 179.0);
-    CHECK_NEAR(u, -100.0, 1e-9, "inverted pendulum: alpha +1 deg -> u = -kpp");
+    /* in HOLD the auto-trim has learnt TS/tau of the angle after one tick */
+    CHECK_NEAR(u, -100.0 * (1.0 - TS / CTRL_TRIM_TAU_S), 1e-9, "inverted pendulum: alpha +1 deg -> u = -kpp (alpha - trim)");
 }
 
 static void test_waits_for_capture_and_release(void)
@@ -221,6 +226,139 @@ static void test_closed_loop_all(void)
     }
 }
 
+/* ---- lab mode (seq 0) and swing-up (exp 24), closed loop -------------------- */
+static void test_lab_mode(void)
+{
+    ENR312_CtrlConfig_t c; ENR312_Ctrl_t x;
+    ENR312_Ctrl_Defaults(&c, 9); c.seq = 0u;
+    ENR312_Ctrl_Init(&x, &c);
+    CHECK_EQ_I(x.phase, CTRL_PH_REGULATE, "lab: hanging state feedback regulates at once");
+    ENR312_Ctrl_SetRef(&x, 30.0);
+    for (int i = 0; i < 2000; ++i) { ENR312_Ctrl_Tick(&x, 0.0, 0.0, 0.0); }
+    CHECK_NEAR(x.ref, 30.0, 1e-9, "lab: the set-point is live from the start");
+    ENR312_Ctrl_Defaults(&c, 23); c.seq = 0u;
+    ENR312_Ctrl_Init(&x, &c);
+    for (int i = 0; i < 600; ++i) { ENR312_Ctrl_Tick(&x, 0.0, 0.0, 180.0); }   /* captured */
+    CHECK_EQ_I(x.phase, CTRL_PH_WAIT_RELEASE, "lab upright: still waits for the hand");
+    ENR312_Ctrl_Tick(&x, 0.0, 0.0, 178.0);
+    ENR312_Ctrl_Tick(&x, 0.0, 0.0, 178.0);
+    CHECK_EQ_I(x.phase, CTRL_PH_HOLD, "lab upright: release goes straight to HOLD");
+}
+
+static void test_full_turn_is_hanging(void)
+{
+    /* a pendulum that fell over and came to rest after a full turn reads 360 deg */
+    ENR312_RunnerConfig_t c; ENR312_Runner_t r; ENR312_Plant_t p;
+    ENR312_Runner_Defaults(&c, 21);
+    ENR312_Plant_Init(&p, 55.85, 20.0, 0.803);
+    p.psi = 360.4 * DEG;
+    CHECK(ENR312_Runner_Start(&r, &c), "exp 21 starts at psi 360");
+    double umax = 0.0;
+    for (uint32_t i = 0; i < (uint32_t)(5.0 / TS) && ENR312_Runner_IsMoving(&r); ++i) {
+        double v = ENR312_Runner_Tick(&r, ENR312_Plant_RotorDeg(&p), ENR312_Plant_EncoderDeg(&p));
+        if (fabs(r.u) > umax) { umax = fabs(r.u); }
+        for (int k = 0; k < SUB; ++k) { ENR312_Plant_Step(&p, v * USTEP_PER_DEG, TS / SUB); }
+    }
+    CHECK(r.state != ENR312_RUN_ABORTED, "psi 360 regulates as hanging, no abort");
+    CHECK(umax < 100.0, "and commands almost nothing (|u| max %.1f; a 360 deg error would be ~3600)", umax);
+    CHECK_NEAR(ENR312_Runner_HangingAngle(360.4), 0.4, 1e-9, "HangingAngle(360.4) = 0.4");
+    CHECK_NEAR(ENR312_Runner_HangingAngle(-719.0), 1.0, 1e-9, "HangingAngle(-719) = 1");
+}
+
+static void test_pendulum_target(void)
+{
+    /* exp 24 with 0 < amp < 179: swing to +/-amp and keep it there; amp 0: stop */
+    const double amps[] = {90.0, 45.0, 135.0};
+    const double wg2s[] = {55.85, 50.0, 62.0};
+    for (unsigned j = 0; j < 3; ++j) {
+        ENR312_RunnerConfig_t c; ENR312_Runner_t r; ENR312_Plant_t p;
+        ENR312_Runner_Defaults(&c, 24); c.amp = amps[j];
+        ENR312_Plant_Init(&p, wg2s[j], 20.0, 0.803); p.psi = 0.3 * DEG;
+        CHECK(ENR312_Runner_Start(&r, &c), "pendulum target starts");
+        double pk = 0.0, arm = 0.0;
+        for (uint32_t i = 0; i < (uint32_t)(40.0 / TS) && ENR312_Runner_IsMoving(&r); ++i) {
+            double v = ENR312_Runner_Tick(&r, ENR312_Plant_RotorDeg(&p), ENR312_Plant_EncoderDeg(&p));
+            for (int k = 0; k < SUB; ++k) { ENR312_Plant_Step(&p, v * USTEP_PER_DEG, TS / SUB); }
+            double a = fabs(ENR312_Runner_HangingAngle(ENR312_Plant_EncoderDeg(&p)));
+            if (i * TS > 30.0 && a > pk) { pk = a; }          /* the last 10 s */
+            if (fabs(ENR312_Plant_RotorDeg(&p)) > arm) { arm = fabs(ENR312_Plant_RotorDeg(&p)); }
+        }
+        CHECK(r.state != ENR312_RUN_ABORTED && r.phase == CTRL_PH_SWINGUP, "amp %.0f: still swinging, no catch", amps[j]);
+        CHECK(fabs(pk - amps[j]) < 6.0, "amp %.0f (plant wg2 %.1f): swings to %.1f deg", amps[j], wg2s[j], pk);
+        printf("    pendulum target %5.1f deg, plant wg2 %5.2f: swings to %5.1f deg, arm max %5.1f deg\n", amps[j], wg2s[j], pk, arm);
+    }
+    /* amp 0 stops a 40 deg swing */
+    ENR312_RunnerConfig_t c; ENR312_Runner_t r; ENR312_Plant_t p;
+    ENR312_Runner_Defaults(&c, 24); c.amp = 0.0;
+    ENR312_Plant_Init(&p, 55.85, 27.0, 0.803); p.psi = 40.0 * DEG;
+    ENR312_Runner_Start(&r, &c);
+    double t_stop = -1.0;
+    for (uint32_t i = 0; i < (uint32_t)(20.0 / TS); ++i) {
+        double v = ENR312_Runner_Tick(&r, ENR312_Plant_RotorDeg(&p), ENR312_Plant_EncoderDeg(&p));
+        for (int k = 0; k < SUB; ++k) { ENR312_Plant_Step(&p, v * USTEP_PER_DEG, TS / SUB); }
+        if (fabs(ENR312_Runner_HangingAngle(ENR312_Plant_EncoderDeg(&p))) > 4.0) { t_stop = -1.0; }
+        else if (t_stop < 0.0) { t_stop = i * TS; }
+    }
+    CHECK(t_stop > 0.0 && t_stop < 12.0, "amp 0 stops a 40 deg swing (inside 4 deg after %.1f s; free decay ~19 s)", t_stop);
+    printf("    pendulum target 0: a 40 deg swing stays inside 4 deg after %.1f s\n", t_stop);
+}
+
+static void test_upright_trim(void)
+{
+    /* encoder datum 0.6 deg off (as measured on the rig 2026-10-21): without the
+     * trim the LQR would hold the arm k3/k1 * 0.6 = 23 deg off its set-point */
+    ENR312_RunnerConfig_t c; ENR312_Runner_t r; ENR312_Plant_t p;
+    ENR312_Runner_Defaults(&c, 23); c.seq = 0u;
+    ENR312_Plant_Init(&p, 55.85, 20.0, 0.803); p.enc_bias = 0.6;
+    p.psi = 179.0 * DEG; p.held = true;           /* a hair off upright: it falls away from the hand */
+    ENR312_Runner_Start(&r, &c);
+    double arm_sum = 0.0; uint32_t n = 0u;
+    for (uint32_t i = 0; i < (uint32_t)(60.0 / TS) && ENR312_Runner_IsMoving(&r); ++i) {
+        if (r.phase != CTRL_PH_WAIT_CAPTURE) { p.held = false; }
+        double v = ENR312_Runner_Tick(&r, ENR312_Plant_RotorDeg(&p), ENR312_Plant_EncoderDeg(&p));
+        for (int k = 0; k < SUB; ++k) { ENR312_Plant_Step(&p, v * USTEP_PER_DEG, TS / SUB); }
+        if (i * TS > 50.0) { arm_sum += ENR312_Plant_RotorDeg(&p); n++; }
+    }
+    double arm = n ? arm_sum / n : 99.0;
+    CHECK(r.state != ENR312_RUN_ABORTED && fabs(arm) < 3.0, "trim: arm returns to its set-point (mean %.2f deg over 50-60 s; 23 without)", arm);
+    CHECK_NEAR(r.ec.trim, -0.6, 0.2, "trim learnt the datum offset (encoder +0.6 -> alpha reads 0.6 low)");
+    printf("    upright trim: datum offset 0.6 deg -> learnt %.2f deg, arm at %.2f deg\n", r.ec.trim, arm);
+}
+
+static void test_swing_up(void)
+{
+    /* from hanging almost still, the pump must bring the pendulum up, the LQR
+     * must catch it, and it must still balance 20 s later; arm inside +/-240 */
+    /* the real pendulum differs from the wg2 the firmware is told, its pivot
+     * friction is unknown, the arm coupling wr2 is a Tutorial value; start
+     * hanging still or plucked */
+    const double wg2s[] = {55.85, 50.0, 62.0, 55.85, 55.85, 55.85, 55.85, 50.0, 62.0};
+    const double qs[]   = {20.0,  20.0, 20.0, 12.0,  35.0,  20.0,  20.0,  12.0, 35.0};
+    const double wr2s[] = {0.803, 0.803, 0.803, 0.803, 0.803, 0.70, 0.90, 0.90, 0.70};
+    const double p0s[]  = {0.3,   0.3,  0.3,  0.3,   0.3,   0.3,   0.3,   25.0, -15.0};
+    for (unsigned j = 0; j < 9; ++j) {
+        ENR312_RunnerConfig_t c; ENR312_Runner_t r; ENR312_Plant_t p;
+        ENR312_Runner_Defaults(&c, 24);
+        ENR312_Plant_Init(&p, wg2s[j], qs[j], wr2s[j]);
+        p.psi = p0s[j] * DEG;
+        CHECK(ENR312_Runner_Start(&r, &c), "swing-up starts");
+        double t_catch = -1.0, arm_max = 0.0;
+        for (uint32_t i = 0; i < (uint32_t)(60.0 / TS) && ENR312_Runner_IsMoving(&r); ++i) {
+            double v = ENR312_Runner_Tick(&r, ENR312_Plant_RotorDeg(&p), ENR312_Plant_EncoderDeg(&p));
+            for (int k = 0; k < SUB; ++k) { ENR312_Plant_Step(&p, v * USTEP_PER_DEG, TS / SUB); }
+            if (t_catch < 0.0 && r.phase == CTRL_PH_HOLD) { t_catch = i * TS; }
+            if (fabs(ENR312_Plant_RotorDeg(&p)) > arm_max) { arm_max = fabs(ENR312_Plant_RotorDeg(&p)); }
+        }
+        double a = ENR312_Runner_UprightAngle(ENR312_Plant_EncoderDeg(&p));
+        CHECK(t_catch > 0.0 && t_catch < 30.0, "plant wg2 %.1f Q %.0f: caught after %.1f s", wg2s[j], qs[j], t_catch);
+        CHECK(r.state != ENR312_RUN_ABORTED && r.phase == CTRL_PH_HOLD && fabs(a) < 3.0,
+              "plant wg2 %.1f: balancing at 60 s (alpha %.2f, phase %u)", wg2s[j], a, (unsigned)r.phase);
+        CHECK(arm_max < 200.0, "plant wg2 %.1f: arm stayed within %.0f deg", wg2s[j], arm_max);
+        printf("    swing-up: plant wg2 %5.2f Q %4.1f wr2 %.2f start %5.1f deg: caught %5.2f s, arm max %5.1f deg, end alpha %+.2f\n",
+               wg2s[j], qs[j], wr2s[j], p0s[j], t_catch, arm_max, a);
+    }
+}
+
 int main(void)
 {
     printf("General controller core tests (Tutorials 6-10, PEND experiments)\n");
@@ -235,6 +373,11 @@ int main(void)
     test_decimation_and_ma();
     test_live_changes();
     test_closed_loop_all();
+    test_lab_mode();
+    test_full_turn_is_hanging();
+    test_pendulum_target();
+    test_upright_trim();
+    test_swing_up();
     TEST_REPORT("test_enr312_ctrl");
     return enr312_tests_failed ? 1 : 0;
 }

@@ -15,12 +15,37 @@
  *   21   PEND S3-5       suspended  dual PID       regulate: stop a swing (pluck, then go)
  *   22   PEND Q7, Q14    suspended  on-off         rotor step and back with bang-bang control
  *   23   PEND C10        inverted   state feedback capture, release, step, back, hold (4-state LQR)
+ *   24   PEND C12        hanging: energy control. amp >= 179: swing up, the 4-state LQR
+ *                        catches it; 0 < amp < 179: swing to +/-amp and keep it there;
+ *                        amp 0: stop the swing. (A pendulum can rest only at 0 and 180:
+ *                        holding it still at psi needs arm acceleration (wg2/wr2) tan psi.)
  *
- * Energy swing-up (PEND C12) is NOT run on the rig. A first attempt here never
- * brought the emulated pendulum closer than ~49 deg to upright (cause not
- * established); the idealised simulation in
- * matlab/experiments/PEND/pend_swingup_study.m shows the actuator limits are
- * not the reason. A rig swing-up is future work.
+ * seq = 0 ("lab" mode): no tutorial sequence. Hanging experiments regulate at
+ * once; upright ones go from release straight to HOLD. Steps, holds and angles
+ * then come from the live set-point ($ref) only.
+ *
+ * Swing-up (exp 24), from the energy of the pendulum, psi from hanging:
+ *   E = psidot^2/(2 wg2) + 1 - cos(psi)        0 hanging still, 2 upright still
+ *   dE/dt = (psidot/wg2)(wr2 cos(psi) u - gamma psidot)
+ *   u = uon sat(SW_KE (2 + delta - E)) sign(psidot cos psi) - (kp theta + kd thetadot)
+ * (pendulum target amp < 179: u = uon sat(SW_KE (h* + delta - E) psidot cos(psi)/wg)
+ *  with h* = 1 - cos(amp), the Astrom-Furuta energy law; amp 0 stops the swing)
+ * pumps energy in (brakes above the target) while a PD keeps the arm near the
+ * centre. delta is the energy the pivot friction drains on the climb, learnt
+ * swing by swing, only from swings where the pump had already reached its
+ * target: at an apex short of upright delta += SW_KA (2 - (1 - cos psi_apex));
+ * on a pass over the top faster than SW_CATCH_RATE delta -= SW_KA (E - 2).
+ * The pendulum then arrives at the top nearly at rest. At |alpha| <= SW_CATCH_DEG, |alpha
+ * rate| <= SW_CATCH_RATE, E >= SW_E_MIN the state feedback k1..k4 (exp 23
+ * LQR) takes over and walks the arm back to 0 at rrate while it balances.
+ * wg2 [1/s^2] is the pendulum constant (default Tutorial 5; set it from the
+ * free-swing measurement). Simulation: matlab/experiments/PEND/pend_swingup_study.m.
+ *
+ * Upright auto-trim (HOLD, all upright experiments): the encoder's "upright"
+ * (hanging datum + 180) is off the true balance point by a fraction of a degree
+ * (rig 2026-10-21: +0.3..+0.7 deg), and the state feedback then holds the arm
+ * off by k3/k1 times that (23 deg). In HOLD the mean alpha is learnt with a
+ * CTRL_TRIM_TAU_S low-pass and subtracted, so the arm returns to its set-point.
  *
  * Conventions (docs/first_principles/ROTARY_PENDULUM_DYNAMICS.md):
  *   theta  rotor angle [deg], from the microsteps issued
@@ -58,6 +83,19 @@ extern "C" {
 #define CTRL_CAPTURE_TICKS     (ENR312_CONTROL_RATE_HZ * 1u)    /* 1 s    */
 #define CTRL_RELEASE_DEG       1.5    /**< same release detection as EXP005 2.0.8   */
 #define CTRL_SAT_ABORT_TICKS   (ENR312_CONTROL_RATE_HZ / 5u)    /* 200 ms */
+#define CTRL_SW_CATCH_DEG      7.0   /**< swing-up hands over inside this     */
+#define CTRL_SW_CATCH_RATE     60.0   /**< ... moving slower than this [deg/s] (rig 2026-10-21: 75 deg/s fell) */
+#define CTRL_SW_OVER_RATE      CTRL_SW_CATCH_RATE  /**< a pass too fast to catch = too much energy */
+#define CTRL_SW_HOME_TICKS     (ENR312_CONTROL_RATE_HZ * 2u)    /* hold where caught 2 s, then home */
+#define CTRL_TRIM_TAU_S        8.0    /**< upright auto-trim time constant [s]  */
+#define CTRL_SAT_ABORT_UP_TICKS (ENR312_CONTROL_RATE_HZ / 2u)   /* 500 ms, upright HOLD */
+#define CTRL_SW_E_MIN          1.8    /**< ... and with at least this energy   */
+#define CTRL_SW_KE             10.0   /**< pump gain on (2 + delta - E)        */
+#define CTRL_SW_DELTA0         0.15   /**< first guess of the climb loss       */
+#define CTRL_SW_KE_AMP         5.0    /**< energy-law gain for a pendulum target (sweep: 5 reaches in 3-6 s, arm <= 34 deg) */
+#define CTRL_SW_DELTA_MAX      0.6
+#define CTRL_SW_KA             0.5    /**< learning gain on the apex shortfall */
+#define CTRL_SW_TIMEOUT_TICKS  (ENR312_CONTROL_RATE_HZ * 40u)   /* 40 s   */
 
 typedef enum {
     CTRL_PH_WAIT_CAPTURE = 0,
@@ -71,7 +109,7 @@ typedef enum {
     CTRL_PH_HOLD         = 8,
     CTRL_PH_IDLE         = 9,
     CTRL_PH_REGULATE     = 10,
-    CTRL_PH_UNUSED_11    = 11,   /* reserved (swing-up, not run on the rig) */
+    CTRL_PH_SWINGUP      = 11,
     CTRL_PH_DONE         = 12,
     CTRL_PH_ABORTED      = 13
 } ENR312_CtrlPhase_t;
@@ -101,6 +139,10 @@ typedef struct {
     double ref_rate;          /**< live set-point slew [deg/s], 0 = step             */
     uint8_t div;              /**< controller runs every div ticks (500/div Hz)      */
     uint8_t ma;               /**< moving average length on the pendulum, 1 = off   */
+    uint8_t seq;              /**< 1 = tutorial sequence, 0 = lab: regulate/hold     */
+    double wg2;               /**< pendulum constant g/L_eq [1/s^2] (swing-up)       */
+    double amp;               /**< exp 24 pendulum target [deg]: 0 stop the swing,
+                                   0..179 swing to +/-amp, >= 179 swing up and balance */
 } ENR312_CtrlConfig_t;
 
 typedef struct {
@@ -123,6 +165,14 @@ typedef struct {
     /* decimation */
     uint8_t  div_count;
     double   u_hold;
+    double   sw_energy;       /**< swing-up: normalised energy E (0 hanging, 2 up)  */
+    double   sw_delta;        /**< swing-up: learnt energy lost per climb           */
+    double   sw_dpsi_prev;    /**< swing-up: previous rate, for apex detection      */
+    double   sw_epeak;        /**< swing-up: highest E since the last apex          */
+    bool     sw_over;         /**< swing-up: this pass over the top already counted */
+    double   sw_amp_prev;     /**< swing-up: amp of the last tick (a change resets delta) */
+    bool     home_pending;    /**< swing-up: walk the arm home 2 s after the catch   */
+    double   trim;            /**< upright auto-trim: learnt encoder offset of upright [deg] */
     /* outputs (last tick) */
     double   u, u_rotor, u_pend, ref, pend_ref, a_meas;
 } ENR312_Ctrl_t;

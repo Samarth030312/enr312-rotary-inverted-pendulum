@@ -7,7 +7,7 @@
 |---|---|
 | **Source** | PEND handout §2 Q7 (on-off control and its drawbacks), Q14 (on-off vs P) |
 | **Status** | Firmware 2.1.0; simulation EXECUTED; **hardware NOT_EXECUTED** |
-| **Run it** | `enr312_lab` → **P22**; `$exp=22`; compare with **T9** at K = [4 0] (P only) |
+| **Run it** | `enr312_lab` → **LAB · HANGING · On-off**; `$exp=22`; compare with **T9** at K = [4 0] (P only) |
 
 ## 1. Objective and physical question
 Drive the arm with bang-bang control, u = +u_on·sign(r − θ) outside a dead band and 0

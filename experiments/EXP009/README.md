@@ -1,5 +1,6 @@
-> **Pre-registration, not yet run on the rig.** Every number below is a simulation
-> prediction ([`results/tables/`](../../results/tables/)), written before any hardware run.
+> **Pre-registration.** Written before the hardware runs and kept unchanged as the
+> record of what was predicted. Status fields below are those of that time.
+> Hardware results: [`results/reports/`](../../results/reports/); raw data in `data/raw/EXP009/`.
 
 # EXP009: Full-state feedback by pole placement (rotor, hanging)
 

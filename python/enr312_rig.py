@@ -33,8 +33,10 @@ except ImportError:  # pragma: no cover
 TICK_S = 0.002
 KEYS2 = ["kp", "kd", "kpp", "kdp", "step", "dist", "ulim", "vmax"]
 KEYS3 = ["ki", "fdr", "fdp", "k1", "k2", "k3", "k4", "bv", "imp", "uon", "db", "rrate", "div", "ma"]
+KEYS4 = ["seq", "wg2"]          # protocol 4: lab mode, pendulum constant (swing-up)
+KEYS5 = ["amp"]                 # protocol 5: pendulum target (exp 24)
 STATES = ("SAFE", "ARMED", "RUNNING", "FAULT")
-UPRIGHT = (5, 6, 7, 8, 23)
+UPRIGHT = (5, 6, 7, 8, 23)       # captured by hand; 24 starts hanging and swings up
 
 
 class Sample:
@@ -152,17 +154,25 @@ class Rig:
                 self.protocol = max(self.protocol, 2)
             return
         self.lines = (self.lines + [s])[-200:]
-        if "protocol 3" in s:
-            self.protocol = 3
+        if "protocol 5" in s:
+            self.protocol = 5
+        elif "protocol 4" in s:
+            self.protocol = max(self.protocol, 4)
+        elif "protocol 3" in s:
+            self.protocol = max(self.protocol, 3)
         elif "protocol 2" in s:
             self.protocol = max(self.protocol, 2)
         if s.startswith("C,"):
             v = [float(x) for x in s[2:].split(",")]
-            if len(v) in (9, 23):
+            if len(v) in (9, 23, 25, 26):
                 c = {"exp": int(v[0])}
                 c.update(zip(KEYS2, v[1:9]))
-                if len(v) == 23:
-                    c.update(zip(KEYS3, v[9:]))
+                if len(v) >= 23:
+                    c.update(zip(KEYS3, v[9:23]))
+                if len(v) >= 25:
+                    c.update(zip(KEYS4, v[23:25]))
+                if len(v) == 26:
+                    c.update(zip(KEYS5, v[25:]))
                 self.cfg = c
         elif s.startswith("ERR"):
             self.last_error = s
@@ -215,7 +225,8 @@ class Rig:
         if exp >= 6 and self.protocol < 3:
             raise RuntimeError("experiment %d needs firmware protocol 3 (2.1.0); board speaks %d"
                                % (exp, self.protocol))
-        allowed = KEYS2 + (KEYS3 if exp >= 6 else [])
+        allowed = KEYS2 + (KEYS3 + (KEYS4 if self.protocol >= 4 else []) + (KEYS5 if self.protocol >= 5 else [])
+                           if exp >= 6 else [])
         for k in gains:
             if k not in allowed:
                 raise ValueError("%s is not a parameter of experiment %d" % (k, exp))

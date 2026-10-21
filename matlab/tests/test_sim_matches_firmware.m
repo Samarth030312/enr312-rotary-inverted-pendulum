@@ -43,10 +43,14 @@ function ok = test_sim_matches_firmware()
     cases = {9, '', struct(); 10, '', struct(); 22, '', struct(); 21, 'psi0=30', struct('psi0', 30); ...
              21, 'psi0=20 at=5:ref=15 at=10:kp=10 tap=12:30 div=5 ma=4', ...
                  struct('psi0', 20, 'events', struct('t', {5, 10}, 'key', {'ref', 'kp'}, 'val', {15, 10}), ...
-                        'taps', [12 30], 'div', 5, 'ma', 4)};
+                        'taps', [12 30], 'div', 5, 'ma', 4); ...
+             9, 'seq=0 at=2:ref=25 at=12:ref=-10', ...
+                 struct('seq', 0, 'events', struct('t', {2, 12}, 'key', {'ref', 'ref'}, 'val', {25, -10})); ...
+             22, 'seq=0 at=1:ref=15', struct('seq', 0, 'events', struct('t', 1, 'key', 'ref', 'val', 15))};
     for i = 1:size(cases, 1)
         e = cases{i, 1}; cfg = odyssix.sim.defaults(e); o = cases{i, 3};
         if isfield(o, 'div'), cfg.div = o.div; cfg.ma = o.ma; end
+        if isfield(o, 'seq'), cfg.seq = o.seq; cfg.seconds = 25; end
         [C, S, st] = both(exe, cfg, pl, cases{i, 2}, o);
         n = min(height(C), height(S));
         d = max(abs(C.rotor_deg(1:n) - S.rotor(1:n)) + abs(C.psi_deg(1:n) - S.psi(1:n)));
@@ -67,6 +71,35 @@ function ok = test_sim_matches_firmware()
                        max(abs(aC)) < 2 && max(abs(aM)) < 2 && C.phase(n) == S.phase(n), ...
                        sprintf('|alpha| C %.2f, MATLAB %.2f; phase %d', max(abs(aC)), max(abs(aM)), S.phase(n))}; %#ok<AGROW>
     end
+
+    % ---- swing-up (exp 24): energy pumping is sensitive to the last bit, like
+    %      balancing; require identity through the pumping, then the same outcome
+    cfg = odyssix.sim.defaults(24);
+    [C, S] = both(exe, cfg, pl, '', struct());
+    n = min(height(C), height(S));
+    d = abs(C.rotor_deg(1:n) - S.rotor(1:n)) + abs(C.psi_deg(1:n) - S.psi(1:n));
+    k = find(d > 1e-9, 1); if isempty(k), k = n; end
+    cC = find(C.phase == 8, 1); cM = find(S.phase == 8, 1);
+    R(end+1, :) = {'exp 24 swing-up identical while pumping (>= 2 s)', S.t(k) >= 2, sprintf('identical for %.2f s', S.t(k))}; %#ok<AGROW>
+    aC = mod(180 - C.psi_deg(end - 500:end) + 180, 360) - 180; aM = abs(S.alpha(end - 500:end));
+    R(end+1, :) = {'exp 24 both caught upright and balancing at the end', ~isempty(cC) && ~isempty(cM) && ...
+                   max(abs(aC)) < 2 && max(aM) < 2 && C.phase(n) == 8 && S.phase(n) == 8, ...
+                   sprintf('caught C %.2f s, MATLAB %.2f s', C.t_s(max([cC 1])), S.t(max([cM 1])))}; %#ok<AGROW>
+
+    % ---- pendulum target (exp 24, amp 90): a stable regulation, so identical throughout
+    cfg = odyssix.sim.defaults(24); cfg.amp = 90; cfg.seconds = 25;
+    [C, S] = both(exe, cfg, pl, 'amp=90', struct());
+    n = min(height(C), height(S)); d = max(abs(C.rotor_deg(1:n) - S.rotor(1:n)) + abs(C.psi_deg(1:n) - S.psi(1:n)));
+    pk = max(abs(mod(S.psi(S.t > 15) + 180, 360) - 180));
+    R(end+1, :) = {'exp 24 amp 90: identical, swings to 90 (6)', d < 1e-6 && abs(pk - 90) < 6, sprintf('%.1e deg; swings to %.1f deg', d, pk)}; %#ok<AGROW>
+    % ---- upright auto-trim with a 0.6 deg encoder offset (exp 23, lab mode)
+    cfg = odyssix.sim.defaults(23); cfg.seq = 0; cfg.seconds = 60;
+    plb = pl; plb.bias = 0.6;
+    [C, S] = both(exe, cfg, plb, 'seq=0 plant_bias=0.6', struct());
+    n = min(height(C), height(S));
+    armC = mean(C.rotor_deg(C.t_s > 50)); armM = mean(S.rotor(S.t > 50));
+    R(end+1, :) = {'exp 23 + 0.6 deg datum offset: both trim the arm home', abs(armC) < 3 && abs(armM) < 3 && C.phase(n) == 8 && S.phase(n) == 8, ...
+                   sprintf('arm C %.2f, MATLAB %.2f deg (23 without trim)', armC, armM)}; %#ok<AGROW>
 
     fprintf('\nMATLAB engine vs firmware control code (C emulator, batch)\n%s\n', repmat('-', 1, 80));
     for i = 1:size(R, 1), fprintf('  %-58s %-5s %s\n', R{i, 1}, pf(R{i, 2}), R{i, 3}); end

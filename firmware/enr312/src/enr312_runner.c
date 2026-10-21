@@ -57,11 +57,11 @@ const char *ENR312_Runner_Validate(const ENR312_RunnerConfig_t *c)
                    : (c->exp == 2) ? 4.0 * EXP002_DEFAULT_U_LIMIT
                                    : 4.0 * EXP003_DEFAULT_U_LIMIT;
     if (ENR312_Ctrl_Handles(c->exp))     { return ENR312_Ctrl_Validate(c); }
-    if (c->exp < 2u || c->exp > 5u)      { return "exp must be 2..10 or 21..23"; }
+    if (c->exp < 2u || c->exp > 5u)      { return "exp must be 2..10 or 21..24"; }
     if (c->ki != 0.0 || c->k1 != 0.0 || c->k2 != 0.0 || c->k3 != 0.0 || c->k4 != 0.0 ||
         c->bv != 0.0 || c->imp_deg != 0.0 || c->uon != 0.0 || c->db != 0.0 ||
         c->div != 1u || c->ma != 1u) {
-        return "parameter not used by Tutorials 2-5 (use exp 6..10, 21..23)";
+        return "parameter not used by Tutorials 2-5 (use exp 6..10, 21..24)";
     }
     if (!in(c->kp, 0.0, 100.0))          { return "kp out of 0..100"; }
     if (!in(c->kd, 0.0, 100.0))          { return "kd out of 0..100"; }
@@ -77,6 +77,14 @@ const char *ENR312_Runner_Validate(const ENR312_RunnerConfig_t *c)
 double ENR312_Runner_UprightAngle(double psi_deg)
 {
     double a = fmod(180.0 - psi_deg, 360.0);       /* (-360, 360) */
+    if (a > 180.0)   { a -= 360.0; }
+    if (a <= -180.0) { a += 360.0; }
+    return a;
+}
+
+double ENR312_Runner_HangingAngle(double psi_deg)
+{
+    double a = fmod(psi_deg, 360.0);                /* (-360, 360) */
     if (a > 180.0)   { a -= 360.0; }
     if (a <= -180.0) { a += 360.0; }
     return a;

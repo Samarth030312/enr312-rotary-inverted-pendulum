@@ -139,7 +139,7 @@ extern "C" {
  *  non-reproducible, so a rebuild would change the ELF hash and the operator
  *  could no longer verify by SHA which image they are about to flash. Bump this
  *  string when the target changes. */
-#define ENR312_FW_VERSION "enr312-target-2.1.0 (protocol 3: closed-loop Tutorials 2-10 + PEND, 115200 baud)"
+#define ENR312_FW_VERSION "enr312-target-2.3.0 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)"
 
 void ENR312_Board_Init(void);
 void ENR312_Board_SystemClockConfig(void);

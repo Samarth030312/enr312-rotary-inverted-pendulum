@@ -33,8 +33,8 @@ class EmulatorTest(unittest.TestCase):
         cls.rig.close()
         cls.proc.terminate()
 
-    def test_1_protocol_3(self):
-        self.assertEqual(self.rig.protocol, 3)
+    def test_1_protocol_5(self):
+        self.assertEqual(self.rig.protocol, 5)
         self.assertEqual(self.rig.state, "SAFE")
 
     def test_2_free_swing_pend_a4(self):
@@ -74,6 +74,22 @@ class EmulatorTest(unittest.TestCase):
         self.assertTrue(r.set_live(kdp=8))
         r.stop()
         self.assertIn("FINISHED", r.run_event)
+
+    def test_5_swing_up(self):
+        r = self.rig
+        r.wait(lambda: abs(r.samples[-1].psi) < 3 and r.state == "RUNNING", 25)
+        cfg = r.configure(24)
+        self.assertEqual(cfg["exp"], 24)
+        self.assertIn("wg2", cfg)                     # protocol 4 C line
+        r.go()
+        caught = r.wait(lambda: r.samples[-1].phase == 8, 30)
+        self.assertTrue(caught, "caught upright")
+        time.sleep(6)
+        s = r.samples[-1]
+        self.assertEqual(s.phase, 8)
+        self.assertLess(abs(s.alpha), 3)
+        self.assertLess(abs(s.rotor), 10)             # the arm walked home
+        r.stop()
         r.abort()
 
 

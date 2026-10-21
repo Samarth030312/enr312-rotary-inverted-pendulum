@@ -17,10 +17,10 @@ NOT_EXECUTED); Tutorials 1–5 ran on the rig on 2026-10-12
 
 | Tool | What it is |
 |---|---|
-| `enr312_lab` (MATLAB) | pick T1–T10 or P21–P23, simulate, run on the rig, overlay, metrics, save data |
+| `enr312_lab` (MATLAB) | missions T1–T10 and LAB (hanging or upright; PID, LQR, state feedback, on-off; ARM go-to/step; PENDULUM target and swing-up); simulate, run on the rig, every run recorded and replayable |
 | `python/run_experiment.py` | the same runs from Python (optional) |
 | `odyssix.pend.*` (MATLAB) | `freeSwing`, `recovery`, `gainSweep`, `derivativeNoise`, `unstablePole` |
-| `pend_swingup_study.m` | energy swing-up, simulation only |
+| `pend_swingup_study.m`, LAB → PENDULUM | energy swing-up: simulation study, and on the rig since 2026-10-21 |
 
 ---
 
@@ -34,8 +34,8 @@ NOT_EXECUTED); Tutorials 1–5 ran on the rig on 2026-10-12
 | 4 | Arduino STM32 boards | Not used: the firmware is built with arm-none-eabi-gcc + make (`make -C firmware/enr312/target`). Explain why in A3. |
 | 5 | Python + pendulum-pid | Use `python/enr312_rig.py` (our protocol, same idea: send commands and gains, receive angles). |
 | 6 | Run a demo | Run **T1** (open-loop moves) then **T3** (suspended PID) in the app. |
-| 7.1 | PID, suspended | **T3/T4** (dual PD), **P21** (stop a swing, hold an angle). |
-| 7.2 | PID, inverted | **T5** (dual PD), **T6** (PID), **T7**, **T8**, **P23** (LQR). Two people; `experiments/PROCEDURE_UPRIGHT.md`. |
+| 7.1 | PID, suspended | **T3/T4** (dual PD), **LAB · hanging · PID** (pluck, RUN: the swing is stopped; ARM GO TO holds any angle). |
+| 7.2 | PID, inverted | **T5** (dual PD), **T6** (PID), **T7**, **T8**, **LAB · upright · LQR**. Two people; `experiments/PROCEDURE_UPRIGHT.md`. |
 
 ---
 
@@ -52,15 +52,15 @@ the rows below say what on this rig to point at.
 | 4 Encoder / potentiometer | Here: an **incremental quadrature encoder**, 600 lines → **2400 counts/rev** in x4 decoding (0.15° per count), A/B on PB4/PB5 into TIM3 encoder mode. Quadrature gives direction; zero is set by **Zero datums** (incremental, no absolute position). A potentiometer is absolute but analogue (ADC noise, wiper wear, < 360°). Draw: encoder supply and GND (per your kit's wiring), A→PB4, B→PB5. |
 | 5 Servo vs DC motor | The rig uses neither: a **stepper** moves exact 1/16 microsteps (open loop, no position sensor needed unless steps are missed). Compare: DC motor = torque/speed from voltage, needs feedback; servo = DC motor + internal position loop. |
 | 6 Motor driver | The L6474 (IHM01A1) switches 12 V and the coil currents (with current limiting) from STEP/DIR logic signals. An MCU pin gives ~20 mA at 3.3 V; a coil needs amps at 12 V and produces back-EMF. |
-| 7 On-Off control | **P22** (`experiments/EXP022`). Prediction: the arm never settles; it oscillates ±r forever (100 % overshoot), and the pendulum is shaken to 36°. Drawbacks: no settling on an acceleration-driven plant, chatter, violent actuation. |
-| 8 Moving-average filter | The firmware has one on the pendulum angle (`ma` = 1–32 samples, app slider on T6–P23). `odyssix.pend.derivativeNoise`: an 8-point MA on the 500 Hz derivative cuts rms noise from 31.8 to 5.8 deg/s at the cost of 7 ms delay. A first-order filter at 10 Hz gives 4.3 deg/s with 16 ms delay. Delay costs phase margin: sweep `ma` with `gainSweep`. |
+| 7 On-Off control | **LAB · hanging · On-off** (`experiments/EXP022`). Prediction: the arm never settles; it oscillates ±r forever (100 % overshoot), and the pendulum is shaken to 36°. Drawbacks: no settling on an acceleration-driven plant, chatter, violent actuation. |
+| 8 Moving-average filter | The firmware has one on the pendulum angle (`ma` = 1–32 samples, app slider on T6–T10 and LAB). `odyssix.pend.derivativeNoise`: an 8-point MA on the 500 Hz derivative cuts rms noise from 31.8 to 5.8 deg/s at the cost of 7 ms delay. A first-order filter at 10 Hz gives 4.3 deg/s with 16 ms delay. Delay costs phase margin: sweep `ma` with `gainSweep`. |
 | 9 P controller | On this rig P alone on the rotor is **T9 with k2 = 0**: an undamped oscillation (±19.7°, period 3.1 s at k1 = 4). On the pendulum, Kdp = 0 falls (`PEND_sim_kdp.csv`). In Arduino-style code: `u = Kp*(ref - angle)` every fixed period, then write it to the actuator; our C equivalent is `enr312_ctrl.c`. |
 | 10 High Kp oscillates | Inner loop: s² + (γ + ωr²Kdp)s + (ωr²Kpp − ωg²), ζ = (γ + ωr²Kdp)/(2√(ωr²Kpp − ωg²)). Raising Kpp raises the natural frequency and **lowers the damping**. Plus the loop delay (filters, sampling) costs more phase at higher crossover. Show it with the Kpp slider on T7 (inner poles in the analysis panel) or `gainSweep(6,'kpp',…)`. |
 | 11 PID roles | P: stiffness; I: removes the offset from a constant load (T8: −4.1° → −0.7°); D: damping (Kdp = 0 falls; too much amplifies encoder noise, Kdp ≥ 150 hits the velocity limit). |
 | 12 PWM | The rig does not use PWM for the motor. Torque comes from the L6474's chopper current regulation, and position from the STEP pulse count; our command is a **step rate**. Arduino Uno PWM: 8-bit `analogWrite`, ~490/980 Hz on 6 pins. |
 | 13 Uno limits | 16 MHz 8-bit AVR, no FPU (software float ~tens of µs per operation), 2 KB RAM. A 500 Hz loop with filtered PID in float, step generation and a 115200-baud stream is tight. See A3. |
-| 14 On-Off vs P | P22 vs T9 at K = [4 0]: both oscillate ±20° (neither has damping on θ̈ = u). P is smooth (pendulum 3.1°); on-off is a parabola train (pendulum 35.9°). Add the D term (T9 reference) and it settles in 5.9 s. |
-| 15 Applications | Segway / self-balancing robots, rocket thrust-vector attitude control, humanoid balance, cranes (anti-sway: the suspended case P21), ship stabilisers. |
+| 14 On-Off vs P | LAB on-off vs T9 at K = [4 0]: both oscillate ±20° (neither has damping on θ̈ = u). P is smooth (pendulum 3.1°); on-off is a parabola train (pendulum 35.9°). Add the D term (T9 reference) and it settles in 5.9 s. |
+| 15 Applications | Segway / self-balancing robots, rocket thrust-vector attitude control, humanoid balance, cranes (anti-sway: the suspended case, LAB hanging), ship stabilisers. |
 
 ---
 
@@ -101,8 +101,8 @@ of the equivalent simple pendulum, J/(m·lc) (2/3 of a uniform rod; Tutorial 5 u
 Tutorial values: T ≈ 0.83 s, L ≈ 0.17 m, ζ ≈ 0.018. Emulator check: ωg² 56.20 vs truth
 56.4, ζ 0.0206 vs 0.0208.
 
-**S3-5 (A5) Suspended PID, time to stop a swing.** **P21**, three gain-set presets,
-pluck then Run; the app's table gives *Time to stop, inside 1 deg*
+**S3-5 (A5) Suspended PID, time to stop a swing.** **LAB · hanging · PID**: pluck, then
+RUN, for three gain sets (change Kd pendulum between runs); the app's table gives *Time to stop, inside 1 deg*
 (`experiments/EXP021`). Prediction: 1.6 s / 2.7 s / 21.3 s. The pendulum Kd has the
 largest effect; without it the decay is the free decay (2 ln 20/γ = 21.4 s).
 
@@ -149,7 +149,7 @@ ln2/p (95 ms for p = 7.29), and the loop-rate rule of thumb (≳ 23 Hz). Compare
 the 16.7 Hz found in B8: only ~2.3 samples per time constant 1/p = 137 ms, which is why
 balance degrades sharply there (pendulum rms 0.49° at 500 Hz → 1.16° at 16.7 Hz).
 
-**S3-10 (C10) LQR.** **P23** + the app's LQR designer (and **T10** for the rotor alone),
+**S3-10 (C10) LQR.** **LAB · upright · LQR** + the app's LQR designer (and **T10** for the rotor alone),
 `experiments/EXP023`. The Q/R table there: larger R → gentler and slower; larger θ weight
 → faster arm, more pendulum error. Versus PID tuning: one design step with interpretable
 weights instead of two interacting loops and a sign puzzle.
@@ -167,8 +167,15 @@ only**): at 1500 deg/s² it reaches and catches upright in 3.0 s with 65° of ar
 A linear PID cannot do it: the linear model assumes cos ψ ≈ −1 (near upright), but below
 horizontal cos ψ changes sign and the same arm acceleration pushes the pendulum the
 **other** way. sin ψ ≈ ψ is also 36 % wrong at 90°, and a linear law has no notion
-of energy. The rig firmware does not swing up (a first attempt failed in the emulator;
-cause not established; future work).
+of energy. **On the rig** (LAB → PENDULUM 180, firmware 2.2.0, 2026-10-21) the energy
+swing-up caught the pendulum upright in 3 of 3 attempts at 7.1–8.0 s, swing for swing
+like the simulation (`results/reports/2026-10-21_rig_session.md`). The first designs
+stalled about 30° short: pivot friction drains about 0.2 of E per climb, so the
+firmware learns that loss (δ) swing by swing (`experiments/EXP024`).
+**Any other angle:** a pendulum can rest only at 0° or 180°. Holding it still at ψ
+needs a constant arm acceleration (ωg²/ωr²)·tan ψ, infinite at 90°. The PENDULUM target
+therefore controls the swing height E* = 1 − cos a: it swings to exactly ±a and stays
+there (simulation: 45/90/135° → 46/92/136°), and 0 stops a swing.
 
 ---
 

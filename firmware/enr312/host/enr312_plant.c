@@ -13,7 +13,7 @@ void ENR312_Plant_Init(ENR312_Plant_t *p, double wg2, double q, double wr2)
 {
     p->wg2 = wg2; p->wr2 = wr2; p->gamma = sqrt(wg2) / q;
     p->psi = 0.0; p->psid = 0.0; p->v_prev = 0.0; p->step_acc = 0.0;
-    p->pos = 0; p->t = 0.0; p->held = false;
+    p->pos = 0; p->t = 0.0; p->held = false; p->enc_bias = 0.0;
 }
 
 static void deriv(const ENR312_Plant_t *p, double psi, double psid, double thd,
@@ -59,5 +59,5 @@ double ENR312_Plant_RotorDeg(const ENR312_Plant_t *p)
 double ENR312_Plant_EncoderDeg(const ENR312_Plant_t *p)
 {
     double q = 360.0 / (double)ENR312_ENCODER_COUNTS_PER_REV;
-    return round(p->psi / DEG2RAD / q) * q;
+    return round((p->psi / DEG2RAD + p->enc_bias) / q) * q;
 }

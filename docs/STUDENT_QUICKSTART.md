@@ -1,7 +1,7 @@
 # ENR312 rotary pendulum lab: student quickstart
 
-One MATLAB app runs all ten tutorials and the PEND experiments, in simulation and on
-the real rig. For the PEND lab report, start from [the PEND answer guide](PEND_ANSWER_GUIDE.md).
+One MATLAB app runs every experiment, in simulation and on the real rig, and records
+every rig run. For the PEND lab report, start from [the PEND answer guide](PEND_ANSWER_GUIDE.md).
 
 ```matlab
 cd <this repository>
@@ -9,105 +9,91 @@ addpath(genpath('matlab'))
 enr312_lab
 ```
 
-1. Choose a **Tutorial** and a **preset** (the Tutorial's own designs).
-2. Move any slider. The simulation reruns in under a second, and the plots,
-   metrics and margins update.
-3. Press **▶ Simulate** to watch the rig move.
-4. On the rig: **Connect**, let the pendulum hang still, **Zero datums**, **ARM**,
-   **START**, then **▶ Run on rig**. (The app refuses to run unless the pendulum
-   has read within 10° of its datum for half a second.) The same
-   gains run on the board, and the measurement (blue) lands on top of the
-   simulation (grey), scored with the same metrics.
+## The screen
 
-**No rig on your desk?** Press *Use emulator*. It runs the firmware's own
-control code on your PC, so everything behaves as on the board. Its data is
-marked SYNTHETIC.
+| Where | What |
+|---|---|
+| left | **MISSION** buttons (T1–T10 and LAB), the preset, and only the sliders this mission uses |
+| centre | the rig in 3-D, big live numbers (arm θ, pendulum, input u, phase), one status line |
+| right | arm, pendulum, and one analysis plot (poles, Nyquist, impulse response, …). Grey = simulation, blue/orange = rig, violet = a replayed run |
+| bottom left | CONNECT · ARM · START · RUN · STOP · ZERO DATUMS · SIMULATE |
+| bottom centre | the numbers that matter (SIM / RIG / REF) and the live controls **ARM** and **PENDULUM** |
+| bottom right | **RUNS**: every recorded run. Click one to overlay it, ▶ REPLAY to watch it. **NEXT STEP ›** walks you through all experiments in order |
 
-## What you can change
+## Missions
 
-| Group | Sliders | What they are |
+| | What it teaches | Rig |
 |---|---|---|
-| Controller | Kp, Kd rotor (outer) | **your design** in Tutorials 2–5 |
-| | Kp, Kd pendulum (inner) | supplied by Tutorials 3–5; change them to see why |
-| | Rotor step, load disturbance D, actuator limit | the experiment's excitation and limits |
-| Physics | Pendulum length L → ωg² | gravity term: a shorter pendulum falls faster |
-| | Q | pivot damping |
-| | Arm radius r → ωr² | how strongly the arm pushes the pendulum |
-| | Nonlinear physics | untick to see the Tutorials' linear model |
-| | Quantisation | untick to remove encoder and microstep steps (the rig cannot) |
+| **T1 · Actuator** | the stepper moves exact microsteps; every start and stop kicks the pendulum | hanging |
+| **T2 · Sensitivity** | T(s) and S_D(s): after a load step a PD sits off by D/Kp | pendulum removed or clamped |
+| **T3 · Effort** | lower gains = less control effort, slower response | hanging |
+| **T4 · MIMO S(s)** | how close L(jω) comes to −1 (M_S) | hanging |
+| **T5 · Inverted** | balancing; the arm first moves the wrong way (RHP zero) | upright, two people |
+| **T6 · Integral** | Ki removes offsets and costs phase margin | upright |
+| **T7 · Pendulum PD** | design the balancing loop; averaged impulse responses | upright |
+| **T8 · Disturbance** | under a constant load: −D/Kp without Ki, 0 with Ki | upright |
+| **T9 · Poles** | state feedback, k1 = ωN², k2 = 2ζωN | hanging |
+| **T10 · LQR** | choose Q and R, press LQR → k | hanging |
+| **LAB · Free** | hanging or upright; PID, LQR (recommended upright), state feedback, on-off; drive it live | either |
 
-The yellow box in the app lists what the model includes and what it leaves out.
-Read it before trusting a number.
+## Live controls (during a run)
 
-## The tutorials
+- **ARM [angle] GO TO / STEP / HOME 0°:** slewed or instant set-point for the arm.
+  Hanging: at any time. Upright: once it balances (HOLD).
+- **PENDULUM [angle] SWING:**
+  - **180°** swings the pendulum up and balances it.
+  - **0 < a < 180°** swings it to exactly ±a and keeps that height.
+  - **0°** stops a swing.
 
-| | Rig set-up | Try | Watch for |
-|---|---|---|---|
-| **1 Actuator & sensing** | pendulum hanging, free | +5°, +20° moves; free swing | the arm moves exactly N × 0.1125°; each start and stop **kicks** the pendulum; measure ωg² and Q with *Free swing*, then *Use measured* |
-| **2 Sensitivity** | **pendulum removed or clamped** | raise Kp, then Kd | overshoot and settling; after the load step the arm **never returns to 0**: offset = D/Kp |
-| **3 Control effort** | pendulum hanging | Designs 1 → 2 → 3 | effort falls at least 2× per design and the response slows; untick quantisation to see how much effort is chatter |
-| **4 Sensitivity (MIMO)** | pendulum hanging | Reference, A, B | Nyquist: how close L comes to −1; M_S |
-| **5 Inverted** | **two people**, path clear for a full turn | System 1, then System 2 | the arm moves the **wrong way first**; System 2's margins; the *Pendulum encoder sign wrong* lesson is in `exp005_lab` |
+  A pendulum can **rest** only at 0° or 180°: holding it still at any other angle
+  would need the arm to accelerate forever. That's why a target in between is a
+  swing height.
+- **Gain sliders** act on the running controller immediately (recorded as events).
+
+## Recording
+
+Every rig run is saved automatically, even when it aborts:
+- `data/raw/EXPnnn/EXPnnn_<date-time>_<label>_Rnn.csv` (read-only)
+- `data/metadata/EXPnnn/<same>.yaml` and `.json`: gains, plant, firmware, board, every
+  live action with its time, the metrics, the result, and the raw serial log
+- one line in `data/metadata/run_index.csv`
+
+Emulator runs go to `matlab/data/synthetic/` and are never mixed with real data. Load
+any run in MATLAB with `[D, M] = odyssix.data.loadRun('<run id>')`.
+
+## First, measure your pendulum
+T1 → **FREE SWING · record 15 s** (motor SAFE): displace 10–20° and let go. You get the
+period, L, the ruler length to expect, ζ, ωg² and Q (PEND A4). Then **USE MEASURED
+PENDULUM**: the simulation and the swing-up use your pendulum from then on.
 
 ## Safety on the rig
 
-* **ABORT** button, **Esc** or **Space** stop everything at once. Pulling the 12 V
-  plug always works.
-* ARM energises the motor (it holds; it does not move). START allows motion.
-  Nothing moves until you press *Run on rig*.
-* The firmware aborts by itself on: pendulum past 15° (Tutorial 5) or 120°
-  (others), arm past 240°, actuator saturation, speed above 360°/s, a driver
-  fault, or **MATLAB going silent for 1 s**.
-* **Tutorial 5:** zero the datums with the pendulum hanging. Then one person
-  holds the pendulum upright and still **before** *Run on rig* is pressed (the run
-  aborts at once if the pendulum is more than 15° from upright, and the app
-  refuses to start it). After 1 s within ±2° the app shows **LET GO NOW** and
-  beeps: let go. The motor stays still until the pendulum moves 1.5° on its own
-  (firmware 2.0.8), so holding on a little too long is harmless; balancing
-  starts the moment it is free. The other person
-  keeps a hand on ABORT. When you have seen enough, press **Stop run**: the
-  rig keeps balancing until then.
+* **ABORT**, **Esc** or **Space** stops everything at once. Pulling the 12 V plug always works.
+* ARM energises the motor (it holds; it does not move). START allows motion. Nothing
+  moves until RUN or SWING.
+* The firmware stops by itself on:
+  * the pendulum past 15° from upright (upright runs) or 120° from hanging (others);
+  * the arm past 240°;
+  * sustained saturation;
+  * the speed ceiling;
+  * a driver fault;
+  * **MATLAB going silent for 1 s**.
+* **Upright runs:** zero the datums with the pendulum hanging. One person holds the
+  pendulum upright and still, then RUN. After 1 s within ±2° the app shows **LET GO NOW**
+  and beeps. The motor waits until the pendulum moves on its own. The other person keeps a
+  hand on ABORT. STOP ends the run; until then it keeps balancing.
+* **SWING UP:** clear the arm's sweep for a half turn either way; hands away from overhead.
 
 ## If the board is not found
-
-*Detect board* says **"ST-LINK is on USB but not configured"**: unplug the Nucleo's
-USB cable, wait 5 s, and plug it back in. Close any other program that uses the
-serial port (Arduino IDE, another MATLAB app): two programs on one port corrupt
-the data.
-
-## Saving your data
-
-*Save rig run* writes the measurement to `data/raw/EXP00N/` (read-only) with a
-metadata file next to it. Fill in your name in it. Emulator runs go to
-`matlab/data/synthetic/` and are never mixed with real data.
+Unplug the Nucleo's USB, wait 5 s, plug it back in. Close any other program on the serial
+port (Arduino IDE, another MATLAB app). No board at all: CONNECT offers the **emulator**,
+the firmware's own code on your PC.
 
 ## Instructor: before the first session
-
 1. `scripts/flash_ready_check.sh` must end in **SOFTWARE FLASH READY: YES**.
-2. Wire and check the rig: `docs/hardware/ENR312_WIRING.md` §4 (checks A1–D2).
+2. Wire and check the rig: `docs/hardware/ENR312_WIRING.md` §4.
    ⚠ On the kit's 12 V supply, the **black wire with the white stripe is +12 V**.
-3. `enr312_lab` → *Detect board* → *Flash firmware*. Then *Connect*, turn the
+3. Flash: `odyssix.stm32.flash()` (checks the image hash and the chip). CONNECT, turn the
    pendulum one full turn by hand, and check that it reads 360°.
-4. Tutorial 1 → *Run on rig*: check the +5° move with a protractor. If the arm
-   moves 10°, conflict C-1 applies: tell the developer before any closed-loop
-   run.
-5. Tutorial 1 → *Free swing*, then *Use measured*: from then on the simulations
-   use your rig's pendulum.
-
-## Tutorials 6–10 and the PEND experiments
-
-| Button | What you do | What to look at |
-|---|---|---|
-| T6 | rotor PID with integral action (upright) | overshoot vs Tutorial 6, root locus |
-| T7 | design the pendulum PD; 8 reference impulses | averaged impulse response |
-| T8 | load disturbance with and without Ki | offset −D/Kp vs 0 |
-| T9 | place the poles: k1 = ωN², k2 = 2ζωN | settling, overshoot, poles of A − BK |
-| T10 | LQR: type diag(Q) and R, press **LQR** | how R trades speed for effort |
-| P21 | pluck, Run: the swing is stopped; **Go to angle** holds the arm anywhere | time to stop |
-| P22 | on-off control | why it never settles |
-| P23 | 4-state LQR balancing | compare with T6 |
-
-Only the sliders the selected experiment uses are shown. During a rig run of
-T6–P23, **Apply gains live** changes gains without stopping, and **Go to angle**
-moves the arm to the typed angle (P21 at any time; upright experiments once they
-are in HOLD). Tick **in simulation** to see the same command simulated.
+4. T1 → RUN: check the +5° move with a protractor.
+5. T1 → FREE SWING, then USE MEASURED PENDULUM.

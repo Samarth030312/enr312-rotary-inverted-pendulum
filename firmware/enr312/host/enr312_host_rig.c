@@ -99,7 +99,8 @@ static void control_tick(Rig *r)
     r->ticks++;
     double ang = pend_deg(r), rot = rotor_deg(r);
     int running = ENR312_Runner_IsMoving(&r->run);
-    if ((r->move_left > 0 || ENR312_Runner_SuspendedLimit(&r->run)) && fabs(ang) > ENR312_PENDULUM_ABORT_DEG) {
+    if ((r->move_left > 0 || ENR312_Runner_SuspendedLimit(&r->run)) &&
+        fabs(ENR312_Runner_HangingAngle(ang)) > ENR312_PENDULUM_ABORT_DEG) {
         fault(r, F_PEND_ABORT);
     }
     if (fabs(rot) > ENR312_ROTOR_LIMIT_DEG) { fault(r, F_ROTOR_LIMIT); }
@@ -187,7 +188,7 @@ static void process_line(Rig *r)
         }
     } else if (a == ENR312_CMD_REF) {
         if (ENR312_Runner_SetRef(&r->run, mv)) { char v[24]; ENR312_Cmd_FormatFixed(v, 24, mv); out(r, "REF %s\r\n", v); }
-        else { out(r, "ERR ref needs a running experiment 6..23\r\n"); }
+        else { out(r, "ERR ref needs a running experiment 6..24\r\n"); }
     } else {
         if (reply[0] == 'C' && reply[1] == ',') { ENR312_Runner_ApplyLive(&r->run, &r->cfg); }
         out(r, "%s\r\n", reply);
@@ -196,12 +197,12 @@ static void process_line(Rig *r)
 
 static const char *HELP =
     "\r\n--- ENR312 commands ---------------------------------------\r\n"
-    " Firmware:      enr312-target-2.1.0 (protocol 3: closed-loop Tutorials 2-10 + PEND, 115200 baud)\r\n"
+    " Firmware:      enr312-target-2.3.0 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)\r\n"
     "  ?  help   t  status   a  ARM   s  START   x  ABORT   c  clear fault\r\n"
     "  z  zero datums   +/-  first motion 5 deg   q  L6474 STATUS   r  stream\r\n"
     "  .  keep-alive (send at least once a second while an experiment runs)\r\n"
-    "  $exp=N (2..10, 21..23)  $kp= $ki= $kd= $kpp= $kdp= $step= $dist= $ulim= $vmax=\r\n"
-    "  $fdr= $fdp= $k1..$k4= $bv= $imp= $uon= $db= $rrate= $div= $ma=\r\n"
+    "  $exp=N (2..10, 21..24)  $kp= $ki= $kd= $kpp= $kdp= $step= $dist= $ulim= $vmax=\r\n"
+    "  $fdr= $fdp= $k1..$k4= $bv= $imp= $uon= $db= $rrate= $div= $ma= $seq=0|1 $wg2= $amp=\r\n"
     "  $cfg  $defaults  $go  $stop  $move=D  $ref=D (live set-point)\r\n"
     "  EMULATOR ONLY:  !  pluck 30 deg    ^  hold the pendulum upright    ~  tap (+60 deg/s)\r\n"
     "-----------------------------------------------------------\r\n";
@@ -287,7 +288,7 @@ static int run_pty(long parent)
     out(&r, "\r\n===========================================================\r\n"
             " *** ENR312 RIG EMULATOR -- firmware logic, NOT HARDWARE *** \r\n"
             " ENR312 ROTARY INVERTED PENDULUM -- target firmware\r\n"
-            " Firmware:      enr312-target-2.1.0 (protocol 3: closed-loop Tutorials 2-10 + PEND, 115200 baud)\r\n"
+            " Firmware:      enr312-target-2.3.0 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)\r\n"
             "\r\n THIS IS NOT THE VEHICLE FIRMWARE.\r\n"
             " State: SAFE. L6474 held in reset. No motion possible.\r\n"
             "===========================================================\r\n");
@@ -319,7 +320,7 @@ static int run_pty(long parent)
  *   seconds=S    length            upright=1   hold upright until captured (default for 5-8, 23)
  *   release=S    the hand keeps holding S s after capture
  *   psi0=D       initial pendulum angle [deg] (e.g. a pluck for exp 21)
- *   wg2=W        plant wg^2 (emulator truth is 56.4)
+ *   plant_wg2=W  simulated pendulum wg^2 (emulator truth is 56.4); wg2= is the firmware key
  *   at=T:cmd     at time T send '$cmd' (e.g. at=60:ref=20, at=50:kp=12)   up to 16
  *   tap=T:V      at time T add V deg/s to the pendulum rate (a tap)       up to 16
  */
@@ -340,7 +341,9 @@ static int run_batch(int argc, char **argv)
         if (strncmp(argv[i], "seconds=", 8) == 0) { seconds = atof(argv[i] + 8); continue; }
         if (strncmp(argv[i], "upright=", 8) == 0) { upright = atoi(argv[i] + 8); continue; }
         if (strncmp(argv[i], "release=", 8) == 0) { r.hold_after = (int)(atof(argv[i] + 8) / TS); continue; }
-        if (strncmp(argv[i], "wg2=", 4) == 0) { r.p.wg2 = atof(argv[i] + 4); r.p.gamma = sqrt(r.p.wg2) / 24.0; continue; }
+        /* plant_wg2= is the SIMULATED pendulum; wg2= (below) is the firmware parameter */
+        if (strncmp(argv[i], "plant_wg2=", 10) == 0) { r.p.wg2 = atof(argv[i] + 10); r.p.gamma = sqrt(r.p.wg2) / 24.0; continue; }
+        if (strncmp(argv[i], "plant_bias=", 11) == 0) { r.p.enc_bias = atof(argv[i] + 11); continue; }
         if (strncmp(argv[i], "psi0=", 5) == 0) { r.p.psi = atof(argv[i] + 5) * 3.14159265358979323846 / 180.0; continue; }
         if ((strncmp(argv[i], "at=", 3) == 0 || strncmp(argv[i], "tap=", 4) == 0) && nev < 32) {
             int tap = argv[i][0] == 't';

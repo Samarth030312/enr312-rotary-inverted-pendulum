@@ -22,6 +22,8 @@ typedef struct {
     int64_t pos;                /* arm position, microsteps                   */
     double t;                   /* s                                          */
     bool held;                  /* a hand holds the pendulum still            */
+    double enc_bias;            /* encoder reading offset, deg (a datum taken  *
+                                 * off-vertical; the rig showed ~0.5 deg)     */
 } ENR312_Plant_t;
 
 void   ENR312_Plant_Init(ENR312_Plant_t *p, double wg2, double q, double wr2);

@@ -43,7 +43,7 @@ How flashing, the serial link, the emulator and the simulation fit together:
 ```matlab
 assert(rotary_pendulum_validate_physics())     % physics model, 14 checks
 assert(test_sim_matches_firmware())            % MATLAB port == firmware C code
-assert(e2e_lab_all_tutorials())                % lab app, all tutorials, sim + emulator
+assert(e2e_lab())                             % lab app: all missions, LAB, swing-up, recording
 assert(e2e_rig_app_emulator())                 % rig app against the emulator
 ```
 

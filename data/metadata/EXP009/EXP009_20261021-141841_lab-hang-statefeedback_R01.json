@@ -1,0 +1,89 @@
+{
+  "run_id": "EXP009_20261021-141841_lab-hang-statefeedback_R01",
+  "experiment_id": "EXP009",
+  "data_class": "HARDWARE",
+  "label": "lab-hang-statefeedback",
+  "date_utc": "2026-10-21 14:18:41",
+  "result": "ABORTED: OPERATOR",
+  "duration_s": 36.608000000000004,
+  "samples": 1831,
+  "sampling": "50 Hz stream of the 500 Hz control loop, MCU time stamps",
+  "raw_data_file": "data/raw/EXP009/EXP009_20261021-141841_lab-hang-statefeedback_R01.csv",
+  "raw_serial_log": "results/evidence/logs/rig_20261021-194128.log",
+  "firmware": "",
+  "firmware_protocol": 4,
+  "board": "",
+  "serial_port": "/dev/ttyACM0",
+  "repository_rev": "35beade",
+  "repository_dirty": false,
+  "operator": "",
+  "notes": "",
+  "config": {
+    "exp": 9,
+    "kp": 0,
+    "kd": 0,
+    "kpp": 0,
+    "kdp": 0,
+    "step": 20,
+    "dist": 0,
+    "ulim": 800,
+    "vmax": 360,
+    "seconds": 24,
+    "ki": 0,
+    "fdr": 50,
+    "fdp": 10,
+    "k1": 1,
+    "k2": 2,
+    "k3": 0,
+    "k4": 0,
+    "bv": 0,
+    "imp": 0,
+    "uon": 0,
+    "db": 0,
+    "rrate": 90,
+    "div": 1,
+    "ma": 1,
+    "seq": 0,
+    "wg2": 57.01,
+    "target": 90,
+    "target_t": 5.2679999999999723
+  },
+  "plant_model": {
+    "wg2": 57.01,
+    "Q": 27,
+    "wr2": 0.803,
+    "nonlinear": true,
+    "quant": true
+  },
+  "events": [
+    {
+      "t": 0,
+      "what": "go",
+      "value": 9
+    },
+    {
+      "t": 5.2679999999999723,
+      "what": "step",
+      "value": 90
+    }
+  ],
+  "metrics": {
+    "overshoot_pct": null,
+    "peak_time_s": null,
+    "settling_s": null,
+    "final_value_deg": null,
+    "limit_cycle_deg": null,
+    "pend_peak_deg": 96.75,
+    "hold_error_deg": -0.3370000000000033,
+    "hold_reach_s": 7.5400000000000205,
+    "hold_band_deg": 0.5
+  },
+  "units": {
+    "t": "s",
+    "rotor": "deg",
+    "psi": "deg, encoder, 0 = hanging datum",
+    "alpha": "deg from upright",
+    "u": "deg/s^2 (plant input)",
+    "ref": "deg"
+  }
+}

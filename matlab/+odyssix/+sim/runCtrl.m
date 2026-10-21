@@ -24,9 +24,9 @@ function S = runCtrl(cfg, plant, opts)
     Ts = 0.002; SUB = 4; h = Ts / SUB;
     UPD = 3200 / 360; ENC = 360 / 2400; d2r = pi / 180;
     N = round(cfg.seconds / Ts);
-    inv = any(cfg.exp == [6 7 8 23]);
-    capture = inv;
-    sf = any(cfg.exp == [9 10 23]);
+    inv = any(cfg.exp == [6 7 8 23 24]);
+    capture = any(cfg.exp == [6 7 8 23]);
+    sf = any(cfg.exp == [9 10 23 24]);
 
     % ---- plant (host/enr312_plant.c) ---------------------------------------
     P.wg2 = plant.wg2; P.gamma = sqrt(plant.wg2) / plant.Q; P.wr2 = plant.wr2;
@@ -41,7 +41,12 @@ function S = runCtrl(cfg, plant, opts)
 
     % ---- controller state (ENR312_Ctrl_Init) --------------------------------
     c = cfg;
-    if inv, phase = 0; elseif cfg.exp == 21, phase = 10; else, phase = 9; end
+    if cfg.exp == 24, phase = 11; elseif inv, phase = 0;
+    elseif cfg.exp == 21 || cfg.seq == 0, phase = 10; else, phase = 9; end
+    if ~isfield(cfg, 'amp'), cfg.amp = 180; end
+    swE = 0; swDelta = 0; if cfg.amp >= 179, swDelta = 0.15; end
+    swDpsiPrev = 0; swEpeak = 0; swOver = false; swAmpPrev = cfg.amp; homePending = false; trim = 0;
+    encBias = 0; if isfield(plant, 'bias'), encBias = plant.bias; end
     abortWhy = 'NONE'; ptick = 0; capRun = 0; warnRun = 0; satRun = 0; aCap = 0;
     refLive = 0; refNow = 0;
     ir = 0; erPrev = 0; dr = 0; rHave = false;
@@ -69,12 +74,12 @@ function S = runCtrl(cfg, plant, opts)
         end
 
         rotor = pos / UPD;
-        psiMeas = psi / d2r; if plant.quant, psiMeas = round(psi / d2r / ENC) * ENC; end
+        psiMeas = psi / d2r + encBias; if plant.quant, psiMeas = round((psi / d2r + encBias) / ENC) * ENC; end
         u = 0;
 
         % board-level limits (control_tick in the emulator, before the runner)
         moving = any(strcmp(runState, {'ACTIVE', 'STOPPING'}));
-        if moving && ~inv && abs(psiMeas) > 120, runState = 'ABORTED'; runAbort = 'OPERATOR'; v = 0; end
+        if moving && ~inv && abs(wrap180(psiMeas)) > 120, runState = 'ABORTED'; runAbort = 'OPERATOR'; v = 0; end
         if abs(rotor) > 240 && any(strcmp(runState, {'ACTIVE', 'STOPPING'})), runState = 'ABORTED'; runAbort = 'OPERATOR'; v = 0; end
 
         if strcmp(runState, 'ACTIVE')
@@ -132,10 +137,14 @@ function S = runCtrl(cfg, plant, opts)
         maSum = maSum + p;
         maI = mod(maI + 1, c.ma);
         psiF = maSum / maN;
-        aRaw = p; if inv, aRaw = wrap180(180 - p); end
-        aF = psiF; if inv, aF = wrap180(180 - psiF); end
+        aRaw = wrap180(p); if inv, aRaw = wrap180(180 - p); end      % hanging: 360 = 0
+        aF = wrap180(psiF); if inv, aF = wrap180(180 - psiF); end
+        if inv && phase == 8, trim = trim + (aF - trim) * Ts / 8.0; end     % upright auto-trim
+        aC = aF; if inv, aC = aF - trim; end
 
-        if phase == 1 && abs(aRaw - aCap) >= 1.5, advance(2); end
+        if phase == 1 && abs(aRaw - aCap) >= 1.5
+            if c.seq == 0, advance(8); else, advance(2); end
+        end
 
         step = 0; if phase == 3, step = c.step; end
         r = step;
@@ -160,9 +169,52 @@ function S = runCtrl(cfg, plant, opts)
             dpsi = dpsi + lpAlpha(c.fdp, dt) * (rawd - dpsi);
             psiPrev = psiF; psiHave = true;
             adot = dpsi; if inv, adot = -dpsi; end
-            if sf
+            if phase == 11
+                % energy control (enr312_ctrl.c, same operation order)
+                upr = c.amp >= 179.0;
+                if upr, hstar = 2.0; else, hstar = 1.0 - cos(c.amp * pi / 180.0); end
+                if c.amp ~= swAmpPrev
+                    if upr, swDelta = 0.15; else, swDelta = 0.0; end
+                    swEpeak = 0; swAmpPrev = c.amp;
+                end
+                prr = psiF * pi / 180.0; pdr = dpsi * pi / 180.0;
+                en = pdr * pdr / (2.0 * c.wg2) + 1.0 - cos(prr);
+                dirv = pdr * cos(prr);
+                if dirv > 0, sg = 1; elseif dirv < 0, sg = -1; else, sg = 0; end
+                if sg == 0 && en < 0.05, sg = 1; end
+                if en > swEpeak, swEpeak = en; end
+                if dpsi * swDpsiPrev < 0
+                    happ = 1.0 - cos(prr);
+                    if upr
+                        if cos(prr) < 0.0 && swEpeak >= 2.0 + swDelta - 0.1
+                            swDelta = swDelta + 0.5 * (2.0 - happ);
+                        end
+                    elseif hstar > 0.0 && swEpeak >= 0.8 * (hstar + swDelta)
+                        swDelta = swDelta + 0.5 * (hstar - happ);
+                    end
+                    swEpeak = 0;
+                end
+                if upr && abs(aRaw) < 5.0 && abs(dpsi) > 60.0 && ~swOver
+                    swDelta = swDelta - 0.5 * (en - 2.0);
+                    swOver = true;
+                end
+                if abs(aRaw) > 30.0, swOver = false; end
+                lo = 0.0; if ~upr, lo = -0.3; end
+                if swDelta < lo, swDelta = lo; elseif swDelta > 0.6, swDelta = 0.6; end
+                swDpsiPrev = dpsi;
+                et = hstar + swDelta;
+                if upr
+                    upp = c.uon * min(max(10.0 * (et - en), -1), 1) * sg;
+                else
+                    upp = c.uon * min(max(5.0 * (et - en) * pdr * cos(prr) / sqrt(c.wg2), -1), 1);
+                end
+                if abs(thetadot) > 0.8 * c.vmax && upp * thetadot > 0, upp = 0; end
+                uRot = -(c.kp * theta + c.kd * thetadot);
+                swE = en;
+                uUnsat = uRot + upp;
+            elseif sf
                 uRot = -(c.k1 * (theta - r) + c.k2 * thetadot);
-                uPen = -(c.k3 * aF + c.k4 * adot);
+                uPen = -(c.k3 * aC + c.k4 * adot);
                 uUnsat = uRot + uPen - c.bv * thetadot;
             elseif cfg.exp == 22
                 e = r - theta;
@@ -173,7 +225,7 @@ function S = runCtrl(cfg, plant, opts)
                 dr = dr + lpAlpha(c.fdr, dt) * (der - dr);
                 erPrev = er; rHave = true;
                 ur = c.kp * er + c.kd * dr + ir;
-                ep = pr - aF;
+                ep = pr - aC;
                 dep = 0; if pHave, dep = (ep - epPrev) / dt; end
                 dp = dp + lpAlpha(c.fdp, dt) * (dep - dp);
                 epPrev = ep; pHave = true;
@@ -198,6 +250,8 @@ function S = runCtrl(cfg, plant, opts)
         if ~any(phase == [12 13])
             if abs(theta) > 240
                 advance(13); abortWhy = 'ROTOR_LIMIT';
+            elseif phase == 11
+                warnRun = 0; satRun = 0;
             elseif inv && abs(aRaw) > 15
                 advance(13); abortWhy = 'PENDULUM_LOST';
             else
@@ -207,9 +261,11 @@ function S = runCtrl(cfg, plant, opts)
                 else
                     warnRun = 0;
                 end
-                if clipped && cfg.exp ~= 22
+                catching = cfg.exp == 24 && phase == 8 && ptick < 250;
+                satTicks = 100; if inv && phase == 8, satTicks = 250; end
+                if clipped && cfg.exp ~= 22 && ~catching
                     satRun = satRun + 1;
-                    if satRun >= 100, advance(13); abortWhy = 'SATURATION'; end
+                    if satRun >= satTicks, advance(13); abortWhy = 'SATURATION'; end
                 else
                     satRun = 0;
                 end
@@ -218,6 +274,14 @@ function S = runCtrl(cfg, plant, opts)
         if phase == 13, uu = 0; end
 
         switch phase
+            case 11
+                if c.amp >= 179.0 && abs(aRaw) <= 7.0 && abs(dpsi) <= 60.0 && swE >= 1.8
+                    refNow = theta; refLive = theta; homePending = true; advance(8);
+                elseif c.amp >= 179.0 && ptick >= 20000
+                    advance(12);
+                end
+            case 8
+                if homePending && ptick >= 1000, refLive = 0; homePending = false; end
             case 0
                 if abs(aRaw) <= 2
                     capRun = capRun + 1;
@@ -251,11 +315,11 @@ function S = runCtrl(cfg, plant, opts)
     function applyEvent(ev)
         moving = any(strcmp(runState, {'ACTIVE', 'STOPPING'}));
         if strcmp(ev.key, 'ref')
-            if moving, refLive = ev.val; end
+            if moving, refLive = ev.val; homePending = false; end
             return;
         end
         live = {'kp', 'ki', 'kd', 'kpp', 'kdp', 'fdr', 'fdp', 'k1', 'k2', 'k3', 'k4', 'bv', ...
-                'uon', 'db', 'ulim', 'rrate', 'dist', 'div', 'vmax'};
+                'uon', 'db', 'ulim', 'rrate', 'dist', 'div', 'vmax', 'wg2', 'amp'};
         cfg.(ev.key) = ev.val;
         if moving && any(strcmp(ev.key, live))
             c.(ev.key) = ev.val;
@@ -297,5 +361,5 @@ function a = wrap180(a)
 end
 function n = phaseNames()
     n = {'WAIT_CAPTURE', 'WAIT_RELEASE', 'BALANCE', 'STEP', 'STEP_BACK', 'DIST', 'DIST_OFF', ...
-         'IMPULSES', 'HOLD', 'IDLE', 'REGULATE', '-', 'DONE', 'ABORTED'};
+         'IMPULSES', 'HOLD', 'IDLE', 'REGULATE', 'SWINGUP', 'DONE', 'ABORTED'};
 end

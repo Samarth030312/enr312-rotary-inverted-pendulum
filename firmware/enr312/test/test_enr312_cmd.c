@@ -18,7 +18,7 @@ int main(void)
     CHECK_EQ_I(c.exp, 2, "exp selected");
     CHECK(strcmp(r, "C,2,5.000,2.500,0.000,0.000,2.000,1.000,400.000,360.000,"
                     "0.000,50.000,10.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,"
-                    "90.000,1.000,1.000") == 0, "defaults reported: %s", r);
+                    "90.000,1.000,1.000,1.000,55.850,180.000") == 0, "defaults reported: %s", r);
     { const char *p2 = "C,2,5.000,2.500,0.000,0.000,2.000,1.000,400.000,360.000,";
       CHECK(strncmp(r, p2, strlen(p2)) == 0, "protocol-2 prefix unchanged"); }
     ENR312_Cmd_Line("kp=6.55", &c, &mv, r, sizeof r);

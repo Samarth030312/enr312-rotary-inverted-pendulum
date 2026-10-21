@@ -1,6 +1,6 @@
 > **Pre-registration.** Written before the hardware runs and kept unchanged as the
 > record of what was predicted. Status fields below are those of that time.
-> Hardware results (2026-10-12): [`results/reports/2026-10-12_rig_tutorials_1-5.md`](../../results/reports/2026-10-12_rig_tutorials_1-5.md); raw data in `data/raw/EXP001/`.
+> Hardware results: [`results/reports/`](../../results/reports/); raw data in `data/raw/EXP001/`.
 
 # EXP001 — Actuator and Angle Sensing
 

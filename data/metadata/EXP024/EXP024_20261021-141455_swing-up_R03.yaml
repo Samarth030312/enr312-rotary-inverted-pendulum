@@ -1,0 +1,67 @@
+run_id: "EXP024_20261021-141455_swing-up_R03"
+experiment_id: "EXP024"
+data_class: "HARDWARE"
+label: "swing-up"
+date_utc: "2026-10-21 14:14:55"
+result: "ABORTED: PENDULUM_LOST"
+duration_s: 42.6
+samples: 2131
+sampling: "50 Hz stream of the 500 Hz control loop, MCU time stamps"
+raw_data_file: "data/raw/EXP024/EXP024_20261021-141455_swing-up_R03.csv"
+raw_serial_log: "results/evidence/logs/rig_20261021-194128.log"
+firmware: "enr312-target-2.2.0 (protocol 4: Tutorials 2-10, PEND, lab mode, swing-up; 115200 baud)"
+firmware_protocol: 4
+board: ""
+serial_port: "/dev/ttyACM0"
+repository_rev: "35beade"
+repository_dirty: false
+operator: ""
+notes: ""
+config:
+  exp: 24
+  kp: 4
+  kd: 4
+  kpp: 0
+  kdp: 0
+  step: 0
+  dist: 0
+  ulim: 1500
+  vmax: 720
+  seconds: 40
+  ki: 0
+  fdr: 50
+  fdp: 5
+  k1: -10
+  k2: -13.787
+  k3: 382.789
+  k4: 50.787
+  bv: 0
+  imp: 0
+  uon: 1000
+  db: 0
+  rrate: 90
+  div: 1
+  ma: 1
+  seq: 1
+  wg2: 57.01
+  target: null
+  target_t: null
+plant_model:
+  wg2: 57.01
+  Q: 27
+  wr2: 0.803
+  nonlinear: true
+  quant: true
+events:
+  - {t: 0, what: "go", value: 24}
+metrics:
+  t_catch_s: 8.04
+  arm_max_deg: 107.887
+  alpha_rms_up_deg: 1.110538925
+units:
+  t: "s"
+  rotor: "deg"
+  psi: "deg, encoder, 0 = hanging datum"
+  alpha: "deg from upright"
+  u: "deg/s^2 (plant input)"
+  ref: "deg"

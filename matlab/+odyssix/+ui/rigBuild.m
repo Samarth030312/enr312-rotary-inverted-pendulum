@@ -13,18 +13,25 @@ function rig = rigBuild(ax, opts)
     arguments
         ax
         opts.ShowReference (1,1) logical = true
+        opts.Dark (1,1) logical = false          % dark telemetry theme (enr312_lab)
     end
     hold(ax, 'on'); axis(ax, 'equal'); axis(ax, 'off');
     ax.Color = 'w'; ax.Clipping = 'off';
+    if opts.Dark, ax.Color = 'none'; end
     view(ax, 38, 14);
     xlim(ax, [-0.20 0.24]); ylim(ax, [-0.22 0.22]); zlim(ax, [0 0.62]);
     try, ax.Toolbar.Visible = 'off'; catch, end
     dark = [0.18 0.19 0.22]; alu = [0.78 0.80 0.83]; blue = [0.16 0.38 0.78];
+    rod = [0.86 0.22 0.18]; refc = [0.13 0.59 0.33]; base = [0.30 0.31 0.34]; frame = [0.62 0.64 0.67];
+    if opts.Dark
+        dark = [0.10 0.11 0.13]; alu = [0.62 0.65 0.70]; blue = [0.00 0.72 0.88];
+        rod = [1.00 0.45 0.10]; refc = [0.85 0.88 0.92]; base = [0.13 0.14 0.17]; frame = [0.30 0.32 0.36];
+    end
 
     zArm = 0.316;
-    box3([0 0 0.006], [0.36 0.28 0.012], [0.30 0.31 0.34], ax);            % base plate
-    box3([-0.03 0 0.136], [0.012 0.06 0.248], [0.62 0.64 0.67], ax);       % stand upright
-    box3([0 0 0.255], [0.072 0.072 0.010], [0.62 0.64 0.67], ax);          % motor plate
+    box3([0 0 0.006], [0.36 0.28 0.012], base, ax);                        % base plate
+    box3([-0.03 0 0.136], [0.012 0.06 0.248], frame, ax);                  % stand upright
+    box3([0 0 0.255], [0.072 0.072 0.010], frame, ax);                     % motor plate
     box3([0 0 0.280], [0.0423 0.0423 0.040], dark, ax);                    % NEMA17 body
     cyl3([0 0 0.300], [0 0 1], 0.0025, 0.012, alu, ax);                    % shaft
     box3([-0.12 0.09 0.020], [0.07 0.055 0.016], [0.10 0.35 0.18], ax);    % IHM01A1
@@ -36,11 +43,11 @@ function rig = rigBuild(ax, opts)
     cyl3([0.122 0 zArm], [1 0 0], 0.019, 0.034, dark, rig.rotor);          % encoder body
     cyl3([0.156 0 zArm], [1 0 0], 0.003, 0.010, alu, rig.rotor);           % encoder shaft
     rig.pend = hgtransform('Parent', rig.rotor);
-    cyl3([0.166 0 0], [0 0 1], 0.0045, 0.255, [0.86 0.22 0.18], rig.pend); % rod
+    cyl3([0.166 0 0], [0 0 1], 0.0045, 0.255, rod, rig.pend);              % rod
     cyl3([0.166 0 -0.006], [1 0 0], 0.009, 0.012, alu, rig.pend);          % clamp
     rig.pivot = [0 0 zArm];
     rig.ref = plot3(ax, [0 0.20], [0 0], [zArm zArm] + 0.012, '--', ...
-                    'Color', [0.13 0.59 0.33], 'LineWidth', 2, 'Visible', opts.ShowReference);
+                    'Color', refc, 'LineWidth', 1.5, 'Visible', opts.ShowReference);
     light(ax, 'Position', [0.6 -0.8 1.0]);
 end
 

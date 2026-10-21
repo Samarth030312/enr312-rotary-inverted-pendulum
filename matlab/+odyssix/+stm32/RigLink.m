@@ -26,7 +26,7 @@ classdef RigLink < handle
         invalidCount = 0
         logFile = ''
         banner = false              % saw the ENR312 boot banner
-        protocol = 1                % 2 = closed-loop firmware ('$' commands), 3 = + Tutorials 6-10/PEND
+        protocol = 1                % 2 = closed-loop firmware ('$' commands), 3 = + Tutorials 6-10/PEND, 4 = + lab mode, swing-up
         emulator = false            % banner said EMULATOR
         cfg = struct()              % last '$cfg' report
         lastError = ''              % last 'ERR ...' line
@@ -43,6 +43,8 @@ classdef RigLink < handle
         % protocol 2 keys (Tutorials 2-5), then the protocol 3 additions (exp >= 6)
         KEYS2 = {'kp', 'kd', 'kpp', 'kdp', 'step', 'dist', 'ulim', 'vmax'}
         KEYS3 = {'ki', 'fdr', 'fdp', 'k1', 'k2', 'k3', 'k4', 'bv', 'imp', 'uon', 'db', 'rrate', 'div', 'ma'}
+        KEYS4 = {'seq', 'wg2'}      % protocol 4: lab mode, pendulum constant (swing-up)
+        KEYS5 = {'amp'}             % protocol 5: pendulum target (exp 24)
         KEYS = struct('help', '?', 'status', 't', 'arm', 'a', 'start', 's', 'abort', 'x', ...
                       'clear', 'c', 'zero', 'z', 'plus', '+', 'minus', '-', 'driver', 'q', 'stream', 'r')
     end
@@ -111,6 +113,9 @@ classdef RigLink < handle
         %   exp first (it loads the firmware defaults), then every gain.
             L.lastError = ''; L.runEvent = '';      % no stale event from a previous run
             L.cfg = struct();                       % no stale echo either
+            if (cfg.exp == 24 || (isfield(cfg, 'seq') && cfg.seq == 0)) && L.protocol < 4
+                error('RigLink:protocol', 'swing-up and lab mode need firmware protocol 4 (2.2.0 or later); flash the current firmware');
+            end
             if cfg.exp >= 6 && L.protocol < 3
                 error('RigLink:protocol', ['experiment %d needs firmware protocol 3 (2.1.0 or later); ' ...
                     'this board speaks protocol %d: flash the current firmware'], cfg.exp, L.protocol);
@@ -118,6 +123,8 @@ classdef RigLink < handle
             L.sendLine(sprintf('exp=%d', cfg.exp));
             f = L.KEYS2;
             if cfg.exp >= 6, f = [f, L.KEYS3]; end      % Tutorials 2-5 reject the new keys
+            if cfg.exp >= 6 && L.protocol >= 4, f = [f, L.KEYS4]; end
+            if cfg.exp >= 6 && L.protocol >= 5, f = [f, L.KEYS5]; end
             for i = 1:numel(f)
                 if isfield(cfg, f{i}), L.sendLine(sprintf('%s=%.6g', f{i}, cfg.(f{i}))); end
             end
@@ -130,7 +137,7 @@ classdef RigLink < handle
         %   gains, filters, rate and limits at once; exp, sequence and step only
         %   take effect on the next run.
             assert(L.protocol >= 3, 'RigLink: live gain changes need protocol 3');
-            assert(any(strcmp(key, [L.KEYS2, L.KEYS3])), 'RigLink: unknown key %s', key);
+            assert(any(strcmp(key, [L.KEYS2, L.KEYS3, L.KEYS4, L.KEYS5])), 'RigLink: unknown key %s', key);
             L.lastError = '';
             L.sendLine(sprintf('%s=%.6g', key, val));
         end
@@ -246,16 +253,22 @@ classdef RigLink < handle
             if numel(L.lines) > 200, L.lines = L.lines(end-199:end); end
             if contains(s, 'THIS IS NOT THE VEHICLE FIRMWARE'), L.banner = true; end
             if contains(s, 'protocol 2'), L.protocol = max(L.protocol, 2); end
-            if contains(s, 'protocol 3'), L.protocol = 3; end
+            if contains(s, 'protocol 3'), L.protocol = max(L.protocol, 3); end
+            if contains(s, 'protocol 4'), L.protocol = max(L.protocol, 4); end
+            if contains(s, 'protocol 5'), L.protocol = 5; end
             if contains(s, 'EMULATOR'), L.emulator = true; end
             if startsWith(s, 'C,')
                 v = str2double(split(string(s(3:end)), ','));
-                if numel(v) == 9 || numel(v) == 23        % protocol 2 / 3
+                if any(numel(v) == [9 23 25 26])         % protocol 2 / 3 / 4 / 5
                     L.cfg = struct('exp', v(1), 'kp', v(2), 'kd', v(3), 'kpp', v(4), 'kdp', v(5), ...
                                    'step', v(6), 'dist', v(7), 'ulim', v(8), 'vmax', v(9));
-                    if numel(v) == 23
+                    if numel(v) >= 23
                         for i = 1:numel(L.KEYS3), L.cfg.(L.KEYS3{i}) = v(9 + i); end
                     end
+                    if numel(v) >= 25
+                        for i = 1:numel(L.KEYS4), L.cfg.(L.KEYS4{i}) = v(23 + i); end
+                    end
+                    if numel(v) == 26, L.cfg.amp = v(26); end
                 end
             end
             if startsWith(s, 'ERR'), L.lastError = s; end

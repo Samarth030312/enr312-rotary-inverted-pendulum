@@ -8,7 +8,7 @@
 | **Source** | PEND handout §1 task 7.1, §3 A5; the "hold the arm at a given angle" request |
 | **Status** | Firmware 2.1.0; simulation EXECUTED; emulator e2e PASS (stops in 1.70 s, holds 20° to 0.008°); **hardware NOT_EXECUTED** |
 | **Depends on** | EXP003 (the same suspended dual-PD law) |
-| **Run it** | `enr312_lab` → **P21**; `$exp=21`, live `$ref=deg`; Python `run_experiment.py --exp 21 --ref 20@10` |
+| **Run it** | `enr312_lab` → **LAB · HANGING · PID** (pluck, RUN; ARM GO TO); `$exp=21`, live `$ref=deg`; Python `run_experiment.py --exp 21 --ref 20@10` |
 
 ## 1. Objective and physical question
 Pluck the hanging pendulum, then let the controller stop the swing while it holds the

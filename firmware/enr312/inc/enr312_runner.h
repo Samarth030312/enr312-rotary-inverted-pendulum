@@ -123,6 +123,10 @@ bool ENR312_Runner_NeedsCapture(uint8_t exp);
 
 /** Map the encoder angle to the EXP005 upright angle alpha = wrap180(180 - psi). */
 double ENR312_Runner_UprightAngle(double psi_deg);
+/** Pendulum angle from hanging, wrapped to (-180, 180] deg: a pendulum that
+ *  fell over and came to rest after a full turn reads 360 on the encoder and
+ *  is hanging (0). Used for every hanging-mode bound and error term. */
+double ENR312_Runner_HangingAngle(double psi_deg);
 
 #ifdef __cplusplus
 }

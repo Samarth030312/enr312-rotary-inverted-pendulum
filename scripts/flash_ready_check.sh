@@ -40,7 +40,7 @@ gate "MATLAB simulation == firmware code (12 checks)" m "assert(test_sim_matches
 gate "Tutorial 3/4/5 model validators (error on any failure)" m "exp003_validate_mimo_model(); exp004_validate_sensitivity(); exp005_validate_inverted();"
 if [ $quick -eq 0 ]; then
   gate "rig app end to end on the emulator" m "assert(e2e_rig_app_emulator())"
-  gate "five-tutorial lab end to end, sim + emulator" m "assert(e2e_lab_all_tutorials())"
+  gate "lab app end to end: all missions, LAB, swing-up, recording (sim + emulator)" m "assert(e2e_lab())"
 fi
 echo "----------------------------------------------------------------------"
 echo "  $pass passed, $fail failed"

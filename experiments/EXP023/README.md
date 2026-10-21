@@ -8,7 +8,7 @@
 | **Source** | PEND handout §3 C10 (LQR, Q/R trade-off, compare with PID tuning) |
 | **Status** | Firmware 2.1.0; simulation EXECUTED; **hardware NOT_EXECUTED**. Safety class **HIGH** |
 | **Depends on** | EXP005, EXP006, EXP010 |
-| **Run it** | `enr312_lab` → **P23** (LQR designer, 4 weights); `$exp=23` |
+| **Run it** | `enr312_lab` → **LAB · UPRIGHT · LQR** (LQR designer, 4 weights); `$exp=23 $seq=0` |
 
 ## 1. Objective and physical question
 Balance with **one** state-feedback law on x = [θ − r, θ̇, α, α̇] designed by LQR,

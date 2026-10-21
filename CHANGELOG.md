@@ -4,6 +4,38 @@ Firmware releases (`firmware/enr312/release/`). Each release image is built from
 clean tree and pinned by SHA-256 in `MANIFEST.txt`; MATLAB refuses to flash an
 image whose hash does not match.
 
+## 2.3.0 (2026-10-21): protocol 5, from the first rig swing-ups
+Motivated by the rig session of 2026-10-21 (`results/reports/2026-10-21_rig_session.md`):
+swing-up caught 3 of 3 on firmware 2.2.0, then lost to an external kick, a catch at
+75 deg/s, and an arm held 23° off by a 0.6° upright offset. **Not yet run on the rig.**
+* **Upright auto-trim** (HOLD): the mean α is learnt (τ 8 s) and controlled away, so the
+  arm returns to its set-point (simulated 0.6° offset: arm −0.03° instead of 23°).
+* **Gentler catch**: only at ≤ 60 deg/s; hold the arm where it caught 2 s, then walk home.
+* **Kick tolerance**: upright HOLD aborts on saturation after 500 ms (sequences: 200 ms);
+  the 15°, arm and speed bounds still guard.
+* **Pendulum target `$amp`** (exp 24): 0 stops a swing, 0 < a < 179 swings to ±a
+  (Åström–Furuta energy law), ≥ 179 swings up and balances; changeable live.
+* Config echo: 26 values (amp appended).
+
+## 2.2.0 (2026-10-21): protocol 4, swing-up, lab mode
+**Not yet run on the rig**; verified in host tests (9 pendulum variants for the
+swing-up), the rig emulator through the app, and the MATLAB simulation (identical
+to the C code).
+* **Swing-up (`$exp=24`)**: energy pumping from hanging, u = u_on·sat(10(2 + δ − E))·sign(ψ̇ cos ψ)
+  with an arm-centring PD; δ, the energy the pivot friction drains on each climb, is
+  learnt swing by swing, so the pendulum arrives at the top almost at rest; the
+  4-state LQR catches it (|α| ≤ 7°, |α̇| ≤ 100 deg/s) and walks the arm home.
+  Arm speed ceiling 720 deg/s for this experiment; timeout 40 s.
+* **Lab mode (`$seq=0`)**: no tutorial sequence; hanging controllers regulate at once,
+  upright ones go from release straight to HOLD; steps and holds come from `$ref`.
+* `$wg2`: the pendulum constant (set it from the free-swing measurement).
+* A pendulum at rest after a full turn (encoder 360°) is treated as hanging: the 120°
+  hanging bound and the hanging controllers use the wrapped angle.
+* LQR (exp 23) and swing-up use a 5 Hz pendulum-rate filter (10 Hz made the input
+  chatter, u rms 212 vs 135 for the rig-proven T5 PID).
+* The config echo `C,…` has 25 values (seq, wg2 appended) and is sent with
+  Telemetry_Write: Printf's 192-byte buffer could truncate it.
+
 ## 2.1.0 (2026-10-21): protocol 3, Tutorials 6–10 and the PEND experiments
 **Not yet run on the rig** (no working board); verified in host tests, the rig
 emulator and the MATLAB simulation. 2.0.8 remains the last rig-verified release, and

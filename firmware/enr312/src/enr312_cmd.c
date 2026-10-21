@@ -21,7 +21,9 @@ static void report(const ENR312_RunnerConfig_t *c, char *out, int n)
     /* the first 8 values are protocol 2 (unchanged order); protocol 3 appends the rest */
     const double v[] = {c->kp, c->kd, c->kpp, c->kdp, c->step_deg, c->dist, c->u_limit, c->v_max,
                         c->ki, c->fdr, c->fdp, c->k1, c->k2, c->k3, c->k4, c->bv, c->imp_deg,
-                        c->uon, c->db, c->ref_rate, (double)c->div, (double)c->ma};
+                        c->uon, c->db, c->ref_rate, (double)c->div, (double)c->ma,
+                        (double)c->seq, c->wg2,    /* protocol 4 appends seq, wg2 */
+                        c->amp};                   /* protocol 5 appends amp     */
     int k = snprintf(out, (size_t)n, "C,%u", (unsigned)c->exp);
     for (unsigned i = 0; i < sizeof v / sizeof v[0] && k > 0 && k < n; ++i) {
         k += snprintf(out + k, (size_t)(n - k), ",");
@@ -81,8 +83,8 @@ ENR312_CmdAction_t ENR312_Cmd_Line(const char *line, ENR312_RunnerConfig_t *cfg,
 
     ENR312_RunnerConfig_t trial = *cfg;
     if (strcmp(key, "exp") == 0) {
-        if (x != floor(x) || !((x >= 2.0 && x <= 10.0) || (x >= 21.0 && x <= 23.0))) {
-            snprintf(reply, (size_t)reply_len, "ERR exp must be 2..10 or 21..23 (EXP001 is open loop: move=, +, -)");
+        if (x != floor(x) || !((x >= 2.0 && x <= 10.0) || (x >= 21.0 && x <= 24.0))) {
+            snprintf(reply, (size_t)reply_len, "ERR exp must be 2..10 or 21..24 (EXP001 is open loop: move=, +, -)");
             return ENR312_CMD_REPLY;
         }
         ENR312_Runner_Defaults(&trial, (uint8_t)x);
@@ -107,6 +109,15 @@ ENR312_CmdAction_t ENR312_Cmd_Line(const char *line, ENR312_RunnerConfig_t *cfg,
     else if (strcmp(key, "uon") == 0)  { trial.uon = x; }
     else if (strcmp(key, "db") == 0)   { trial.db = x; }
     else if (strcmp(key, "rrate") == 0) { trial.ref_rate = x; }
+    else if (strcmp(key, "wg2") == 0)  { trial.wg2 = x; }
+    else if (strcmp(key, "amp") == 0)  { trial.amp = x; }
+    else if (strcmp(key, "seq") == 0) {
+        if (x != 0.0 && x != 1.0) {
+            snprintf(reply, (size_t)reply_len, "ERR seq must be 0 or 1");
+            return ENR312_CMD_REPLY;
+        }
+        trial.seq = (uint8_t)x;
+    }
     else if (strcmp(key, "div") == 0 || strcmp(key, "ma") == 0) {
         if (x != floor(x) || x < 1.0 || x > 255.0) {
             snprintf(reply, (size_t)reply_len, "ERR %s must be a whole number", key);
