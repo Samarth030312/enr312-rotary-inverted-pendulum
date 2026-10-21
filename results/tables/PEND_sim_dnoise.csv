@@ -1,0 +1,3 @@
+# SIMULATION (firmware-exact, Tutorial plant values; NOT measured). rev d849e47, 2026-10-21
+one_count_deg_s,raw_rms_deg_s,filtered_rms_deg_s,ma8_rms_deg_s,filter_lag_ms,ma8_lag_ms
+75.0000000000083,31.7641140624826,4.33743775734516,5.76719846279715,15.9154943091895,6.99999999999923

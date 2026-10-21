@@ -4,6 +4,24 @@ Firmware releases (`firmware/enr312/release/`). Each release image is built from
 clean tree and pinned by SHA-256 in `MANIFEST.txt`; MATLAB refuses to flash an
 image whose hash does not match.
 
+## 2.1.0 (2026-10-21): protocol 3, Tutorials 6–10 and the PEND experiments
+**Not yet run on the rig** (no working board); verified in host tests, the rig
+emulator and the MATLAB simulation. 2.0.8 remains the last rig-verified release, and
+Tutorials 1–5 behave identically in 2.1.0.
+* New general controller core (`enr312_ctrl.c`): experiments 6 (PID, inverted),
+  7 (pendulum-loop design, reference impulses), 8 (root locus, load disturbance
+  60 deg/s²), 9 (state feedback, pole placement), 10 (LQR), 21 (stop a swing,
+  regulate), 22 (on-off), 23 (4-state LQR balancing).
+* Upright experiments balance 5 s after release before their sequence starts (the
+  release transient takes ~3 s), then stay in HOLD until Stop run.
+* Live set-point `$ref=deg` (slewed, `$rrate`), and live gain changes during a run.
+* New `$` keys: ki fdr fdp k1–k4 bv imp uon db rrate div ma; the config echo `C,…`
+  has 23 values (the first 9 unchanged).
+* The `?` help repeats the firmware version line, so a host that connects after boot
+  learns the protocol.
+* Emulator (host build only): long output no longer overruns its 512-byte buffer.
+* ELF SHA-256 `9a923608d7200cd79021c438094983b80346d361e001231f567b9743b3b23588`.
+
 ## 2.0.8 (2026-10-12)
 * **Tutorial 5 waits for the operator to let go.** After capture the motor stays
   still until the pendulum moves 1.5° on its own; balancing starts only then.

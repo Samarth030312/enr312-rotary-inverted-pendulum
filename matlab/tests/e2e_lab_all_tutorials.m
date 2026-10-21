@@ -22,8 +22,8 @@ function ok = e2e_lab_all_tutorials()
     R(end+1, :) = {'metrics survive a T5 abort before balancing', okA, msgA};
     % --- emulator: connect, arm, start ------------------------------------------
     app.startEmulator(); L = app.link;
-    waitFor(@() L.n > 20 && L.protocol == 2, 8);
-    R(end+1, :) = {'emulator speaks protocol 2', L.protocol == 2, sprintf('%d samples', L.n)};
+    waitFor(@() L.n > 20 && L.protocol >= 2, 8);
+    R(end+1, :) = {'emulator speaks protocol 2 or later', L.protocol >= 2, sprintf('protocol %d, %d samples', L.protocol, L.n)};
     app.armNoPrompt(); waitFor(@() strcmp(L.state, 'ARMED'), 3);
     app.send('s'); waitFor(@() strcmp(L.state, 'RUNNING'), 3);
     R(end+1, :) = {'ARM, START -> RUNNING', strcmp(L.state, 'RUNNING'), L.state};

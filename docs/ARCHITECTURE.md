@@ -130,13 +130,19 @@ self-test, `?` help, `.` keep-alive.
 
 Line commands start with `$`: `exp=N`, `kp=`, `kd=`, `kpp=`, `kdp=`, `step=`,
 `dist=`, `ulim=`, `vmax=`, `defaults`, `cfg` (echo the configuration), `go`,
-`stop`, `move=DEG`.
+`stop`, `move=DEG`. Protocol 3 (firmware 2.1.0) adds `ki= fdr= fdp= k1= k2= k3= k4=
+bv= imp= uon= db= rrate= div= ma=` for experiments 6–10 and 21–23, and `ref=DEG`, a
+live arm set-point (accepted while experiment 21 regulates or once 6/7/8/23 hold
+upright). A gain line sent during a run of those experiments is applied at once.
+The version line (and so the protocol) is printed in the boot banner and again by `?`.
 
 Telemetry (50 Hz):
 
 ```
 D,<tick (2 ms)>,<rotor mdeg>,<pendulum mdeg>,<encoder raw>,<faults>,<state>,<run exp>,<phase>,<u deg/s²>,<ref mdeg>,<isr_max_us>
-C,<exp>,<kp>,<kd>,<kpp>,<kdp>,<step>,<dist>,<ulim>,<vmax>          (reply to $cfg)
+C,<exp>,<kp>,<kd>,<kpp>,<kdp>,<step>,<dist>,<ulim>,<vmax>          (reply to $cfg, protocol 2)
+   ...,<ki>,<fdr>,<fdp>,<k1>,<k2>,<k3>,<k4>,<bv>,<imp>,<uon>,<db>,<rrate>,<div>,<ma>   (protocol 3 appends)
+REF <deg>                                                           (reply to $ref)
 ```
 
 Before every closed-loop run the app sends the configuration, asks for the
@@ -148,7 +154,9 @@ serial line can never silently change a gain.
 | Package / file | Role |
 |---|---|
 | `matlab/apps/enr312_lab.m` | the lab app: tutorials, presets, sliders, plots, rig control |
-| `matlab/+odyssix/+sim/` | `runTutorial` (firmware port), `plant`, `defaults`, `metrics` (same metrics for simulation and rig) |
+| `matlab/+odyssix/+sim/` | `runTutorial` (Tutorials 1–5) and `runCtrl` (6–10, PEND): firmware ports; `plant`, `defaults`, `loop`, `metrics` (same metrics for simulation and rig), `impulseAverage` |
+| `matlab/+odyssix/+ctrl/` | `lqr` (toolbox-free Riccati solver), `pendulumModel` (linearised state space) |
+| `matlab/+odyssix/+pend/` | PEND analyses: `freeSwing`, `recovery`, `gainSweep`, `derivativeNoise`, `unstablePole` |
 | `matlab/+odyssix/+stm32/` | `tools` (find programmer, toolchain), `flash`, `build`, `listBoards`, `RigLink`, `emulatorBinary`, `sha256` |
 | `matlab/models/` | pendulum parameters and equations of motion |
 | `matlab/identification/` | free-swing fit for ωg² and Q |

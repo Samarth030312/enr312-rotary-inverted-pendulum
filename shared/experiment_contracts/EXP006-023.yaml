@@ -1,0 +1,238 @@
+# Contracts for EXP006-EXP010 and the PEND experiments EXP021-EXP023.
+# Defaults of firmware 2.1.0 (enr312_ctrl.c ENR312_Ctrl_Defaults), units: gains in
+# deg/s^2 per deg (per deg s, per deg/s), filters Hz, angles deg, u deg/s^2, rates deg/s.
+# matlab/tests/test_contracts.m checks this file against odyssix.sim.defaults and
+# against the firmware's own '$cfg' echo (C code, rig emulator).
+# Definitions: experiments/EXP0NN/README.md. Parameter set: PS-EDUKIT01-v1.
+
+EXP006:
+  title: "Integral action, dual PID (inverted)"
+  mode: inverted
+  status: unlocked
+  hardware: NOT_EXECUTED
+  defaults:
+    kp: 15
+    ki: 3
+    kd: 7.5
+    kpp: 300
+    kdp: 30
+    fdr: 50
+    fdp: 10
+    k1: 0
+    k2: 0
+    k3: 0
+    k4: 0
+    bv: 0
+    step: 40
+    dist: 0
+    imp: 0
+    uon: 0
+    db: 0
+    ulim: 1500
+    vmax: 360
+    rrate: 90
+    div: 1
+    ma: 1
+
+EXP007:
+  title: "Pendulum-loop design, impulses (inverted)"
+  mode: inverted
+  status: unlocked
+  hardware: NOT_EXECUTED
+  defaults:
+    kp: 15
+    ki: 0
+    kd: 7.5
+    kpp: 300
+    kdp: 30
+    fdr: 50
+    fdp: 10
+    k1: 0
+    k2: 0
+    k3: 0
+    k4: 0
+    bv: 0
+    step: 0
+    dist: 0
+    imp: 10
+    uon: 0
+    db: 0
+    ulim: 1500
+    vmax: 360
+    rrate: 90
+    div: 1
+    ma: 1
+
+EXP008:
+  title: "Root locus, load disturbance (inverted)"
+  mode: inverted
+  status: unlocked
+  hardware: NOT_EXECUTED
+  defaults:
+    kp: 15
+    ki: 7.5
+    kd: 7.5
+    kpp: 300
+    kdp: 30
+    fdr: 50
+    fdp: 10
+    k1: 0
+    k2: 0
+    k3: 0
+    k4: 0
+    bv: 0
+    step: 40
+    dist: 60
+    imp: 0
+    uon: 0
+    db: 0
+    ulim: 1500
+    vmax: 360
+    rrate: 90
+    div: 1
+    ma: 1
+
+EXP009:
+  title: "Full-state feedback, pole placement (rotor)"
+  mode: suspended
+  status: unlocked
+  hardware: NOT_EXECUTED
+  defaults:
+    kp: 0
+    ki: 0
+    kd: 0
+    kpp: 0
+    kdp: 0
+    fdr: 50
+    fdp: 10
+    k1: 1
+    k2: 2
+    k3: 0
+    k4: 0
+    bv: 0
+    step: 20
+    dist: 0
+    imp: 0
+    uon: 0
+    db: 0
+    ulim: 800
+    vmax: 360
+    rrate: 90
+    div: 1
+    ma: 1
+
+EXP010:
+  title: "LQR (rotor)"
+  mode: suspended
+  status: unlocked
+  hardware: NOT_EXECUTED
+  defaults:
+    kp: 0
+    ki: 0
+    kd: 0
+    kpp: 0
+    kdp: 0
+    fdr: 50
+    fdp: 10
+    k1: 1
+    k2: 1.7321
+    k3: 0
+    k4: 0
+    bv: 0
+    step: 20
+    dist: 0
+    imp: 0
+    uon: 0
+    db: 0
+    ulim: 800
+    vmax: 360
+    rrate: 90
+    div: 1
+    ma: 1
+
+EXP021:
+  title: "PEND: stop a swing, hold an angle"
+  mode: suspended
+  status: unlocked
+  hardware: NOT_EXECUTED
+  defaults:
+    kp: 6
+    ki: 0
+    kd: 4.8
+    kpp: 10
+    kdp: 5
+    fdr: 10
+    fdp: 10
+    k1: 0
+    k2: 0
+    k3: 0
+    k4: 0
+    bv: 0
+    step: 0
+    dist: 0
+    imp: 0
+    uon: 0
+    db: 0
+    ulim: 800
+    vmax: 360
+    rrate: 90
+    div: 1
+    ma: 1
+
+EXP022:
+  title: "PEND: on-off control"
+  mode: suspended
+  status: unlocked
+  hardware: NOT_EXECUTED
+  defaults:
+    kp: 0
+    ki: 0
+    kd: 0
+    kpp: 0
+    kdp: 0
+    fdr: 50
+    fdp: 10
+    k1: 0
+    k2: 0
+    k3: 0
+    k4: 0
+    bv: 0
+    step: 20
+    dist: 0
+    imp: 0
+    uon: 200
+    db: 0.5
+    ulim: 800
+    vmax: 360
+    rrate: 90
+    div: 1
+    ma: 1
+
+EXP023:
+  title: "PEND: 4-state LQR balancing (inverted)"
+  mode: inverted
+  status: unlocked
+  hardware: NOT_EXECUTED
+  defaults:
+    kp: 0
+    ki: 0
+    kd: 0
+    kpp: 0
+    kdp: 0
+    fdr: 50
+    fdp: 10
+    k1: -10
+    k2: -13.787
+    k3: 382.789
+    k4: 50.787
+    bv: 0
+    step: 20
+    dist: 0
+    imp: 0
+    uon: 0
+    db: 0
+    ulim: 1500
+    vmax: 360
+    rrate: 90
+    div: 1
+    ma: 1

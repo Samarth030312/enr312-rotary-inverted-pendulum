@@ -12,6 +12,10 @@
 
 void ENR312_Runner_Defaults(ENR312_RunnerConfig_t *cfg, uint8_t exp)
 {
+    /* the general core sets every field; for Tutorials 2-5 this leaves the
+     * fields they do not use at neutral values, then the code below applies
+     * their own defaults */
+    if (ENR312_Ctrl_Defaults(cfg, exp)) { return; }
     cfg->exp      = exp;
     cfg->kpp      = 0.0;
     cfg->kdp      = 0.0;
@@ -52,7 +56,13 @@ const char *ENR312_Runner_Validate(const ENR312_RunnerConfig_t *c)
     double ulimMax = (c->exp == 5) ? EXP005_DEFAULT_U_LIMIT
                    : (c->exp == 2) ? 4.0 * EXP002_DEFAULT_U_LIMIT
                                    : 4.0 * EXP003_DEFAULT_U_LIMIT;
-    if (c->exp < 2u || c->exp > 5u)      { return "exp must be 2..5"; }
+    if (ENR312_Ctrl_Handles(c->exp))     { return ENR312_Ctrl_Validate(c); }
+    if (c->exp < 2u || c->exp > 5u)      { return "exp must be 2..10 or 21..23"; }
+    if (c->ki != 0.0 || c->k1 != 0.0 || c->k2 != 0.0 || c->k3 != 0.0 || c->k4 != 0.0 ||
+        c->bv != 0.0 || c->imp_deg != 0.0 || c->uon != 0.0 || c->db != 0.0 ||
+        c->div != 1u || c->ma != 1u) {
+        return "parameter not used by Tutorials 2-5 (use exp 6..10, 21..23)";
+    }
     if (!in(c->kp, 0.0, 100.0))          { return "kp out of 0..100"; }
     if (!in(c->kd, 0.0, 100.0))          { return "kd out of 0..100"; }
     if (!in(c->kpp, 0.0, 1000.0))        { return "kpp out of 0..1000"; }
@@ -89,6 +99,10 @@ bool ENR312_Runner_Start(ENR312_Runner_t *r, const ENR312_RunnerConfig_t *cfg)
     r->ref_deg = 0.0;
     r->pend_deg = 0.0;
 
+    if (ENR312_Ctrl_Handles(cfg->exp)) {
+        ENR312_Ctrl_Init(&r->ec, cfg);
+        return true;
+    }
     switch (cfg->exp) {
     case 2:
         ENR312_Exp002_Init(&r->e2, cfg->kp, cfg->kd, true);
@@ -144,7 +158,14 @@ double ENR312_Runner_Tick(ENR312_Runner_t *r, double rotor_deg, double psi_deg)
 
     if (r->state == ENR312_RUN_ACTIVE) {
         bool finished = false, aborted = false;
-        switch (r->cfg.exp) {
+        if (ENR312_Ctrl_Handles(r->cfg.exp)) {
+            r->u = ENR312_Ctrl_Tick(&r->ec, rotor_deg, r->v_deg_s, psi_deg);
+            r->ref_deg = r->ec.ref; r->pend_deg = r->ec.a_meas;
+            r->phase = (uint8_t)r->ec.phase;
+            aborted  = (r->ec.phase == CTRL_PH_ABORTED);
+            finished = (r->ec.phase == CTRL_PH_DONE);
+            r->core_abort = (uint8_t)r->ec.abort_reason;
+        } else switch (r->cfg.exp) {
         case 2: {
             const ENR312_Exp002Sample_t *s = ENR312_Exp002_Tick(&r->e2, rotor_deg, 0.0);
             r->u = s->u; r->ref_deg = s->reference_deg; r->pend_deg = psi_deg;
@@ -223,6 +244,7 @@ const char *ENR312_Runner_PhaseName(const ENR312_Runner_t *r)
     static const char *const p5[] = {"WAIT_CAPTURE", "BALANCE", "ROTOR_STEP", "SETTLE",
                                      "HOLD", "ABORTED"};
     if (r->state == ENR312_RUN_IDLE) { return "IDLE"; }
+    if (ENR312_Ctrl_Handles(r->cfg.exp)) { return ENR312_Ctrl_PhaseName(r->phase); }
     switch (r->cfg.exp) {
     case 2:  return (r->phase < 7u) ? p2[r->phase] : "?";
     case 3:
@@ -241,6 +263,7 @@ const char *ENR312_Runner_AbortName(const ENR312_Runner_t *r)
     case ENR312_RUN_ABORT_CORE:     break;
     default:                        return "?";
     }
+    if (ENR312_Ctrl_Handles(r->cfg.exp)) { return ENR312_Ctrl_AbortName(r->core_abort); }
     switch (r->cfg.exp) {
     case 2:
         return r->core_abort == EXP002_ABORT_ROTOR_LIMIT ? "ROTOR_LIMIT"
@@ -255,4 +278,30 @@ const char *ENR312_Runner_AbortName(const ENR312_Runner_t *r)
              : r->core_abort == EXP005_ABORT_ROTOR_LIMIT   ? "ROTOR_LIMIT"
              : r->core_abort == EXP005_ABORT_SATURATION    ? "SATURATION" : "CORE";
     }
+}
+
+void ENR312_Runner_ApplyLive(ENR312_Runner_t *r, const ENR312_RunnerConfig_t *cfg)
+{
+    if (ENR312_Runner_IsMoving(r) && ENR312_Ctrl_Handles(r->cfg.exp) && cfg->exp == r->cfg.exp) {
+        ENR312_Ctrl_SetGains(&r->ec, cfg);
+        r->cfg.u_limit = cfg->u_limit;
+        r->cfg.v_max = cfg->v_max;
+    }
+}
+
+bool ENR312_Runner_SetRef(ENR312_Runner_t *r, double ref_deg)
+{
+    if (!ENR312_Runner_IsMoving(r) || !ENR312_Ctrl_Handles(r->cfg.exp)) { return false; }
+    ENR312_Ctrl_SetRef(&r->ec, ref_deg);
+    return true;
+}
+
+bool ENR312_Runner_SuspendedLimit(const ENR312_Runner_t *r)
+{
+    return ENR312_Runner_IsMoving(r) && r->cfg.exp != 5u && !ENR312_Ctrl_Inverted(r->cfg.exp);
+}
+
+bool ENR312_Runner_NeedsCapture(uint8_t exp)
+{
+    return exp == 5u || exp == 6u || exp == 7u || exp == 8u || exp == 23u;
 }

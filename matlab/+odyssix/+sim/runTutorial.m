@@ -2,7 +2,8 @@ function S = runTutorial(cfg, plant)
 %RUNTUTORIAL  Simulate one ENR312 tutorial exactly as the firmware runs it.
 %
 %   S = odyssix.sim.runTutorial(cfg, plant)
-%   cfg   = odyssix.sim.defaults(exp)   (exp 1..5), fields:
+%   cfg   = odyssix.sim.defaults(exp)   (exp 1..5; 6..10 and 21..23 go to
+%           odyssix.sim.runCtrl, the port of the general firmware core), fields:
 %           exp kp kd kpp kdp step dist ulim vmax seconds
 %   plant = odyssix.sim.plant()         fields: wg2 Q wr2 nonlinear quant
 %
@@ -22,6 +23,10 @@ function S = runTutorial(cfg, plant)
 %      phaseNames, cfg, plant.
 %   Base MATLAB only.
 
+    if cfg.exp >= 6                         % general core: Tutorials 6-10, PEND
+        S = odyssix.sim.runCtrl(cfg, plant);
+        return;
+    end
     Ts = 0.002; SUB = 4; h = Ts / SUB;
     UPD = 3200 / 360;                       % microsteps per degree (C-1: may be 2x)
     ENC = 360 / 2400;                       % encoder count, deg

@@ -1,6 +1,7 @@
 # ENR312 rotary pendulum lab: student quickstart
 
-One MATLAB app runs all five tutorials, in simulation and on the real rig.
+One MATLAB app runs all ten tutorials and the PEND experiments, in simulation and on
+the real rig. For the PEND lab report, start from [the PEND answer guide](PEND_ANSWER_GUIDE.md).
 
 ```matlab
 cd <this repository>
@@ -92,3 +93,21 @@ metadata file next to it. Fill in your name in it. Emulator runs go to
    run.
 5. Tutorial 1 → *Free swing*, then *Use measured*: from then on the simulations
    use your rig's pendulum.
+
+## Tutorials 6–10 and the PEND experiments
+
+| Button | What you do | What to look at |
+|---|---|---|
+| T6 | rotor PID with integral action (upright) | overshoot vs Tutorial 6, root locus |
+| T7 | design the pendulum PD; 8 reference impulses | averaged impulse response |
+| T8 | load disturbance with and without Ki | offset −D/Kp vs 0 |
+| T9 | place the poles: k1 = ωN², k2 = 2ζωN | settling, overshoot, poles of A − BK |
+| T10 | LQR: type diag(Q) and R, press **LQR** | how R trades speed for effort |
+| P21 | pluck, Run: the swing is stopped; **Go to angle** holds the arm anywhere | time to stop |
+| P22 | on-off control | why it never settles |
+| P23 | 4-state LQR balancing | compare with T6 |
+
+Only the sliders the selected experiment uses are shown. During a rig run of
+T6–P23, **Apply gains live** changes gains without stopping, and **Go to angle**
+moves the arm to the typed angle (P21 at any time; upright experiments once they
+are in HOLD). Tick **in simulation** to see the same command simulated.

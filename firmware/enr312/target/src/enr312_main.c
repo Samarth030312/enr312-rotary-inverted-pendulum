@@ -110,9 +110,9 @@ void ENR312_ControlTick(void)
     bool running = ENR312_Runner_IsMoving(&g_run);
 
     /* +/-120 deg is a SUSPENDED-mode bound: active during counted moves and
-     * EXP002-004 runs. EXP005 keeps the pendulum near 180 deg by design and
-     * has its own 15 deg bound around upright inside the runner. */
-    if ((ENR312_StepGen_Busy() || (running && g_run.cfg.exp != 5u)) &&
+     * suspended runs. Inverted runs (5, 6-8, 23) keep the pendulum near 180 deg
+     * and have their own bound around upright inside the core. */
+    if ((ENR312_StepGen_Busy() || ENR312_Runner_SuspendedLimit(&g_run)) &&
         fabs(ang_deg) > ENR312_PENDULUM_ABORT_DEG) {
         ENR312_Safety_RaiseFault(ENR312_FAULT_PENDULUM_ABORT);
     }
@@ -251,7 +251,7 @@ static void print_stream(void)
 
 static void process_line(void)
 {
-    char reply[96];
+    char reply[320];
     double mv = 0.0;
     ENR312_CmdAction_t a = ENR312_Cmd_Line(g_line, &g_cfg, &mv, reply, (int)sizeof reply);
     switch (a) {
@@ -269,7 +269,7 @@ static void process_line(void)
             ok = ENR312_Runner_Start(&g_run, &g_cfg);
             __enable_irq();
             if (ok) {
-                ENR312_Telemetry_Printf("GO EXP00%u\r\n", (unsigned)g_cfg.exp);
+                ENR312_Telemetry_Printf("GO EXP%03u\r\n", (unsigned)g_cfg.exp);
             } else {
                 ENR312_Telemetry_Write("ERR configuration invalid ('$cfg')\r\n");
             }
@@ -285,8 +285,28 @@ static void process_line(void)
         ENR312_Telemetry_Write("MOVE:\r\n");
         (void)move_degrees(mv, FIRST_MOTION_RATE_HZ);
         break;
+    case ENR312_CMD_REF: {
+        bool ok;
+        __disable_irq();
+        ok = ENR312_Runner_SetRef(&g_run, mv);
+        __enable_irq();
+        if (ok) {
+            char v[24];
+            (void)ENR312_Cmd_FormatFixed(v, (int)sizeof v, mv);
+            ENR312_Telemetry_Printf("REF %s\r\n", v);
+        } else {
+            ENR312_Telemetry_Write("ERR ref needs a running experiment 6..23\r\n");
+        }
+        break;
+    }
     case ENR312_CMD_REPLY:
     default:
+        if (reply[0] == 'C' && reply[1] == ',') {
+            /* an accepted change: a running general-core experiment takes it now */
+            __disable_irq();
+            ENR312_Runner_ApplyLive(&g_run, &g_cfg);
+            __enable_irq();
+        }
         ENR312_Telemetry_Printf("%s\r\n", reply);
         break;
     }
@@ -301,12 +321,12 @@ static void report_runner(void)
     uint8_t ph = g_run.phase;
     if (st == last_state && ph == last_phase) { return; }
     if (st == ENR312_RUN_ABORTED && last_state != ENR312_RUN_ABORTED) {
-        ENR312_Telemetry_Printf("RUN ABORTED EXP00%u reason=%s\r\n",
+        ENR312_Telemetry_Printf("RUN ABORTED EXP%03u reason=%s\r\n",
                                 (unsigned)g_run.cfg.exp, ENR312_Runner_AbortName(&g_run));
     } else if (st == ENR312_RUN_FINISHED && last_state != ENR312_RUN_FINISHED) {
-        ENR312_Telemetry_Printf("RUN FINISHED EXP00%u\r\n", (unsigned)g_run.cfg.exp);
+        ENR312_Telemetry_Printf("RUN FINISHED EXP%03u\r\n", (unsigned)g_run.cfg.exp);
     } else if (st == ENR312_RUN_ACTIVE) {
-        ENR312_Telemetry_Printf("RUN EXP00%u phase=%s\r\n",
+        ENR312_Telemetry_Printf("RUN EXP%03u phase=%s\r\n",
                                 (unsigned)g_run.cfg.exp, ENR312_Runner_PhaseName(&g_run));
     }
     last_state = st; last_phase = ph;
@@ -316,6 +336,9 @@ static void print_help(void)
 {
     ENR312_Telemetry_Write(
         "\r\n--- ENR312 commands ---------------------------------------\r\n"
+        /* the version again: a host that connects after boot (the ST-LINK VCP
+         * does not reset the MCU) learns the protocol by sending '?' */
+        " Firmware:      " ENR312_FW_VERSION "\r\n"
         "  ?  help            t  status\r\n"
         "  r  toggle 50 Hz CSV stream for MATLAB (D,ticks,rotor,pend,raw,faults,state)\r\n"
         "  a  ARM   (energise L6474; motor holds, does not move)\r\n"
@@ -330,8 +353,9 @@ static void print_help(void)
         "  P  scan the 4 CS/SCK resistor routings (SAFE only, never energises)\r\n"
         "  M  electrical self-test: reset line, MISO, FLAG (SAFE only, never energises)\r\n"
         "  .  keep-alive (send at least once a second while an experiment runs)\r\n"
-        "  $exp=N (2..5)  $kp= $kd= $kpp= $kdp= $step= $dist= $ulim= $vmax=\r\n"
-        "  $cfg  $defaults  $go  $stop  $move=D   (closed-loop Tutorials 2-5)\r\n"
+        "  $exp=N (2..10, 21..23)  $kp= $ki= $kd= $kpp= $kdp= $step= $dist= $ulim= $vmax=\r\n"
+        "  $fdr= $fdp= $k1..$k4= $bv= $imp= $uon= $db= $rrate= $div= $ma=\r\n"
+        "  $cfg  $defaults  $go  $stop  $move=D  $ref=D (live set-point)\r\n"
         "-----------------------------------------------------------\r\n");
 }
 

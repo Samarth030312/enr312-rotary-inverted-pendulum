@@ -42,8 +42,12 @@ static void test_defaults_and_validation(void)
     CHECK(ENR312_Runner_Validate(&c) != NULL, "kp 200 rejected");
     ENR312_Runner_Defaults(&c, 5); c.u_limit = 2000.0;
     CHECK(ENR312_Runner_Validate(&c) != NULL, "EXP005 ulim above 1500 rejected");
-    ENR312_Runner_Defaults(&c, 5); c.exp = 6;
-    CHECK(ENR312_Runner_Validate(&c) != NULL, "exp 6 rejected");
+    ENR312_Runner_Defaults(&c, 5); c.exp = 11;
+    CHECK(ENR312_Runner_Validate(&c) != NULL, "exp 11 rejected");
+    ENR312_Runner_Defaults(&c, 5); c.ki = 3.0;
+    CHECK(ENR312_Runner_Validate(&c) != NULL, "ki rejected for Tutorial 5 (not used there)");
+    ENR312_Runner_Defaults(&c, 6);
+    CHECK(ENR312_Runner_Validate(&c) == NULL, "exp 6 defaults valid");
     ENR312_Runner_t r; ENR312_Runner_Defaults(&c, 2); c.step_deg = 99.0;
     CHECK(!ENR312_Runner_Start(&r, &c), "invalid config does not start");
 }

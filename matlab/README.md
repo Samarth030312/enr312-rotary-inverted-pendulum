@@ -6,7 +6,7 @@ can be cloned anywhere.
 
 ```matlab
 addpath(genpath('matlab'))
-enr312_lab        % the lab app: Tutorials 1-5, simulation + rig + emulator
+enr312_lab        % the lab app: Tutorials 1-10 + PEND, simulation + rig + emulator
 ```
 
 ## Layout

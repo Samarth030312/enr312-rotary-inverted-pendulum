@@ -12,10 +12,16 @@ a first-principles model, a MATLAB simulation that matches the firmware's
 control code to floating-point rounding, a 500 Hz embedded controller, and measurements from the
 physical rig compared against the predictions.
 
-It implements the first five control tutorials of the **ENR312 Control
-Engineering Laboratory** (Ahmedabad University, Monsoon 2026), which follow
-W. J. Kaiser's Edukit tutorial series (UCLA): from digital-actuator tracking
-through sensitivity functions and MIMO control to balancing the pendulum upright.
+It implements the ten control tutorials of the **ENR312 Control Engineering
+Laboratory** (Ahmedabad University, Monsoon 2026), which follow W. J. Kaiser's
+Edukit tutorial series (UCLA), plus the course's **PEND** lab questions: from
+digital-actuator tracking, sensitivity functions and MIMO control to balancing the
+pendulum upright, integral action, root locus, state feedback and LQR.
+
+**Status.** Tutorials 1–5 have run on the rig (2026-10-12). Tutorials 6–10 and the PEND
+experiments are implemented in firmware 2.1.0 and verified in unit tests, the rig
+emulator and the simulation; their rig runs are still to be done, so their numbers
+below are **predictions**, not results.
 
 <p align="center">
   <img src="results/figures/rig_vs_sim_T2_T5.png" width="900"
@@ -30,11 +36,13 @@ through sensitivity functions and MIMO control to balancing the pendulum upright
 | Part | What it does | Where |
 |---|---|---|
 | Firmware | 500 Hz control loop, L6474 stepper driver over SPI, quadrature encoder on TIM3, safety supervisor, serial command protocol | [`firmware/enr312/`](firmware/enr312/) |
-| Lab app | One MATLAB window for all five tutorials: tune gains, simulate, run the same gains on the rig, overlay measurement on simulation | [`matlab/apps/enr312_lab.m`](matlab/apps/enr312_lab.m) |
+| Lab app | One MATLAB window for Tutorials 1–10 and the PEND experiments: tune gains (PID, state feedback, LQR designer), simulate, run the same gains on the rig, command the arm to an angle, change gains live, overlay measurement on simulation | [`matlab/apps/enr312_lab.m`](matlab/apps/enr312_lab.m) |
 | Simulation | Line-by-line port of the firmware control path driving a nonlinear pendulum model; tested equal to the C code | [`matlab/+odyssix/+sim/`](matlab/+odyssix/+sim/) |
 | Emulator | The firmware's own C control code compiled for the PC behind the same serial protocol, so the app runs without hardware | [`firmware/enr312/host/`](firmware/enr312/host/) |
 | Physics | Derivation of the pendulum equations, the sign change between hanging and upright, model audit | [`docs/first_principles/`](docs/first_principles/ROTARY_PENDULUM_DYNAMICS.md) |
-| Experiments | EXP001–EXP005: objective, hypothesis, derivation, procedure, acceptance criteria (written before the rig runs) | [`experiments/`](experiments/) |
+| Experiments | EXP001–EXP010 and PEND EXP021–EXP023: objective, hypothesis, derivation, predictions, procedure, acceptance criteria (written before the rig runs) | [`experiments/`](experiments/) |
+| PEND guide | Every task and question of the PEND lab handout mapped to the experiment, tool or data that answers it | [`docs/PEND_ANSWER_GUIDE.md`](docs/PEND_ANSWER_GUIDE.md) |
+| Python client | Optional: the same serial protocol from Python (pyserial), for scripting runs | [`python/`](python/) |
 | Data | Raw rig measurements with metadata, and the serial transcripts of every hardware session | [`data/`](data/), [`results/evidence/`](results/evidence/rig_sessions/) |
 | Results | Rig-vs-simulation comparison and discrepancy analysis | [`results/reports/`](results/reports/2026-10-12_rig_tutorials_1-5.md) |
 
@@ -50,6 +58,22 @@ through sensitivity functions and MIMO control to balancing the pendulum upright
 
 Full analysis, including what does **not** yet match the model:
 [`results/reports/2026-10-12_rig_tutorials_1-5.md`](results/reports/2026-10-12_rig_tutorials_1-5.md).
+
+## Predictions for Tutorials 6–10 and PEND (simulation, not yet run on the rig)
+
+From the firmware-exact simulation with the Tutorial plant values
+([`results/tables/`](results/tables/), `matlab/experiments/PEND/pend_predictions.m`):
+
+| Experiment | Prediction to test on the rig |
+|---|---|
+| 6 Integral action (inverted) | Linear model reproduces Tutorial 6 (overshoot 52.0 % vs 52.6 %, phase margin 31.42° vs 31.45°), but at the rig's 1500 deg/s² input limit the derivative kick of the 40° step saturates: **34 %** overshoot expected. |
+| 7 Pendulum-loop design | A pendulum loop that is stable on its own (Kp 150, Kd 15) still loses balance in the full loop; 300/30 gives a 1.4° averaged impulse response. |
+| 8 Load disturbance | Arm offset under a 60 deg/s² load: −4.1° without integral action (theory −D/Kp = −4.0°), −0.7° with it. |
+| 9 / 10 State feedback, LQR | Tutorial 9 reference settles in 5.94 s (tutorial 5.8 s); LQR gains reproduce Tutorial 10 exactly. The stepper's minimum step rate parks the arm up to (k2 + b)·0.225/k1 degrees short. |
+| PEND 21 Stop a swing | 1.6 s with the pendulum D term, 21 s (free decay) without it; any commanded arm angle held to the microstep. |
+| PEND 22 On-off | Never settles: ±20° oscillation for a 20° step, pendulum shaken to 36°. |
+| PEND 23 LQR balancing | 2.3 % overshoot vs 34 % for the Tutorial 6 PID, pendulum error 0.17° vs 0.42° rms. |
+| PEND loop rate, taps | Balances down to a 16.7 Hz loop; recovers taps up to 100 deg/s of pendulum rate, falls at 120. |
 
 ## Quick start
 
@@ -108,9 +132,11 @@ More diagrams (firmware state machine, Tutorial 5 sequence, flashing path) in
   flash image built from source must match the SHA-256 of the committed release
   in `release/MANIFEST.txt`
 * link-map check that the image contains no RTOS or middleware symbols
-* 330+ host unit tests of the control cores, runner and command parser (C)
-* physics-model validation, simulation-equals-firmware test, end-to-end tests of
-  both apps against the emulator (MATLAB)
+* 389 host unit tests of the control cores, runner and command parser (C)
+* physics-model validation, simulation-equals-firmware test, a three-way parameter
+  check (contract = MATLAB = firmware), end-to-end tests of the app for all
+  experiments against the emulator (MATLAB), and the Python client against the
+  emulator
 
 CI runs the C part on every push (see the badge above).
 
@@ -124,6 +150,7 @@ CI runs the C part on every push (see the badge above).
 | [Troubleshooting](docs/TROUBLESHOOTING.md) | Every problem met during bring-up, its cause and its fix |
 | [Wiring and electrical check](docs/hardware/ENR312_WIRING.md) | Pin plan, motor/encoder/supply wiring, staged power-up check |
 | [Pendulum dynamics](docs/first_principles/ROTARY_PENDULUM_DYNAMICS.md) | Derivation and linearisation |
+| [PEND answer guide](docs/PEND_ANSWER_GUIDE.md) | How to answer every PEND lab question with this rig |
 | [Engineering standards](docs/ENGINEERING_STANDARDS.md) | Rules the project follows: first principles, units, data provenance |
 | [References](docs/REFERENCES.md) | Course material, datasheets and the reference implementation |
 | [Changelog](CHANGELOG.md) | Firmware releases and what each one fixed |
@@ -135,11 +162,12 @@ firmware/enr312/     bare-metal firmware: src/ (portable control cores), target/
                      host/ (emulator + plant model), test/ (host unit tests), release/ (pinned image)
 Drivers/             ST STM32F4 HAL and CMSIS (vendor code, their own licences)
 matlab/              lab app, simulation, models, identification, tests
-experiments/         EXP001–EXP005 definitions (pre-registered before the rig runs)
+experiments/         EXP001–EXP010, EXP021–EXP023 definitions (pre-registered before the rig runs)
 shared/              parameters and experiment contracts shared by firmware and MATLAB
 data/                raw rig data (read-only) + metadata
 results/             figures, tables, reports, hardware session logs
 docs/                documentation
+python/              optional Python client for the serial protocol
 scripts/             readiness check, release script, Python design scripts
 ```
 

@@ -1,0 +1,6 @@
+# SIMULATION (firmware-exact, Tutorial plant values; NOT measured). rev d849e47, 2026-10-21
+gains,stop_time_s
+"set 1 (6/4.8, 10/5)",1.584
+"set 2 (pendulum Kd 15)",2.65
+"set 3 (rotor only)",21.29
+"no control (free decay)",21.29

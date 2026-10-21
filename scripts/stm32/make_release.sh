@@ -23,7 +23,9 @@ grep -aq "THIS IS NOT THE VEHICLE FIRMWARE" "$tgt/build/enr312_pendulum.elf" \
 mkdir -p "$rel"
 cp "$tgt/build/enr312_pendulum.elf" "$tgt/build/enr312_pendulum.bin" "$tgt/build/enr312_pendulum.hex" "$rel/"
 rev="$(git -C "$root" rev-parse --short HEAD)"
+ver="$(sed -n 's/^#define ENR312_FW_VERSION "\(.*\)"/\1/p' "$tgt/inc/enr312_board.h")"
 {
+  echo "firmware:    $ver"
   echo "target:      ENR312 rotary inverted pendulum (STM32F401RE, NUCLEO-F401RE + X-NUCLEO-IHM01A1)"
   echo "NOT:         the vehicle firmware -- never flash build/odyssix_stm32_core.elf onto the rig"
   echo "source_rev:  $rev"

@@ -16,6 +16,7 @@
  *   4  Tutorial 4  identical acquisition to 3 (the analysis differs)
  *   5  Tutorial 5  INVERTED: capture gate, balance, R step, then HOLD balancing
  *                  until the operator stops (the pendulum is never dropped)
+ *   6-10, 21-23  general core (enr312_ctrl.h): Tutorials 6-10 and the PEND experiments
  *   (Tutorial 1 is open-loop: first-motion moves and sensing, no runner.)
  *
  * Pendulum angle convention (docs/first_principles/ROTARY_PENDULUM_DYNAMICS.md):
@@ -33,20 +34,16 @@
 #include "enr312_exp002.h"
 #include "enr312_exp003.h"
 #include "enr312_exp005.h"
+#include "enr312_ctrl.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct {
-    uint8_t exp;          /**< 2, 3, 4 or 5                                  */
-    double  kp, kd;       /**< rotor (outer) PD                              */
-    double  kpp, kdp;     /**< pendulum (inner) PD; unused for EXP002        */
-    double  step_deg;     /**< rotor reference step [deg]                    */
-    double  dist;         /**< EXP002 load-disturbance step [deg/s^2]        */
-    double  u_limit;      /**< plant-input clamp [deg/s^2]                   */
-    double  v_max;        /**< rotor speed ceiling [deg/s]                   */
-} ENR312_RunnerConfig_t;
+/** One configuration for every closed-loop experiment. Tutorials 2-5 use
+ *  exp, kp, kd, kpp, kdp, step_deg, dist, u_limit, v_max; the general core
+ *  (enr312_ctrl.h, experiments 6-10 and 21-23) uses the rest as well. */
+typedef ENR312_CtrlConfig_t ENR312_RunnerConfig_t;
 
 typedef enum {
     ENR312_RUN_IDLE = 0,
@@ -69,6 +66,7 @@ typedef struct {
     ENR312_Exp002_t e2;
     ENR312_Exp003_t e3;
     ENR312_Exp005_t e5;
+    ENR312_Ctrl_t   ec;     /**< general core, experiments 6-10 and 21-23     */
     ENR312_RunState_t state;
     ENR312_RunAbort_t abort_reason;
     uint8_t  core_abort;    /**< core-specific abort code                    */
@@ -110,6 +108,18 @@ bool ENR312_Runner_IsMoving(const ENR312_Runner_t *r);
 /** Human-readable names for telemetry. */
 const char *ENR312_Runner_PhaseName(const ENR312_Runner_t *r);
 const char *ENR312_Runner_AbortName(const ENR312_Runner_t *r);
+
+/** Live update of a running general-core experiment (gains, filters, rate). */
+void ENR312_Runner_ApplyLive(ENR312_Runner_t *r, const ENR312_RunnerConfig_t *cfg);
+
+/** Live rotor set-point for HOLD / REGULATE (general core only). False if not applicable. */
+bool ENR312_Runner_SetRef(ENR312_Runner_t *r, double ref_deg);
+
+/** True if the +/-120 deg suspended-mode pendulum bound applies to this run. */
+bool ENR312_Runner_SuspendedLimit(const ENR312_Runner_t *r);
+
+/** True for experiments that balance upright and start with an operator capture. */
+bool ENR312_Runner_NeedsCapture(uint8_t exp);
 
 /** Map the encoder angle to the EXP005 upright angle alpha = wrap180(180 - psi). */
 double ENR312_Runner_UprightAngle(double psi_deg);

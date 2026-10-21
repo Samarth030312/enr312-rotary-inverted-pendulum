@@ -1,9 +1,9 @@
 # ENR312 pendulum firmware
 
 Bare-metal C for the NUCLEO-F401RE on the STEVAL-EDUKIT01 rig. No RTOS, no
-dynamic allocation. Release 2.0.8: 44 KB flash, 4.4 KB static RAM, 500 Hz control
-loop (worst-case control interrupt measured on the rig: 19–129 µs of the 2000 µs
-period).
+dynamic allocation. Release 2.1.0 (protocol 3): 50 KB flash, 5.2 KB static RAM,
+500 Hz control loop. Worst-case control interrupt measured on the rig with 2.0.8:
+19–129 µs of the 2000 µs period; 2.1.0 has not run on the rig yet.
 
 ## Layout
 
@@ -13,7 +13,9 @@ inc/, src/        portable control code (no HAL, no CMSIS): compiles on the PC
   enr312_encoder        encoder unwrapping, polarity, velocity
   enr312_rotor          microstep accounting → arm angle
   enr312_pd             PD with a 10 Hz first-order derivative filter
-  enr312_exp00N         one core per tutorial (sequence, limits, aborts)
+  enr312_exp00N         one core per tutorial 1-5 (sequence, limits, aborts)
+  enr312_ctrl           general core for Tutorials 6-10 and PEND: dual PID with
+                        integral, state feedback, on-off, filters, live set-point
   enr312_metrics        step-response metrics on the target
   enr312_runner         u (deg/s²) → velocity → step rate, speed ceiling, run state
   enr312_cmd            '$' command parser
@@ -21,7 +23,7 @@ target/           STM32 application: clocks, GPIO, SPI1 L6474 driver, TIM3 encod
                   TIM2 step generator, TIM4 500 Hz loop, USART2, safety state machine
   enr312.ioc        pin/peripheral configuration (CubeMX), checked against the code
 host/             PC-side plant model and the rig emulator
-test/             host unit tests (334 checks)
+test/             host unit tests (389 checks)
 cubemx/           CubeMX-generated init code from enr312.ioc, as a starting point
 release/          committed, hash-pinned image that MATLAB flashes
 ```

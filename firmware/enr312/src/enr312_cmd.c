@@ -18,7 +18,10 @@ int ENR312_Cmd_FormatFixed(char *buf, int len, double v)
 
 static void report(const ENR312_RunnerConfig_t *c, char *out, int n)
 {
-    const double v[] = {c->kp, c->kd, c->kpp, c->kdp, c->step_deg, c->dist, c->u_limit, c->v_max};
+    /* the first 8 values are protocol 2 (unchanged order); protocol 3 appends the rest */
+    const double v[] = {c->kp, c->kd, c->kpp, c->kdp, c->step_deg, c->dist, c->u_limit, c->v_max,
+                        c->ki, c->fdr, c->fdp, c->k1, c->k2, c->k3, c->k4, c->bv, c->imp_deg,
+                        c->uon, c->db, c->ref_rate, (double)c->div, (double)c->ma};
     int k = snprintf(out, (size_t)n, "C,%u", (unsigned)c->exp);
     for (unsigned i = 0; i < sizeof v / sizeof v[0] && k > 0 && k < n; ++i) {
         k += snprintf(out + k, (size_t)(n - k), ",");
@@ -57,6 +60,15 @@ ENR312_CmdAction_t ENR312_Cmd_Line(const char *line, ENR312_RunnerConfig_t *cfg,
         snprintf(reply, (size_t)reply_len, "ERR %s: not a number", key);
         return ENR312_CMD_REPLY;
     }
+    if (strcmp(key, "ref") == 0) {
+        if (fabs(x) > 90.0) {
+            snprintf(reply, (size_t)reply_len, "ERR ref limited to +/-90 deg");
+            return ENR312_CMD_REPLY;
+        }
+        *move_deg = x;
+        snprintf(reply, (size_t)reply_len, "REF");
+        return ENR312_CMD_REF;
+    }
     if (strcmp(key, "move") == 0) {
         if (fabs(x) > 90.0) {
             snprintf(reply, (size_t)reply_len, "ERR move limited to +/-90 deg");
@@ -69,8 +81,8 @@ ENR312_CmdAction_t ENR312_Cmd_Line(const char *line, ENR312_RunnerConfig_t *cfg,
 
     ENR312_RunnerConfig_t trial = *cfg;
     if (strcmp(key, "exp") == 0) {
-        if (x < 2.0 || x > 5.0 || x != floor(x)) {
-            snprintf(reply, (size_t)reply_len, "ERR exp must be 2..5 (EXP001 is open loop: move=, +, -)");
+        if (x != floor(x) || !((x >= 2.0 && x <= 10.0) || (x >= 21.0 && x <= 23.0))) {
+            snprintf(reply, (size_t)reply_len, "ERR exp must be 2..10 or 21..23 (EXP001 is open loop: move=, +, -)");
             return ENR312_CMD_REPLY;
         }
         ENR312_Runner_Defaults(&trial, (uint8_t)x);
@@ -83,6 +95,25 @@ ENR312_CmdAction_t ENR312_Cmd_Line(const char *line, ENR312_RunnerConfig_t *cfg,
     else if (strcmp(key, "dist") == 0) { trial.dist = x; }
     else if (strcmp(key, "ulim") == 0) { trial.u_limit = x; }
     else if (strcmp(key, "vmax") == 0) { trial.v_max = x; }
+    else if (strcmp(key, "ki") == 0)   { trial.ki = x; }
+    else if (strcmp(key, "fdr") == 0)  { trial.fdr = x; }
+    else if (strcmp(key, "fdp") == 0)  { trial.fdp = x; }
+    else if (strcmp(key, "k1") == 0)   { trial.k1 = x; }
+    else if (strcmp(key, "k2") == 0)   { trial.k2 = x; }
+    else if (strcmp(key, "k3") == 0)   { trial.k3 = x; }
+    else if (strcmp(key, "k4") == 0)   { trial.k4 = x; }
+    else if (strcmp(key, "bv") == 0)   { trial.bv = x; }
+    else if (strcmp(key, "imp") == 0)  { trial.imp_deg = x; }
+    else if (strcmp(key, "uon") == 0)  { trial.uon = x; }
+    else if (strcmp(key, "db") == 0)   { trial.db = x; }
+    else if (strcmp(key, "rrate") == 0) { trial.ref_rate = x; }
+    else if (strcmp(key, "div") == 0 || strcmp(key, "ma") == 0) {
+        if (x != floor(x) || x < 1.0 || x > 255.0) {
+            snprintf(reply, (size_t)reply_len, "ERR %s must be a whole number", key);
+            return ENR312_CMD_REPLY;
+        }
+        if (key[0] == 'd') { trial.div = (uint8_t)x; } else { trial.ma = (uint8_t)x; }
+    }
     else {
         snprintf(reply, (size_t)reply_len, "ERR unknown parameter '%s'", key);
         return ENR312_CMD_REPLY;

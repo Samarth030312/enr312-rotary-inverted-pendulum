@@ -8,6 +8,8 @@ classdef RigLink < handle
 %   (firmware/enr312/target/src/enr312_main.c):
 %     ? help   t status   a ARM   s START   x ABORT   c clear fault
 %     z zero datums   + / -  first-motion +/-5 deg   q L6474 status   r stream on/off
+%   '$' lines (protocol 2/3): exp= kp= ... cfg go stop ref=; see configure,
+%   setLive, setRef.
 %   Stream lines:  D,<ticks>,<rotor mdeg>,<pendulum mdeg>,<encoder raw>,<faults>,<state>
 %   at 50 Hz; ticks are the firmware's 500 Hz control ticks, so time stamps
 %   come from the MCU, not from the PC.
@@ -24,11 +26,12 @@ classdef RigLink < handle
         invalidCount = 0
         logFile = ''
         banner = false              % saw the ENR312 boot banner
-        protocol = 1                % 2 = closed-loop firmware ('$' commands)
+        protocol = 1                % 2 = closed-loop firmware ('$' commands), 3 = + Tutorials 6-10/PEND
         emulator = false            % banner said EMULATOR
         cfg = struct()              % last '$cfg' report
         lastError = ''              % last 'ERR ...' line
         runEvent = ''               % last 'GO' / 'RUN ...' line
+        lastRef = NaN               % last live set-point acknowledged ('REF x') [deg]
     end
     properties (Access = private)
         sp = []; partial = ''; fid = -1
@@ -37,6 +40,9 @@ classdef RigLink < handle
     end
     properties (Constant)
         TICK_S = 0.002
+        % protocol 2 keys (Tutorials 2-5), then the protocol 3 additions (exp >= 6)
+        KEYS2 = {'kp', 'kd', 'kpp', 'kdp', 'step', 'dist', 'ulim', 'vmax'}
+        KEYS3 = {'ki', 'fdr', 'fdp', 'k1', 'k2', 'k3', 'k4', 'bv', 'imp', 'uon', 'db', 'rrate', 'div', 'ma'}
         KEYS = struct('help', '?', 'status', 't', 'arm', 'a', 'start', 's', 'abort', 'x', ...
                       'clear', 'c', 'zero', 'z', 'plus', '+', 'minus', '-', 'driver', 'q', 'stream', 'r')
     end
@@ -57,11 +63,14 @@ classdef RigLink < handle
             configureTerminator(L.sp, 'CR/LF');
             flush(L.sp);
             L.port = port; L.partial = ''; L.state = 'UNKNOWN'; L.streaming = false;
+            L.protocol = 1; L.banner = false; L.emulator = false;   % learnt again from this board
             d = fullfile(odyssix.repoRoot(), 'results', 'evidence', 'logs');
             if ~isfolder(d), mkdir(d); end
             L.logFile = fullfile(d, ['rig_' char(datetime('now', 'Format', 'yyyyMMdd-HHmmss')) '.log']);
             L.fid = fopen(L.logFile, 'w');
             L.key('t');                         % ask for status: proves the link
+            L.key('?');                         % help: its 'Firmware:' line names the protocol
+                                                % (the boot banner went out before we connected)
         end
 
         function tf = isOpen(L)
@@ -102,13 +111,37 @@ classdef RigLink < handle
         %   exp first (it loads the firmware defaults), then every gain.
             L.lastError = ''; L.runEvent = '';      % no stale event from a previous run
             L.cfg = struct();                       % no stale echo either
+            if cfg.exp >= 6 && L.protocol < 3
+                error('RigLink:protocol', ['experiment %d needs firmware protocol 3 (2.1.0 or later); ' ...
+                    'this board speaks protocol %d: flash the current firmware'], cfg.exp, L.protocol);
+            end
             L.sendLine(sprintf('exp=%d', cfg.exp));
-            f = {'kp', 'kp'; 'kd', 'kd'; 'kpp', 'kpp'; 'kdp', 'kdp'; 'step', 'step'; ...
-                 'dist', 'dist'; 'ulim', 'ulim'; 'vmax', 'vmax'};
-            for i = 1:size(f, 1)
-                if isfield(cfg, f{i, 1}), L.sendLine(sprintf('%s=%.6g', f{i, 2}, cfg.(f{i, 1}))); end
+            f = L.KEYS2;
+            if cfg.exp >= 6, f = [f, L.KEYS3]; end      % Tutorials 2-5 reject the new keys
+            for i = 1:numel(f)
+                if isfield(cfg, f{i}), L.sendLine(sprintf('%s=%.6g', f{i}, cfg.(f{i}))); end
             end
             L.sendLine('cfg');
+        end
+
+        function setLive(L, key, val)
+        %SETLIVE  Change one gain during a run (experiments 6-10, 21-23), e.g.
+        %   L.setLive('kpp', 400). The firmware answers with a C line and applies
+        %   gains, filters, rate and limits at once; exp, sequence and step only
+        %   take effect on the next run.
+            assert(L.protocol >= 3, 'RigLink: live gain changes need protocol 3');
+            assert(any(strcmp(key, [L.KEYS2, L.KEYS3])), 'RigLink: unknown key %s', key);
+            L.lastError = '';
+            L.sendLine(sprintf('%s=%.6g', key, val));
+        end
+
+        function setRef(L, deg)
+        %SETREF  Live arm set-point [deg] ('$ref='), slewed at rrate deg/s.
+        %   Accepted while experiment 21 regulates, or once 6/7/8/23 hold upright;
+        %   the firmware answers 'REF x' (L.lastRef) or 'ERR ...' (L.lastError).
+            assert(L.protocol >= 3, 'RigLink: set-point needs protocol 3');
+            L.lastError = ''; L.lastRef = NaN;
+            L.sendLine(sprintf('ref=%.6g', deg));
         end
 
         function go(L),      L.runEvent = ''; L.sendLine('go');   end
@@ -202,7 +235,7 @@ classdef RigLink < handle
             if numel(f) == 12                        % protocol 2
                 w = str2double(f(8:11));
                 L.rexp(L.n) = w(1); L.rph(L.n) = w(2); L.ru(L.n) = w(3); L.rref(L.n) = w(4) / 1000;
-                L.protocol = 2;
+                L.protocol = max(L.protocol, 2);    % the D line is the same in protocol 3
             end
             L.state = char(f(7)); L.faults = v(5); L.streaming = true;
             ok = 1;
@@ -212,16 +245,21 @@ classdef RigLink < handle
             L.lines{end+1} = s;
             if numel(L.lines) > 200, L.lines = L.lines(end-199:end); end
             if contains(s, 'THIS IS NOT THE VEHICLE FIRMWARE'), L.banner = true; end
-            if contains(s, 'protocol 2'), L.protocol = 2; end
+            if contains(s, 'protocol 2'), L.protocol = max(L.protocol, 2); end
+            if contains(s, 'protocol 3'), L.protocol = 3; end
             if contains(s, 'EMULATOR'), L.emulator = true; end
             if startsWith(s, 'C,')
                 v = str2double(split(string(s(3:end)), ','));
-                if numel(v) == 9
+                if numel(v) == 9 || numel(v) == 23        % protocol 2 / 3
                     L.cfg = struct('exp', v(1), 'kp', v(2), 'kd', v(3), 'kpp', v(4), 'kdp', v(5), ...
                                    'step', v(6), 'dist', v(7), 'ulim', v(8), 'vmax', v(9));
+                    if numel(v) == 23
+                        for i = 1:numel(L.KEYS3), L.cfg.(L.KEYS3{i}) = v(9 + i); end
+                    end
                 end
             end
             if startsWith(s, 'ERR'), L.lastError = s; end
+            if startsWith(s, 'REF '), L.lastRef = str2double(s(5:end)); end
             if startsWith(s, 'GO ') || startsWith(s, 'RUN ') || startsWith(s, 'STOPPING'), L.runEvent = s; end
             if contains(s, 'STREAM ON'),  L.streaming = true;  end
             if contains(s, 'STREAM OFF'), L.streaming = false; end

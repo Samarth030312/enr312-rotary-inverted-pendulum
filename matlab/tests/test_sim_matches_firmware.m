@@ -38,10 +38,47 @@ function ok = test_sim_matches_firmware()
             R(end+1, :) = {'EXP005 wrong-way undershoot agrees (0.1 deg)', abs(uC - uM) < 0.1, sprintf('C %.3f, MATLAB %.3f deg', uC, uM)}; %#ok<AGROW>
         end
     end
+    % ---- general core (enr312_ctrl.c) vs odyssix.sim.runCtrl ------------------
+    pl = struct('wg2', 56.4, 'Q', 24, 'wr2', 0.803, 'nonlinear', true, 'quant', true);
+    cases = {9, '', struct(); 10, '', struct(); 22, '', struct(); 21, 'psi0=30', struct('psi0', 30); ...
+             21, 'psi0=20 at=5:ref=15 at=10:kp=10 tap=12:30 div=5 ma=4', ...
+                 struct('psi0', 20, 'events', struct('t', {5, 10}, 'key', {'ref', 'kp'}, 'val', {15, 10}), ...
+                        'taps', [12 30], 'div', 5, 'ma', 4)};
+    for i = 1:size(cases, 1)
+        e = cases{i, 1}; cfg = odyssix.sim.defaults(e); o = cases{i, 3};
+        if isfield(o, 'div'), cfg.div = o.div; cfg.ma = o.ma; end
+        [C, S, st] = both(exe, cfg, pl, cases{i, 2}, o);
+        n = min(height(C), height(S));
+        d = max(abs(C.rotor_deg(1:n) - S.rotor(1:n)) + abs(C.psi_deg(1:n) - S.psi(1:n)));
+        label = sprintf('exp %d %s', e, cases{i, 2});
+        R(end+1, :) = {sprintf('%-40s identical', label), st == 0 && d < 1e-6, sprintf('%.1e deg over %d samples', d, n)}; %#ok<AGROW>
+    end
+    for e = [6 7 8 23]
+        cfg = odyssix.sim.defaults(e);
+        [C, S] = both(exe, cfg, pl, '', struct());
+        n = min(height(C), height(S));
+        d = abs(C.rotor_deg(1:n) - S.rotor(1:n)) + abs(C.psi_deg(1:n) - S.psi(1:n));
+        k = find(d > 1e-9, 1); if isempty(k), k = n; end
+        b = find(S.phase == 2, 1);
+        aC = 180 - C.psi_deg(end - 500:end); aM = S.alpha(end - 500:end);
+        R(end+1, :) = {sprintf('exp %d identical through capture, release, balance start', e), k > b, ...
+                       sprintf('%.2f s (balance from %.2f s)', S.t(k), S.t(b))}; %#ok<AGROW>
+        R(end+1, :) = {sprintf('exp %d both balancing at the end, same phase', e), ...
+                       max(abs(aC)) < 2 && max(abs(aM)) < 2 && C.phase(n) == S.phase(n), ...
+                       sprintf('|alpha| C %.2f, MATLAB %.2f; phase %d', max(abs(aC)), max(abs(aM)), S.phase(n))}; %#ok<AGROW>
+    end
+
     fprintf('\nMATLAB engine vs firmware control code (C emulator, batch)\n%s\n', repmat('-', 1, 80));
-    for i = 1:size(R, 1), fprintf('  %-42s %-5s %s\n', R{i, 1}, pf(R{i, 2}), R{i, 3}); end
+    for i = 1:size(R, 1), fprintf('  %-58s %-5s %s\n', R{i, 1}, pf(R{i, 2}), R{i, 3}); end
     n = sum([R{:, 2}]); fprintf('%s\n  %d / %d passed\n\n', repmat('-', 1, 80), n, size(R, 1));
     ok = n == size(R, 1);
     %#ok<*NASGU> T kept for symmetry with other tests
 end
 function s = pf(b), if b, s = 'PASS'; else, s = 'FAIL'; end, end
+
+function [C, S, st] = both(exe, cfg, pl, args, o)
+    S = odyssix.sim.runCtrl(cfg, pl, o);
+    f = [tempname '.csv'];
+    st = system(sprintf('"%s" --batch exp=%d seconds=%g %s > "%s"', exe, cfg.exp, cfg.seconds, args, f));
+    C = readtable(f); delete(f);
+end
