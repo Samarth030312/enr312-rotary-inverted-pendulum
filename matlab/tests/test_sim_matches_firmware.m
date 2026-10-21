@@ -92,6 +92,20 @@ function ok = test_sim_matches_firmware()
     n = min(height(C), height(S)); d = max(abs(C.rotor_deg(1:n) - S.rotor(1:n)) + abs(C.psi_deg(1:n) - S.psi(1:n)));
     pk = max(abs(mod(S.psi(S.t > 15) + 180, 360) - 180));
     R(end+1, :) = {'exp 24 amp 90: identical, swings to 90 (6)', d < 1e-6 && abs(pk - 90) < 6, sprintf('%.1e deg; swings to %.1f deg', d, pk)}; %#ok<AGROW>
+    % ---- pivot dry friction (stick-slip), hanging PID: identical
+    cfg = odyssix.sim.defaults(21); cfg.seconds = 15;
+    plc = pl; plc.coulomb = 0.9;
+    [C, S] = both(exe, cfg, plc, 'psi0=20 plant_coulomb=0.9', struct('psi0', 20));
+    n = min(height(C), height(S)); d = max(abs(C.rotor_deg(1:n) - S.rotor(1:n)) + abs(C.psi_deg(1:n) - S.psi(1:n)));
+    R(end+1, :) = {'exp 21 with pivot dry friction 0.9: identical', d < 1e-6, sprintf('%.1e deg over %d samples', d, n)}; %#ok<AGROW>
+    % ---- swing-up on a realistic pendulum: friction, offset, wg2 50 vs firmware 57.01
+    cfg = odyssix.sim.defaults(24); cfg.wg2 = 57.01;
+    plr = pl; plr.wg2 = 50; plr.coulomb = 0.9; plr.bias = 0.5;
+    [C, S] = both(exe, cfg, plr, 'wg2=57.01 plant_wg2=50 plant_coulomb=0.9 plant_bias=0.5', struct());
+    cC = find(C.phase == 8, 1); cM = find(S.phase == 8, 1);
+    R(end+1, :) = {'exp 24, friction + offset + wg2 error: both catch, same time', ~isempty(cC) && ~isempty(cM) && abs(C.t_s(cC) - S.t(cM)) < 0.01, ...
+                   sprintf('C %.2f s, MATLAB %.2f s', C.t_s(max([cC 1])), S.t(max([cM 1])))}; %#ok<AGROW>
+
     % ---- upright auto-trim with a 0.6 deg encoder offset (exp 23, lab mode)
     cfg = odyssix.sim.defaults(23); cfg.seq = 0; cfg.seconds = 60;
     plb = pl; plb.bias = 0.6;

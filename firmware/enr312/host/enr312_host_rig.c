@@ -197,7 +197,7 @@ static void process_line(Rig *r)
 
 static const char *HELP =
     "\r\n--- ENR312 commands ---------------------------------------\r\n"
-    " Firmware:      enr312-target-2.3.0 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)\r\n"
+    " Firmware:      enr312-target-2.3.2 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)\r\n"
     "  ?  help   t  status   a  ARM   s  START   x  ABORT   c  clear fault\r\n"
     "  z  zero datums   +/-  first motion 5 deg   q  L6474 STATUS   r  stream\r\n"
     "  .  keep-alive (send at least once a second while an experiment runs)\r\n"
@@ -288,7 +288,7 @@ static int run_pty(long parent)
     out(&r, "\r\n===========================================================\r\n"
             " *** ENR312 RIG EMULATOR -- firmware logic, NOT HARDWARE *** \r\n"
             " ENR312 ROTARY INVERTED PENDULUM -- target firmware\r\n"
-            " Firmware:      enr312-target-2.3.0 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)\r\n"
+            " Firmware:      enr312-target-2.3.2 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)\r\n"
             "\r\n THIS IS NOT THE VEHICLE FIRMWARE.\r\n"
             " State: SAFE. L6474 held in reset. No motion possible.\r\n"
             "===========================================================\r\n");
@@ -344,6 +344,8 @@ static int run_batch(int argc, char **argv)
         /* plant_wg2= is the SIMULATED pendulum; wg2= (below) is the firmware parameter */
         if (strncmp(argv[i], "plant_wg2=", 10) == 0) { r.p.wg2 = atof(argv[i] + 10); r.p.gamma = sqrt(r.p.wg2) / 24.0; continue; }
         if (strncmp(argv[i], "plant_bias=", 11) == 0) { r.p.enc_bias = atof(argv[i] + 11); continue; }
+        if (strncmp(argv[i], "plant_coulomb=", 14) == 0) { r.p.coulomb = atof(argv[i] + 14); continue; }
+        if (strncmp(argv[i], "plant_q=", 8) == 0) { r.p.gamma = sqrt(r.p.wg2) / atof(argv[i] + 8); continue; }
         if (strncmp(argv[i], "psi0=", 5) == 0) { r.p.psi = atof(argv[i] + 5) * 3.14159265358979323846 / 180.0; continue; }
         if ((strncmp(argv[i], "at=", 3) == 0 || strncmp(argv[i], "tap=", 4) == 0) && nev < 32) {
             int tap = argv[i][0] == 't';

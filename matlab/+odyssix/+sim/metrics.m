@@ -100,7 +100,9 @@ function m = metrics(D, cfg)
     end
     % "hold the arm at this angle when asked": cfg.target [deg] commanded at
     % cfg.target_t [s] (live '$ref', experiments 6-8, 21, 23)
-    if isfield(cfg, 'target') && isfield(cfg, 'target_t') && isfinite(cfg.target_t)
+    % (metadata read back from JSON stores an unused target as [])
+    if isfield(cfg, 'target') && isfield(cfg, 'target_t') && isscalar(cfg.target_t) && isfinite(cfg.target_t) ...
+            && isscalar(cfg.target) && isfinite(cfg.target)
         w = t >= cfg.target_t;
         m.hold_error_deg = NaN; m.hold_reach_s = NaN;
         if any(w)

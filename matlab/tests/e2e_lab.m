@@ -51,7 +51,10 @@ function ok = e2e_lab()
 
     % LAB hanging PID: pluck, stop the swing, go to 20, live gain, stop
     app.lab('hanging', 'PID'); truth(); before = app.lastSaved();
-    app.send('!'); pause(0.8); app.runRig(); waitFor(@() ~isempty(app.rigData()) && height(app.rigData()) > 20, 3);
+    app.send('!'); pause(0.8); app.runRig(); waitFor(@() ~isempty(app.rigData()) && height(app.rigData()) > 60, 6);
+    if isempty(app.rigData())                           % the run did not start: say why, do not crash
+        R(end+1, :) = {'LAB hanging: run started', false, app.ui.say.Text}; ok = report(R); return;
+    end
     pauseUI(6); app.gotoAngle(20); pauseUI(5);
     app.set('kdp', 8); waitFor(@() isfield(L.cfg, 'kdp') && L.cfg.kdp == 8, 2);
     R(end+1, :) = {'LAB hanging: live gain echoed', isfield(L.cfg, 'kdp') && L.cfg.kdp == 8, sprintf('kdp %g', L.cfg.kdp)};
@@ -112,6 +115,9 @@ function ok = e2e_lab()
     R(end+1, :) = {'REPLAY of a saved run', okR, msg};
     R(end+1, :) = {'state SAFE at the end', strcmp(L.state, 'SAFE'), L.state};
 
+    ok = report(R);
+end
+function ok = report(R)
     fprintf('\nenr312_lab end to end (simulation + EMULATOR, synthetic)\n%s\n', repmat('-', 1, 96));
     for i = 1:size(R, 1), fprintf('  %-52s %-5s %s\n', R{i, 1}, pf(R{i, 2}), R{i, 3}); end
     n = sum([R{:, 2}]); fprintf('%s\n  %d / %d passed\n\n', repmat('-', 1, 96), n, size(R, 1));

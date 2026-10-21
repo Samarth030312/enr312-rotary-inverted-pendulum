@@ -1,0 +1,93 @@
+{
+  "run_id": "EXP008_20261021-162641_t8-tutorial-8-kp-15-ti-2-td-0-5_R01",
+  "experiment_id": "EXP008",
+  "data_class": "HARDWARE",
+  "label": "T8-Tutorial 8  Kp 15, Ti 2, Td 0.5",
+  "date_utc": "2026-10-21 16:26:41",
+  "result": "FINISHED",
+  "duration_s": 72.436000000000035,
+  "samples": 3622,
+  "sampling": "50 Hz stream of the 500 Hz control loop, MCU time stamps",
+  "raw_data_file": "data/raw/EXP008/EXP008_20261021-162641_t8-tutorial-8-kp-15-ti-2-td-0-5_R01.csv",
+  "raw_serial_log": "results/evidence/logs/rig_20261021-214306.log",
+  "firmware": "",
+  "firmware_protocol": 5,
+  "board": "",
+  "serial_port": "/dev/ttyACM0",
+  "repository_rev": "53ca206",
+  "repository_dirty": false,
+  "operator": "",
+  "notes": "",
+  "config": {
+    "exp": 8,
+    "kp": 15,
+    "kd": 7.5,
+    "kpp": 300,
+    "kdp": 30,
+    "step": 40,
+    "dist": 60,
+    "ulim": 1500,
+    "vmax": 360,
+    "seconds": 53,
+    "ki": 7.5,
+    "fdr": 50,
+    "fdp": 10,
+    "k1": 0,
+    "k2": 0,
+    "k3": 0,
+    "k4": 0,
+    "bv": 0,
+    "imp": 0,
+    "uon": 0,
+    "db": 0,
+    "rrate": 90,
+    "div": 1,
+    "ma": 1,
+    "seq": 1,
+    "wg2": 55.85,
+    "amp": 180,
+    "target": null,
+    "target_t": null
+  },
+  "plant_model": {
+    "wg2": 55.85,
+    "Q": 20,
+    "wr2": 0.803,
+    "nonlinear": true,
+    "quant": true
+  },
+  "events": [
+    {
+      "t": 0,
+      "what": "go",
+      "value": 8
+    },
+    {
+      "t": 72.316000000000031,
+      "what": "stop",
+      "value": 0
+    }
+  ],
+  "metrics": {
+    "overshoot_pct": 28.258126278229835,
+    "peak_time_s": 1.2400000000000091,
+    "settling_s": null,
+    "rotor_wobble_deg": 7.6499999999999986,
+    "undershoot_pct": -7.5888777685914439,
+    "ss_error_deg": -0.28849504950495231,
+    "alpha_rms_deg": 0.843668990789938,
+    "balanced": true,
+    "ld_peak_deg": 7.538,
+    "ld_final_deg": 0.12923762376237616,
+    "ld_settling_s": 9.9800000000000182,
+    "ld_offset_pred_deg": -0
+  },
+  "units": {
+    "t": "s",
+    "rotor": "deg",
+    "psi": "deg, encoder, 0 = hanging datum",
+    "alpha": "deg from upright",
+    "u": "deg/s^2 (plant input)",
+    "ref": "deg"
+  }
+}

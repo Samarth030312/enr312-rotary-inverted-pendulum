@@ -1,3 +1,3 @@
 # EXP005 Processed Data
 
-Derived from `../../raw/EXP005/` only. **Empty — no raw data exists.**
+Derived from `../../raw/EXP005/` only. Nothing stored here yet: the analysis reads the raw files directly.

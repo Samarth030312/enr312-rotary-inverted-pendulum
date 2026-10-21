@@ -1,0 +1,63 @@
+{
+  "run_id": "EXP002_20261021-161719_t2-kp-6-55-kd-4_R01",
+  "experiment_id": "EXP002",
+  "data_class": "HARDWARE",
+  "label": "T2-Kp 6.55, Kd 4",
+  "date_utc": "2026-10-21 16:17:19",
+  "result": "FINISHED",
+  "duration_s": 19.021999999999991,
+  "samples": 952,
+  "sampling": "50 Hz stream of the 500 Hz control loop, MCU time stamps",
+  "raw_data_file": "data/raw/EXP002/EXP002_20261021-161719_t2-kp-6-55-kd-4_R01.csv",
+  "raw_serial_log": "results/evidence/logs/rig_20261021-214306.log",
+  "firmware": "enr312-target-2.3.0 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)",
+  "firmware_protocol": 5,
+  "board": "",
+  "serial_port": "/dev/ttyACM0",
+  "repository_rev": "53ca206",
+  "repository_dirty": false,
+  "operator": "",
+  "notes": "",
+  "config": {
+    "exp": 2,
+    "kp": 6.55,
+    "kd": 4,
+    "kpp": 0,
+    "kdp": 0,
+    "step": 1.5,
+    "dist": 1,
+    "ulim": 400,
+    "vmax": 360,
+    "seconds": 19.5,
+    "target": null,
+    "target_t": null
+  },
+  "plant_model": {
+    "wg2": 57.01,
+    "Q": 27,
+    "wr2": 0.803,
+    "nonlinear": true,
+    "quant": true
+  },
+  "events": {
+    "t": 0,
+    "what": "go",
+    "value": 2
+  },
+  "metrics": {
+    "overshoot_pct": 19.999999999999996,
+    "peak_time_s": 0.65999999999999659,
+    "settling_s": 1.1599999999999966,
+    "dist_offset_deg": 0.19841176470588237,
+    "dist_offset_pred_deg": 0.15267175572519084,
+    "u_max": 364
+  },
+  "units": {
+    "t": "s",
+    "rotor": "deg",
+    "psi": "deg, encoder, 0 = hanging datum",
+    "alpha": "deg from upright",
+    "u": "deg/s^2 (plant input)",
+    "ref": "deg"
+  }
+}

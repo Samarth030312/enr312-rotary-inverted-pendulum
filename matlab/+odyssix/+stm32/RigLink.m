@@ -32,6 +32,7 @@ classdef RigLink < handle
         lastError = ''              % last 'ERR ...' line
         runEvent = ''               % last 'GO' / 'RUN ...' line
         lastRef = NaN               % last live set-point acknowledged ('REF x') [deg]
+        firmware = ''               % the board's 'Firmware:' line (version and protocol)
     end
     properties (Access = private)
         sp = []; partial = ''; fid = -1
@@ -65,7 +66,7 @@ classdef RigLink < handle
             configureTerminator(L.sp, 'CR/LF');
             flush(L.sp);
             L.port = port; L.partial = ''; L.state = 'UNKNOWN'; L.streaming = false;
-            L.protocol = 1; L.banner = false; L.emulator = false;   % learnt again from this board
+            L.protocol = 1; L.banner = false; L.emulator = false; L.firmware = '';   % learnt again from this board
             d = fullfile(odyssix.repoRoot(), 'results', 'evidence', 'logs');
             if ~isfolder(d), mkdir(d); end
             L.logFile = fullfile(d, ['rig_' char(datetime('now', 'Format', 'yyyyMMdd-HHmmss')) '.log']);
@@ -252,6 +253,7 @@ classdef RigLink < handle
             L.lines{end+1} = s;
             if numel(L.lines) > 200, L.lines = L.lines(end-199:end); end
             if contains(s, 'THIS IS NOT THE VEHICLE FIRMWARE'), L.banner = true; end
+            if contains(s, 'Firmware:'), L.firmware = strtrim(extractAfter(s, 'Firmware:')); end
             if contains(s, 'protocol 2'), L.protocol = max(L.protocol, 2); end
             if contains(s, 'protocol 3'), L.protocol = max(L.protocol, 3); end
             if contains(s, 'protocol 4'), L.protocol = max(L.protocol, 4); end

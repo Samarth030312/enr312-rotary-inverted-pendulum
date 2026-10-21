@@ -1,0 +1,56 @@
+run_id: "EXP005_20261021-162052_t5-system-1-kp-9-kd-9_R01"
+experiment_id: "EXP005"
+data_class: "HARDWARE"
+label: "T5-System 1  Kp 9, Kd 9"
+date_utc: "2026-10-21 16:20:52"
+result: "FINISHED"
+duration_s: 70.562
+samples: 3529
+sampling: "50 Hz stream of the 500 Hz control loop, MCU time stamps"
+raw_data_file: "data/raw/EXP005/EXP005_20261021-162052_t5-system-1-kp-9-kd-9_R01.csv"
+raw_serial_log: "results/evidence/logs/rig_20261021-214306.log"
+firmware: "enr312-target-2.3.0 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)"
+firmware_protocol: 5
+board: ""
+serial_port: "/dev/ttyACM0"
+repository_rev: "53ca206"
+repository_dirty: false
+operator: ""
+notes: ""
+config:
+  exp: 5
+  kp: 9
+  kd: 9
+  kpp: 300
+  kdp: 30
+  step: 2
+  dist: 0
+  ulim: 1500
+  vmax: 360
+  seconds: 25
+  target: null
+  target_t: null
+plant_model:
+  wg2: 55.85
+  Q: 20
+  wr2: 0.803
+  nonlinear: true
+  quant: true
+events:
+  - {t: 0, what: "go", value: 5}
+  - {t: 70.442, what: "stop", value: 0}
+metrics:
+  undershoot_pct: -292.5
+  overshoot_pct: 248.8
+  peak_time_s: 1.46
+  settling_s: null
+  alpha_peak_deg: 3.3
+  hunting_deg: 3.825
+  balanced: true
+units:
+  t: "s"
+  rotor: "deg"
+  psi: "deg, encoder, 0 = hanging datum"
+  alpha: "deg from upright"
+  u: "deg/s^2 (plant input)"
+  ref: "deg"

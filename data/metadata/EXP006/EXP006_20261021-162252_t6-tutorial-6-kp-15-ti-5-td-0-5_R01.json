@@ -1,0 +1,89 @@
+{
+  "run_id": "EXP006_20261021-162252_t6-tutorial-6-kp-15-ti-5-td-0-5_R01",
+  "experiment_id": "EXP006",
+  "data_class": "HARDWARE",
+  "label": "T6-Tutorial 6  Kp 15, Ti 5, Td 0.5",
+  "date_utc": "2026-10-21 16:22:52",
+  "result": "FINISHED",
+  "duration_s": 64.223999999999933,
+  "samples": 3212,
+  "sampling": "50 Hz stream of the 500 Hz control loop, MCU time stamps",
+  "raw_data_file": "data/raw/EXP006/EXP006_20261021-162252_t6-tutorial-6-kp-15-ti-5-td-0-5_R01.csv",
+  "raw_serial_log": "results/evidence/logs/rig_20261021-214306.log",
+  "firmware": "",
+  "firmware_protocol": 5,
+  "board": "",
+  "serial_port": "/dev/ttyACM0",
+  "repository_rev": "53ca206",
+  "repository_dirty": false,
+  "operator": "",
+  "notes": "",
+  "config": {
+    "exp": 6,
+    "kp": 15,
+    "kd": 7.5,
+    "kpp": 300,
+    "kdp": 30,
+    "step": 40,
+    "dist": 0,
+    "ulim": 1500,
+    "vmax": 360,
+    "seconds": 43,
+    "ki": 3,
+    "fdr": 50,
+    "fdp": 10,
+    "k1": 0,
+    "k2": 0,
+    "k3": 0,
+    "k4": 0,
+    "bv": 0,
+    "imp": 0,
+    "uon": 0,
+    "db": 0,
+    "rrate": 90,
+    "div": 1,
+    "ma": 1,
+    "seq": 1,
+    "wg2": 55.85,
+    "amp": 180,
+    "target": null,
+    "target_t": null
+  },
+  "plant_model": {
+    "wg2": 55.85,
+    "Q": 20,
+    "wr2": 0.803,
+    "nonlinear": true,
+    "quant": true
+  },
+  "events": [
+    {
+      "t": 0,
+      "what": "go",
+      "value": 6
+    },
+    {
+      "t": 64.083999999999946,
+      "what": "stop",
+      "value": 0
+    }
+  ],
+  "metrics": {
+    "overshoot_pct": 14.526571042939175,
+    "peak_time_s": 13.940000000000055,
+    "settling_s": null,
+    "rotor_wobble_deg": 10.463000000000001,
+    "undershoot_pct": -4.8887058769702367,
+    "ss_error_deg": -1.498158415841587,
+    "alpha_rms_deg": 0.7733790492303565,
+    "balanced": true
+  },
+  "units": {
+    "t": "s",
+    "rotor": "deg",
+    "psi": "deg, encoder, 0 = hanging datum",
+    "alpha": "deg from upright",
+    "u": "deg/s^2 (plant input)",
+    "ref": "deg"
+  }
+}

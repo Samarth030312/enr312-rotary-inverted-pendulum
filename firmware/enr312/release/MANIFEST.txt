@@ -1,14 +1,14 @@
-firmware:    enr312-target-2.3.0 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)
+firmware:    enr312-target-2.3.2 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)
 target:      ENR312 rotary inverted pendulum (STM32F401RE, NUCLEO-F401RE + X-NUCLEO-IHM01A1)
 NOT:         the vehicle firmware -- never flash build/odyssix_stm32_core.elf onto the rig
-source_rev:  c597cd3
-built:       2026-10-21T15:09:33Z
+source_rev:  d30c652
+built:       2026-10-21T18:57:08Z
 compiler:    arm-none-eabi-gcc (Arm GNU Toolchain 13.2.rel1 (Build arm-13.7)) 13.2.1 20231009
 build_cmd:   make -C firmware/enr312/target   (byte-reproducible)
 flash_addr:  0x08000000
 uart:        ST-LINK VCP, 115200 8N1
-size:        text 58964 data 488 bss 4832
+size:        text 59132 data 488 bss 4832
 sha256:
-  e0d9bedda238a9a7cfb22507facd35f8d04dbdc47e5ddf2db13471979c27c4cc  enr312_pendulum.elf
-  f8bc4f445bd4435c33d11b031db2ff2124e26eb2c9e7903909f0c1ce1e721de7  enr312_pendulum.bin
-  80adbe7dacaabda886cd49fdb94fd4283c9e638f846572bfe139e773d67883c5  enr312_pendulum.hex
+  fb3fde2db0c82bf9a3ba2424b78939cf41279a6b3171034b4ef5ff1876bbe5d2  enr312_pendulum.elf
+  716cf683953c7d1555ea62913465ebe09805d9b6cb61d119be94c21e9cac0636  enr312_pendulum.bin
+  660547d73eca2194212ecd5ec5effd5a3fd9991187f4f2e26a6706473fbc6d11  enr312_pendulum.hex

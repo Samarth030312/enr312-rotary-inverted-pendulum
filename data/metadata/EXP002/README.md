@@ -1,11 +1,3 @@
-# EXP002 Metadata
+# EXP002 metadata
 
-One YAML sidecar per raw data file, same stem. Template in
-`experiments/EXP002/MEASUREMENTS.md`.
-
-Must record: experiment ID, date, operator, source revision, parameter-set ID, controller
-gains and derivative filter, excitation amplitudes and the predicted `u_peak`, sampling
-period, units for every signal, hardware configuration (sign conventions, pendulum
-removed/clamped), and execution status.
-
-**Empty — no data exists.**
+One file per raw run in [`data/raw/EXP002/`](../../raw/EXP002/), same name. Runs from 2026-10-12 have a YAML file only (older format, no result field). From 2026-10-21 on, each run has a YAML and a JSON file with the gains, the plant values used by the simulation, the firmware line, every live action with its time, the metrics, the result and the serial lines of the run.

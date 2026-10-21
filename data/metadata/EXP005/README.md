@@ -1,8 +1,3 @@
-# EXP005 Metadata
+# EXP005 metadata
 
-One YAML sidecar per raw file. Template in `experiments/EXP005/MEASUREMENTS.md`.
-
-Must record: inverted configuration, rotor sign inversion active, inner gains 300/0/**30**,
-and that OI-10 (timing verification) was satisfied.
-
-**Empty — no data exists.**
+One file per raw run in [`data/raw/EXP005/`](../../raw/EXP005/), same name. Runs from 2026-10-12 have a YAML file only (older format, no result field). From 2026-10-21 on, each run has a YAML and a JSON file with the gains, the plant values used by the simulation, the firmware line, every live action with its time, the metrics, the result and the serial lines of the run.

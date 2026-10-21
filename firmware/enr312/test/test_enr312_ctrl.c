@@ -325,6 +325,64 @@ static void test_upright_trim(void)
     printf("    upright trim: datum offset 0.6 deg -> learnt %.2f deg, arm at %.2f deg\n", r.ec.trim, arm);
 }
 
+static void test_swing_up_realistic(void)
+{
+    /* what the rig taught (2026-10-21): pivot dry friction (it rests up to ~1 deg
+     * off vertical), a 0.5 deg encoder offset, and a pendulum constant that is
+     * not the 57.01 the firmware is told. 2.3.0 (catch <= 60 deg/s only) passed
+     * the top 30+ times on the rig without catching. */
+    const double wg2s[] = {50.0, 57.0, 65.0, 45.0, 50.0, 57.0, 65.0};
+    const double fcs[]  = {0.9,  0.9,  0.9,  0.9,  1.5,  1.5,  1.5};
+    for (unsigned j = 0; j < 7; ++j) {
+        ENR312_RunnerConfig_t c; ENR312_Runner_t r; ENR312_Plant_t p;
+        ENR312_Runner_Defaults(&c, 24); c.wg2 = 57.01;
+        ENR312_Plant_Init(&p, wg2s[j], 24.0, 0.803); p.coulomb = fcs[j]; p.enc_bias = 0.5; p.psi = 0.3 * DEG;
+        ENR312_Runner_Start(&r, &c);
+        double t_catch = -1.0;
+        for (uint32_t i = 0; i < (uint32_t)(45.0 / TS) && ENR312_Runner_IsMoving(&r); ++i) {
+            double v = ENR312_Runner_Tick(&r, ENR312_Plant_RotorDeg(&p), ENR312_Plant_EncoderDeg(&p));
+            for (int k = 0; k < SUB; ++k) { ENR312_Plant_Step(&p, v * USTEP_PER_DEG, TS / SUB); }
+            if (t_catch < 0.0 && r.phase == CTRL_PH_HOLD) { t_catch = i * TS; }
+        }
+        double a = ENR312_Runner_UprightAngle(ENR312_Plant_EncoderDeg(&p));
+        CHECK(t_catch > 0.0 && t_catch < 20.0 && r.phase == CTRL_PH_HOLD && fabs(a) < 3.0,
+              "realistic plant wg2 %.0f (firmware 57.01), friction %.1f, offset 0.5: caught %.1f s and balancing (alpha %.2f)",
+              wg2s[j], fcs[j], t_catch, a);
+        printf("    realistic swing-up: plant wg2 %4.1f friction %.1f offset 0.5: caught %5.2f s, end alpha %+.2f\n", wg2s[j], fcs[j], t_catch, a);
+    }
+}
+
+static void test_swing_up_identified(void)
+{
+    /* the pendulum identified from the rig runs of 2026-10-21
+     * (matlab/identification/identify_pendulum_20261021.m): wg2 47.6 (free decay)
+     * and 49.5 (92 deg swings), dry friction 0.48 rad/s^2, no measurable viscous
+     * damping. Told its measured wg2, the firmware must catch it every time. */
+    const double wg2s[] = {47.6, 49.5, 47.6, 49.5};
+    const double fws[]  = {48.5, 48.5, 57.01, 57.01};
+    for (unsigned j = 0; j < 4; ++j) {
+        ENR312_RunnerConfig_t c; ENR312_Runner_t r; ENR312_Plant_t p;
+        ENR312_Runner_Defaults(&c, 24); c.wg2 = fws[j];
+        ENR312_Plant_Init(&p, wg2s[j], 1.0e4, 0.803); p.coulomb = 0.48; p.enc_bias = 0.5; p.psi = 0.3 * DEG;
+        ENR312_Runner_Start(&r, &c);
+        double t_catch = -1.0;
+        for (uint32_t i = 0; i < (uint32_t)(45.0 / TS) && ENR312_Runner_IsMoving(&r); ++i) {
+            double v = ENR312_Runner_Tick(&r, ENR312_Plant_RotorDeg(&p), ENR312_Plant_EncoderDeg(&p));
+            for (int k = 0; k < SUB; ++k) { ENR312_Plant_Step(&p, v * USTEP_PER_DEG, TS / SUB); }
+            if (t_catch < 0.0 && r.phase == CTRL_PH_HOLD) { t_catch = i * TS; }
+        }
+        double a = ENR312_Runner_UprightAngle(ENR312_Plant_EncoderDeg(&p));
+        bool ok = t_catch > 0.0 && t_catch < 20.0 && r.phase == CTRL_PH_HOLD && fabs(a) < 3.0;
+        if (fws[j] < 50.0) {
+            CHECK(ok, "identified plant wg2 %.1f, firmware told %.1f: caught %.1f s and balancing (alpha %.2f)",
+                  wg2s[j], fws[j], t_catch, a);
+        }
+        printf("    identified swing-up: plant wg2 %4.1f, firmware wg2 %5.2f: %s %5.2f s, end alpha %+.2f%s\n",
+               wg2s[j], fws[j], ok ? "caught" : "no catch", t_catch, a,
+               fws[j] < 50.0 ? "" : "   (information: the wg2 the rig ran with)");
+    }
+}
+
 static void test_swing_up(void)
 {
     /* from hanging almost still, the pump must bring the pendulum up, the LQR
@@ -378,6 +436,8 @@ int main(void)
     test_pendulum_target();
     test_upright_trim();
     test_swing_up();
+    test_swing_up_realistic();
+    test_swing_up_identified();
     TEST_REPORT("test_enr312_ctrl");
     return enr312_tests_failed ? 1 : 0;
 }

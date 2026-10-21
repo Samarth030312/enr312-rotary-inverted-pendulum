@@ -250,11 +250,22 @@ pin_map:
 # PHYSICAL / MECHANICAL PARAMETERS
 # ---------------------------------------------------------------------------
 mechanical:
-  status: NOT_AVAILABLE
+  status: NOT_MEASURED
   note: >
-    Pendulum mass, arm length, pendulum length, centre-of-mass position, inertias and
-    friction coefficients are NOT recorded anywhere in this repository and have NOT been
-    measured. They are NOT required by EXP001, which concerns only the actuator command
-    chain and the angle measurement chain. They become required at EXP004. They must be
-    obtained by direct measurement of the rig, not copied from any reference model.
-  required_by: [EXP004, EXP005]
+    Pendulum mass, lengths and inertias have not been measured. The models only need
+    their combinations: wg2 (gravity term) and wr2 (arm coupling). wr2 is still the
+    Tutorial value 0.803. wg2 and the pivot friction were identified from rig data
+    (below).
+
+pendulum_dynamics:
+  status: MEASURED
+  date: 2026-10-21
+  method: matlab/identification/identify_pendulum_20261021.m
+  table: results/tables/PEND_identification_20261021.csv
+  wg2_free_decay:      { value: 47.6, unit: rad^2/s^2, source: "EXP010 R01, arm still, 5.7 deg free decay, Coulomb fit rms 0.33 deg" }
+  wg2_large_swing:     { value: 49.5, unit: rad^2/s^2, source: "EXP024 R05, 92 deg swings, elliptic-integral period" }
+  wg2_to_use:          { value: 48.5, unit: rad^2/s^2 }
+  wg2_tutorial:        { value: 57.01, unit: rad^2/s^2, source: "Tutorial geometry; the value the rig ran with on 2026-10-21" }
+  coulomb:             { value: 0.48, unit: rad/s^2, source: "EXP010 R01 free decay; stick band +-0.57 deg" }
+  q_large_swing:       { value: [57, 63], source: "EXP024 R05 energy balance at 92 deg, after the Coulomb loss" }
+  open: "a dedicated free swing with the motor off (FREE SWING in enr312_lab) is still to be recorded" 

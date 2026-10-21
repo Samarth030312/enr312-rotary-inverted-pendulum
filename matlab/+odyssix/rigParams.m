@@ -5,13 +5,13 @@ function p = rigParams()
 %   firmware/enr312/inc/enr312_rig_config.h. All three must agree; the
 %   agreement is checked by validation/exp001_check_parameter_consistency.m.
 %
-%   PROVENANCE. Nothing here is MEASURED. Every value is a prediction until
-%   EXP001 and EXP002 execute on hardware. Do not cite these as results.
+%   PROVENANCE. Each value says where it comes from: [DATASHEET], [REF],
+%   [COURSE], [LOCAL FIRMWARE], or MEASURED with the date and the evidence.
 %
 %   See also EXP001_SENSING_MODEL, EXP001_RUN_ANALYSIS.
 
     p.parameterSetId = 'PS-EDUKIT01-v1';
-    p.status         = 'UNVERIFIED_AGAINST_HARDWARE';
+    p.status         = 'PARTLY_MEASURED';      % polarities, scales, pendulum dynamics: see each entry
 
     % --- Sensing chain: incremental quadrature encoder --------------------
     p.encoder.ppr            = 600;                      % [DATASHEET]
@@ -45,10 +45,20 @@ function p = rigParams()
     p.limits.rotorDeg        = 240;                      % [REF]
     p.limits.pendulumDeg     = 120;                      % [REF]
 
-    % --- Mechanical: DELIBERATELY ABSENT -----------------------------------
-    % Masses, lengths, inertias and friction are NOT known and are NOT needed
-    % by EXP001. They are required from EXP004. Populating them with reference
-    % values would be fabrication.
-    p.mechanical.status      = 'NOT_AVAILABLE';
-    p.mechanical.requiredBy  = {'EXP004','EXP005'};
+    % --- Pendulum dynamics: IDENTIFIED from rig runs of 2026-10-21 ----------
+    % matlab/identification/identify_pendulum_20261021.m, table
+    % results/tables/PEND_identification_20261021.csv. Not from a dedicated
+    % free swing (still to be recorded); from a T10 stretch with the arm still
+    % and from the steady 92 deg swings of the pendulum-target run R05.
+    p.pendulum.wg2Measured   = [47.6 49.5];   % rad^2/s^2: free decay 5.7 deg; 92 deg swings (elliptic period)
+    p.pendulum.wg2           = 48.5;          % the value to give the firmware ($wg2)
+    p.pendulum.coulomb       = 0.48;          % rad/s^2, dry pivot friction (free decay fit, rms 0.33 deg)
+    p.pendulum.QLargeSwing   = [57 63];       % viscous Q that closes the energy balance at 92 deg
+    p.pendulum.source        = 'MEASURED 2026-10-21 (EXP010 R01, EXP024 R05)';
+    p.pendulum.tutorialWg2   = 57.01;         % [COURSE] from the Tutorial geometry; what the rig ran with
+
+    % --- Masses, lengths, inertias: NOT MEASURED ------------------------------
+    % Only their combinations wg2 and wr2 enter the models. wr2 is still the
+    % Tutorial value (0.803).
+    p.mechanical.status      = 'NOT_MEASURED';
 end

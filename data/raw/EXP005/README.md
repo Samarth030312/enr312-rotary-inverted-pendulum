@@ -1,23 +1,12 @@
-# EXP005 Raw Data — IMMUTABLE
+# EXP005 (T5 inverted): raw rig data
 
-**Empty. No experimental data exists.**
+Recorded on the real rig, never edited. Metadata for each file (gains, firmware, live actions, result) is in [`data/metadata/EXP005/`](../../metadata/EXP005/) under the same name. Columns and units: [`data/README.md`](../../README.md).
 
-## Schema
-
-```
-tick,t_s,phase,rotor_ref_deg,rotor_deg,pend_deg,u_rotor,u_pend,u,abort_reason
-```
-
-| Column | Meaning |
-|---|---|
-| `phase` | 0 wait-capture, 1 balance, 2 rotor-step, 3 settle, 4 done, 5 aborted |
-| `pend_deg` | pendulum angle from **UPRIGHT** — a different datum from EXP003/EXP004 |
-| `u_rotor` | `K_rotor` output **after** the inverted-mode sign inversion |
-| `abort_reason` | 0 none, 1 **pendulum lost**, 2 rotor limit, 3 saturation, 4 operator |
-
-## Invariants
-
-1. `abort_reason` 0 throughout for a valid balance run.
-2. `|pend_deg| < 15` throughout — beyond that the linear model does not describe the system.
-3. Zero saturated samples.
-4. Metadata **must** record that OI-10 (timing verification) was satisfied before the run.
+| Run | UTC | Result | Length |
+|---|---|---|---|
+| `EXP005_20261012_180556_ca13472` | 2026-10-12 18:05 | not recorded (older format) | 5 s |
+| `EXP005_20261012_182741_25f2101` | 2026-10-12 18:27 | not recorded (older format) | 40 s |
+| `EXP005_20261012_182942_25f2101` | 2026-10-12 18:29 | not recorded (older format) | 28 s |
+| `EXP005_20261012_183152_25f2101` | 2026-10-12 18:31 | not recorded (older format) | 88 s |
+| `EXP005_20261012_183622_25f2101` | 2026-10-12 18:36 | not recorded (older format) | 22 s |
+| `EXP005_20261021-162052_t5-system-1-kp-9-kd-9_R01` | 2026-10-21 16:20 | FINISHED | 71 s |

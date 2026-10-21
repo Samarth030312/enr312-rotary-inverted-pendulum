@@ -13,12 +13,12 @@ enr312_lab
 
 | Where | What |
 |---|---|
-| left | **MISSION** buttons (T1–T10 and LAB), the preset, and only the sliders this mission uses |
+| left | **MISSION** buttons (T1–T10 and LAB), the preset, and only the parameters this mission uses (type a number, Enter) |
 | centre | the rig in 3-D, big live numbers (arm θ, pendulum, input u, phase), one status line |
 | right | arm, pendulum, and one analysis plot (poles, Nyquist, impulse response, …). Grey = simulation, blue/orange = rig, violet = a replayed run |
 | bottom left | CONNECT · ARM · START · RUN · STOP · ZERO DATUMS · SIMULATE |
 | bottom centre | the numbers that matter (SIM / RIG / REF) and the live controls **ARM** and **PENDULUM** |
-| bottom right | **RUNS**: every recorded run. Click one to overlay it, ▶ REPLAY to watch it. **NEXT STEP ›** walks you through all experiments in order |
+| bottom right | **RUNS**: every recorded run. Select one, then **OVERLAY RUN** draws it over the plots. **▶ PLAY** plays the run (or the simulation) on the 3-D rig; press again to pause, drag the time bar to scrub, pick 0.5×–4×. Nothing plays until you press PLAY. **NEXT ›** walks you through all experiments in order |
 
 ## Missions
 
@@ -48,7 +48,9 @@ enr312_lab
   A pendulum can **rest** only at 0° or 180°: holding it still at any other angle
   would need the arm to accelerate forever. That's why a target in between is a
   swing height.
-- **Gain sliders** act on the running controller immediately (recorded as events).
+- **Gains** typed during a run act on the running controller at once and are recorded as events.
+- **LAB → hanging → Energy (swing / swing-up)** shows the energy controller's own
+  parameters (pump, arm centring, catch LQR), not PID gains.
 
 ## Recording
 

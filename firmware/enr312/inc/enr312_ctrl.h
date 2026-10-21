@@ -85,7 +85,14 @@ extern "C" {
 #define CTRL_SAT_ABORT_TICKS   (ENR312_CONTROL_RATE_HZ / 5u)    /* 200 ms */
 #define CTRL_SW_CATCH_DEG      7.0   /**< swing-up hands over inside this     */
 #define CTRL_SW_CATCH_RATE     60.0   /**< ... moving slower than this [deg/s] (rig 2026-10-21: 75 deg/s fell) */
-#define CTRL_SW_OVER_RATE      CTRL_SW_CATCH_RATE  /**< a pass too fast to catch = too much energy */
+#define CTRL_SW_CATCH_APPROACH 100.0  /**< ... or still approaching from 2..7 deg at up to this
+                                           (rig 2026-10-21: 64-75 deg/s approaching held; one at
+                                           -0.45 deg already crossing over fell) */
+#define CTRL_SW_OVER_RATE      CTRL_SW_CATCH_APPROACH  /**< a pass faster than this = too much energy */
+#define CTRL_SW_KA_OVER        1.0    /**< correction per too-fast pass (0.5 took ~30 passes on the rig) */
+#define CTRL_SW_CATCH_UMAX     2.0    /**< catch only if the LQR's first demand is <= this x ulim:
+                                           rig catches that held asked ~2100-2700 deg/s^2; an emulator
+                                           catch with the arm at 190 deg/s asked 4300 and fell */
 #define CTRL_SW_HOME_TICKS     (ENR312_CONTROL_RATE_HZ * 2u)    /* hold where caught 2 s, then home */
 #define CTRL_TRIM_TAU_S        8.0    /**< upright auto-trim time constant [s]  */
 #define CTRL_SAT_ABORT_UP_TICKS (ENR312_CONTROL_RATE_HZ / 2u)   /* 500 ms, upright HOLD */
@@ -94,6 +101,9 @@ extern "C" {
 #define CTRL_SW_DELTA0         0.15   /**< first guess of the climb loss       */
 #define CTRL_SW_KE_AMP         5.0    /**< energy-law gain for a pendulum target (sweep: 5 reaches in 3-6 s, arm <= 34 deg) */
 #define CTRL_SW_DELTA_MAX      0.6
+#define CTRL_SW_DELTA_MIN     -0.3    /**< delta below 0 absorbs a wg2 set too high: E is then
+                                           underestimated near the bottom and the pump overshoots
+                                           (rig 2026-10-21: 57.01 set, 47.6-49.5 measured) */
 #define CTRL_SW_KA             0.5    /**< learning gain on the apex shortfall */
 #define CTRL_SW_TIMEOUT_TICKS  (ENR312_CONTROL_RATE_HZ * 40u)   /* 40 s   */
 

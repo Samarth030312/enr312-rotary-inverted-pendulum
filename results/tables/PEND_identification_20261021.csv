@@ -1,0 +1,6 @@
+source,wg2_rad2_s2,coulomb_rad_s2,gamma_1_s,fit_rms_deg,arm_moved_deg
+"A EXP010 R01 free decay (arm still), Coulomb + viscous fit",47.6009235210136,0.47617472081106,0.000139828556866774,0.325031837462487,0
+"A same stretch, viscous-only fit",47.7519092040205,0,1.56636699498133,0.729351521821944,0
+"B+C EXP024 R05 12.0-17.5 s, amplitude 91.6 deg: elliptic period; energy balance with c from A",49.3682545898142,0.47617472081106,0.118625698157551,NaN,18.675
+"B+C EXP024 R05 25.0-30.0 s, amplitude 91.6 deg: elliptic period; energy balance with c from A",49.4743294390838,0.47617472081106,0.124059641963328,NaN,24.975
+"B+C EXP024 R05 44.0-48.5 s, amplitude 91.9 deg: elliptic period; energy balance with c from A",49.5429153813106,0.47617472081106,0.11110526721979,NaN,18.113

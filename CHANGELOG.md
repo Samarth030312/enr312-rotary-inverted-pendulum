@@ -4,6 +4,38 @@ Firmware releases (`firmware/enr312/release/`). Each release image is built from
 clean tree and pinned by SHA-256 in `MANIFEST.txt`; MATLAB refuses to flash an
 image whose hash does not match.
 
+## 2.3.2 (2026-10-22): swing-up robust to a wrong pendulum constant
+From the identification of the 2026-10-21 data
+(`matlab/identification/identify_pendulum_20261021.m`). The rig ran with ωg² 57.01, a
+value derived from the Tutorial geometry, but it measures 47.6 (free decay) to 49.5
+(92° swings). With ωg² set too high, the energy estimate is low near the bottom and the
+pump overshoots the top. The learnt correction δ could not go below 0, so it could not
+take the excess back. **Not yet run on the rig.**
+* δ may go down to −0.3 in swing-up too (`CTRL_SW_DELTA_MIN`), as it already could for a
+  pendulum target.
+* Simulated on the identified pendulum (`matlab/experiments/PEND/swingup_versions_study.m`),
+  with the firmware told 57.01: 2.2.0, 2.3.0 and 2.3.1 catch in part of the cases and
+  2.3.2 in all of them. The model reproduces the rig's outcomes for 2.2.0 and 2.3.0.
+* App: SWING UP offers the measured ωg² when the one in use differs by more than 8 %.
+  A simulation in the app keeps the rig's 1 s host watchdog fed, so a run still active
+  on the rig no longer stops while the app simulates.
+
+## 2.3.1 (2026-10-21): a swing-up catch that works on the real pendulum
+From the evening rig session (`results/reports/2026-10-21b_rig_session.md`): 2.3.0
+caught one swing-up in three, after 39 s. The real pendulum passes the top at 75–120 deg/s
+because the pivot has dry friction; the 60 deg/s catch rule almost never fired.
+**Not yet run on the rig.**
+* **Catch** at |α| ≤ 7° when slow (≤ 60 deg/s) **or** coming towards upright from 2–7°
+  at ≤ 100 deg/s, and only if the LQR's first command is within 2× the arm's limit
+  (a catch with the arm already moving fast cannot be stopped in time).
+* A pass over the top lowers the learnt climb loss with gain 1.0 (was 0.5).
+* The pendulum target (0 < amp < 179) starts with no learnt loss, so amp 0 really stops.
+* Host plant and MATLAB simulation: stick-slip (Coulomb) pivot friction and an encoder
+  offset. Simulated with friction 0.9–1.5 rad/s², offset 0.5° and ωg² 45–65: 7 of 7
+  caught in 6–11 s in the host tests; 12 of 13 in the wider sweep. (Later
+  identification put the friction at 0.48 rad/s² plus a speed-dependent loss. On that
+  pendulum 2.3.1 catches in only half the cases; see 2.3.2.) Never flashed.
+
 ## 2.3.0 (2026-10-21): protocol 5, from the first rig swing-ups
 Motivated by the rig session of 2026-10-21 (`results/reports/2026-10-21_rig_session.md`):
 swing-up caught 3 of 3 on firmware 2.2.0, then lost to an external kick, a catch at

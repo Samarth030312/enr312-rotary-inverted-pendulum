@@ -27,6 +27,12 @@ Caught upright in **3 of 3** attempts at 7.1–8.0 s. The rig's swing builds up 
 swing for swing like the simulation of the same gains with the Tutorial pendulum
 values. The energy model with the learnt climb loss (δ) describes the real pendulum.
 
+> **Note added 2026-10-22.** That simulation used the Tutorial pendulum constant
+> ωg² = 57.01 for both the firmware and the simulated pendulum. Identification from the
+> same day's data puts the real value at 47.6–49.5. The resemblance of the build-up was
+> real, but it does not validate ωg². The consequences are in the
+> [evening report](2026-10-21b_rig_session.md), section 1.
+
 ### 2. The arm sits off its set-point because "upright" is off by 0.6°
 ![offset](../figures/2026-10-21_upright_offset_and_trim.png)
 

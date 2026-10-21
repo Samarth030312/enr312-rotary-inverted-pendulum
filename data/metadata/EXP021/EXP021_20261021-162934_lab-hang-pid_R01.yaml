@@ -1,0 +1,69 @@
+run_id: "EXP021_20261021-162934_lab-hang-pid_R01"
+experiment_id: "EXP021"
+data_class: "HARDWARE"
+label: "lab-hang-pid"
+date_utc: "2026-10-21 16:29:34"
+result: "FINISHED"
+duration_s: 10.222
+samples: 512
+sampling: "50 Hz stream of the 500 Hz control loop, MCU time stamps"
+raw_data_file: "data/raw/EXP021/EXP021_20261021-162934_lab-hang-pid_R01.csv"
+raw_serial_log: "results/evidence/logs/rig_20261021-214306.log"
+firmware: ""
+firmware_protocol: 5
+board: ""
+serial_port: "/dev/ttyACM0"
+repository_rev: "53ca206"
+repository_dirty: false
+operator: ""
+notes: ""
+config:
+  exp: 21
+  kp: 6
+  kd: 4.8
+  kpp: 10
+  kdp: 5
+  step: 0
+  dist: 0
+  ulim: 800
+  vmax: 360
+  seconds: 24
+  ki: 0
+  fdr: 10
+  fdp: 10
+  k1: 0
+  k2: 0
+  k3: 0
+  k4: 0
+  bv: 0
+  imp: 0
+  uon: 0
+  db: 0
+  rrate: 90
+  div: 1
+  ma: 1
+  seq: 0
+  wg2: 57.01
+  amp: 180
+  target: null
+  target_t: null
+plant_model:
+  wg2: 57.01
+  Q: 27
+  wr2: 0.803
+  nonlinear: true
+  quant: true
+events:
+  - {t: 0, what: "go", value: 21}
+  - {t: 10.082, what: "stop", value: 0}
+metrics:
+  swing_start_deg: 0.3
+  stop_time_s: 0
+  rotor_peak_deg: 0.563
+units:
+  t: "s"
+  rotor: "deg"
+  psi: "deg, encoder, 0 = hanging datum"
+  alpha: "deg from upright"
+  u: "deg/s^2 (plant input)"
+  ref: "deg"

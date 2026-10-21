@@ -12,6 +12,9 @@ function S = runCtrl(cfg, plant, opts)
 %     events    struct array with fields t, key, val: at time t send '$key=val'
 %               (key 'ref' = live set-point; any gain name = live gain change)
 %     taps      [t v; ...] add v deg/s to the pendulum rate at time t
+%     onTick    function handle called every 1000 steps (2 s of simulated
+%               time); does not change the result. The app uses it to keep
+%               the rig's 1 s host watchdog fed while it simulates.
 %
 %   A line-by-line port of firmware/enr312/src/enr312_ctrl.c (the controller),
 %   enr312_runner.c (u -> velocity -> step rate) and host/enr312_host_rig.c
@@ -30,6 +33,7 @@ function S = runCtrl(cfg, plant, opts)
 
     % ---- plant (host/enr312_plant.c) ---------------------------------------
     P.wg2 = plant.wg2; P.gamma = sqrt(plant.wg2) / plant.Q; P.wr2 = plant.wr2;
+    P.coulomb = 0; if isfield(plant, 'coulomb'), P.coulomb = plant.coulomb; end   % pivot dry friction, rad/s^2
     psi0 = 0.4; if capture, psi0 = 179.4; end
     if isfield(opts, 'psi0'), psi0 = opts.psi0; end
     psi = psi0 * d2r; psid = 0; held = capture;
@@ -60,7 +64,9 @@ function S = runCtrl(cfg, plant, opts)
     runState = 'ACTIVE'; v = 0; vsat = 0; runAbort = 'NONE';
     [t, rot, psiO, alO, uO, refO, phO, prO] = deal(nan(N, 1));
     ref = 0; pendRef = 0; aMeas = 0;
+    onTick = []; if isfield(opts, 'onTick'), onTick = opts.onTick; end
     for k = 1:N
+        if ~isempty(onTick) && mod(k, 1000) == 0, onTick(); end
         tk = (k - 1) * Ts;
         % batch events: before the tick, as host/enr312_host_rig.c
         for i = find(~evDone)
@@ -121,7 +127,19 @@ function S = runCtrl(cfg, plant, opts)
             vr = rate / UPD * d2r;
             if held, psid = 0; elseif vr ~= vPrev, psid = psid + P.wr2 * cos(psi) * (vr - vPrev); end
             vPrev = vr;
-            if ~held, [psi, psid] = rk4(psi, psid, vr, h, P, plant.nonlinear); end
+            if ~held && P.coulomb > 0
+                % stick-slip pivot friction, as host/enr312_plant.c
+                drive = -P.wg2 * sin(psi) + vr * vr * sin(psi) * cos(psi);
+                if ~(psid == 0 && abs(drive) <= P.coulomb)
+                    if psid > 0, fs = 1; elseif psid < 0, fs = -1; elseif drive > 0, fs = 1; else, fs = -1; end
+                    w0 = psid;
+                    [psi, psid] = rk4(psi, psid, vr, h, P, plant.nonlinear);
+                    psid = psid - fs * P.coulomb * h;
+                    if w0 ~= 0 && psid * w0 < 0, psid = 0; end
+                end
+            elseif ~held
+                [psi, psid] = rk4(psi, psid, vr, h, P, plant.nonlinear);
+            end
         end
     end
     S = table(t, rot, psiO, alO, uO, refO, phO, prO, 'VariableNames', ...
@@ -194,12 +212,12 @@ function S = runCtrl(cfg, plant, opts)
                     end
                     swEpeak = 0;
                 end
-                if upr && abs(aRaw) < 5.0 && abs(dpsi) > 60.0 && ~swOver
-                    swDelta = swDelta - 0.5 * (en - 2.0);
+                if upr && abs(aRaw) < 5.0 && abs(dpsi) > 100.0 && ~swOver
+                    swDelta = swDelta - 1.0 * (en - 2.0);
                     swOver = true;
                 end
                 if abs(aRaw) > 30.0, swOver = false; end
-                lo = 0.0; if ~upr, lo = -0.3; end
+                lo = -0.3;                                          % CTRL_SW_DELTA_MIN
                 if swDelta < lo, swDelta = lo; elseif swDelta > 0.6, swDelta = 0.6; end
                 swDpsiPrev = dpsi;
                 et = hstar + swDelta;
@@ -275,7 +293,12 @@ function S = runCtrl(cfg, plant, opts)
 
         switch phase
             case 11
-                if c.amp >= 179.0 && abs(aRaw) <= 7.0 && abs(dpsi) <= 60.0 && swE >= 1.8
+                adotc = -dpsi;
+                slowc = abs(dpsi) <= 60.0;
+                appr = abs(aRaw) >= 2.0 && aRaw * adotc < 0.0 && abs(dpsi) <= 100.0;
+                uc = c.k2 * thetadot + c.k3 * aRaw + c.k4 * adotc;
+                feas = abs(uc) <= 2.0 * c.ulim;
+                if c.amp >= 179.0 && abs(aRaw) <= 7.0 && (slowc || appr) && feas && swE >= 1.8
                     refNow = theta; refLive = theta; homePending = true; advance(8);
                 elseif c.amp >= 179.0 && ptick >= 20000
                     advance(12);

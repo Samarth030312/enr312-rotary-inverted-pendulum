@@ -22,6 +22,9 @@ typedef struct {
     int64_t pos;                /* arm position, microsteps                   */
     double t;                   /* s                                          */
     bool held;                  /* a hand holds the pendulum still            */
+    double coulomb;             /* pivot dry friction, rad/s^2 (0 = none). The *
+                                 * rig rests up to ~0.9 deg off vertical:      *
+                                 * wg2 sin(0.9 deg) ~ 0.9 rad/s^2 (2026-10-21) */
     double enc_bias;            /* encoder reading offset, deg (a datum taken  *
                                  * off-vertical; the rig showed ~0.5 deg)     */
 } ENR312_Plant_t;

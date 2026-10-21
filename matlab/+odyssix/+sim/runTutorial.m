@@ -1,7 +1,8 @@
-function S = runTutorial(cfg, plant)
+function S = runTutorial(cfg, plant, opts)
 %RUNTUTORIAL  Simulate one ENR312 tutorial exactly as the firmware runs it.
 %
 %   S = odyssix.sim.runTutorial(cfg, plant)
+%   S = odyssix.sim.runTutorial(cfg, plant, opts)   opts.onTick as in runCtrl
 %   cfg   = odyssix.sim.defaults(exp)   (exp 1..5; 6..10 and 21..23 go to
 %           odyssix.sim.runCtrl, the port of the general firmware core), fields:
 %           exp kp kd kpp kdp step dist ulim vmax seconds
@@ -23,8 +24,10 @@ function S = runTutorial(cfg, plant)
 %      phaseNames, cfg, plant.
 %   Base MATLAB only.
 
+    if nargin < 3, opts = struct(); end
+    onTick = []; if isfield(opts, 'onTick'), onTick = opts.onTick; end
     if cfg.exp >= 6                         % general core: Tutorials 6-10, PEND
-        S = odyssix.sim.runCtrl(cfg, plant);
+        S = odyssix.sim.runCtrl(cfg, plant, opts);
         return;
     end
     Ts = 0.002; SUB = 4; h = Ts / SUB;
@@ -54,6 +57,7 @@ function S = runTutorial(cfg, plant)
 
     [t, rot, psiO, alO, uO, refO, phO] = deal(nan(N, 1));
     for k = 1:N
+        if ~isempty(onTick) && mod(k, 1000) == 0, onTick(); end
         rotor = pos / UPD;
         psiMeas = psi / d2r; if plant.quant, psiMeas = round(psi / d2r / ENC) * ENC; end   % as C
         alpha = wrap180(180 - psiMeas);           % ENR312_Runner_UprightAngle

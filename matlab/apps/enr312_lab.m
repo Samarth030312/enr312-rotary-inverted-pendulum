@@ -32,7 +32,8 @@ function app = enr312_lab()
     S = []; lp = []; H = []; replay = [];
     hwRun = idleRun();
     fitRes = []; recording = struct('on', false, 'i0', 0, 'tEnd', 0);
-    lastSaved = ''; session = struct('step', 0);
+    lastSaved = ''; session = struct('step', 0); drawCount = 0; swingPanel = false;
+    feedT = tic;                                   % last watchdog feed from inside a simulation
     NEW = {'ki', 'fdr', 'fdp', 'k1', 'k2', 'k3', 'k4', 'bv', 'imp', 'uon', 'db', 'div', 'ma'};
     tr = struct();
 
@@ -111,6 +112,7 @@ function app = enr312_lab()
     ui.ma   = slider('ma',   'moving average (n)', [1 32], '%.0f');
     ui.div.ValueChangedFcn = @(s, ~) intSlider(s, 'div');
     ui.ma.ValueChangedFcn = @(s, ~) intSlider(s, 'ma');
+    ui.labels = struct('kp', ui.kp.UserData.name, 'kd', ui.kd.UserData.name);   % renamed for the swing-up
     ui.lqrQ = uieditfield(L, 'text', 'Value', '1 1 10 1', 'Tooltip', 'diag(Q)', ...
         'BackgroundColor', K.field, 'FontColor', K.text);
     place(ui.lqrQ, next(26), 1); ui.lqrRow = row;
@@ -168,7 +170,7 @@ function app = enr312_lab()
     ui.stopRun = uibutton(B1, 'Text', '■  STOP', 'FontSize', 15, 'FontWeight', 'bold', ...
         'ButtonPushedFcn', @(~, ~) onStopRun());
     ui.zero = uibutton(B1, 'Text', 'ZERO DATUMS', 'ButtonPushedFcn', @(~, ~) send('z'));
-    ui.sim = uibutton(B1, 'Text', 'SIMULATE', 'FontWeight', 'bold', 'ButtonPushedFcn', @(~, ~) animate(S, 'sim'));
+    ui.sim = uibutton(B1, 'Text', 'PLAY SIMULATION', 'FontWeight', 'bold', 'ButtonPushedFcn', @(~, ~) animate(S, 'sim'));
 
     B2 = uigridlayout(G, [3 1], 'RowHeight', {'1x', 30, 30}, 'Padding', [10 8 10 8], 'RowSpacing', 5, ...
         'BackgroundColor', K.panel);
@@ -195,20 +197,31 @@ function app = enr312_lab()
     ui.ptarget.ValueChangedFcn = @(~, ~) pendTargetChanged();
     ui.pstop = uibutton(pg_, 'Text', 'STOP SWING', 'ButtonPushedFcn', @(~, ~) onPendulumTarget(0, false));
 
-    B3 = uigridlayout(G, [2 3], 'RowHeight', {'1x', 30}, 'ColumnWidth', {'1x', 110, 120}, ...
-        'Padding', [10 8 10 8], 'RowSpacing', 6, 'ColumnSpacing', 6, 'BackgroundColor', K.panel);
+    B3 = uigridlayout(G, [3 4], 'RowHeight', {'1x', 28, 28}, 'ColumnWidth', {150, 100, '1x', 70}, ...
+        'Padding', [10 8 10 8], 'RowSpacing', 5, 'ColumnSpacing', 6, 'BackgroundColor', K.panel);
     B3.Layout.Row = 3; B3.Layout.Column = 3;
     ui.runs = uitable(B3, 'ColumnName', {'RUN', 'RESULT', 'KEY NUMBERS'}, 'RowName', {}, ...
         'ColumnWidth', {270, 150, 'auto'}, 'FontSize', 11, 'BackgroundColor', K.panel, ...
         'ForegroundColor', K.text, 'CellSelectionCallback', @(~, e) onPickRun(e));
-    ui.runs.Layout.Column = [1 3];
+    ui.runs.Layout.Column = [1 4];
     ui.runsFilter = uidropdown(B3, 'Items', {'this mission', 'all runs', 'hardware only'}, ...
         'ValueChangedFcn', @(~, ~) refreshRuns(), 'BackgroundColor', K.field, 'FontColor', K.text);
-    ui.replayBtn = uibutton(B3, 'Text', '▶  REPLAY', 'ButtonPushedFcn', @(~, ~) animate(replay, 'replay'));
-    ui.next = uibutton(B3, 'Text', 'NEXT STEP  ›', 'FontWeight', 'bold', 'ButtonPushedFcn', @(~, ~) nextSession(), ...
+    ui.loadRun = uibutton(B3, 'Text', 'OVERLAY RUN', 'ButtonPushedFcn', @(~, ~) onOverlay(), ...
+        'Tooltip', 'draw the selected run over the simulation (violet)');
+    ui.tTime = lbl(B3, '', 11, K.dim, 'normal');
+    ui.next = uibutton(B3, 'Text', 'NEXT ›', 'FontWeight', 'bold', 'ButtonPushedFcn', @(~, ~) nextSession(), ...
         'Tooltip', 'guided session: every experiment in order');
+    ui.play = uibutton(B3, 'Text', '▶  PLAY', 'FontWeight', 'bold', 'ButtonPushedFcn', @(~, ~) onPlay(), ...
+        'Tooltip', 'play / pause the simulation or the overlaid run on the 3-D rig');
+    ui.speed = uidropdown(B3, 'Items', {'0.5x', '1x', '2x', '4x'}, 'Value', '1x', 'BackgroundColor', K.field, 'FontColor', K.text);
+    ui.scrub = uislider(B3, 'Limits', [0 1], 'Value', 0, 'MajorTicks', [], 'MinorTicks', [], ...
+        'ValueChangingFcn', @(~, e) onScrub(e.Value), 'ValueChangedFcn', @(s, ~) onScrub(s.Value));
+    ui.scrub.Layout.Column = [3 4];
+    player = struct('D', [], 'kind', '', 't', 0, 'playing', false, ...
+        'timer', timer('ExecutionMode', 'fixedSpacing', 'Period', 0.05, 'BusyMode', 'drop', 'TimerFcn', @(~, ~) playerTick()));
 
     styleButtons(fig);
+    pending = timer('ExecutionMode', 'singleShot', 'StartDelay', 0.25, 'TimerFcn', @(~, ~) safeUpdate());
     tick = timer('ExecutionMode', 'fixedSpacing', 'Period', 0.1, 'BusyMode', 'drop', ...
                  'TimerFcn', @(~, ~) onTick(), 'ErrorFcn', @(~, e) say(['internal: ' e.Data.message], 'warn'));
     refreshPorts(); selectMission(5); setEnabled(); start(tick);
@@ -260,7 +273,7 @@ function app = enr312_lab()
         ui.labHang.Value = strcmp(m, 'hanging'); ui.labUp.Value = strcmp(m, 'upright');
         % upright: LQR first; the robust tuning study gave it 27 % less pendulum
         % error than the best dual PID (results/reports/2026-10-21_rig_session.md)
-        if strcmp(m, 'hanging'), items = {'PID', 'State feedback', 'On-off'}; else, items = {'LQR', 'PID'}; end
+        if strcmp(m, 'hanging'), items = {'PID', 'State feedback', 'On-off', 'Energy (swing / swing-up)'}; else, items = {'LQR', 'PID'}; end
         if strcmp(m, 'upright') && ~any(strcmp(lab.ctrl, items)), lab.ctrl = 'LQR'; end
         ui.labCtrl.Items = items;
         if ~any(strcmp(items, lab.ctrl)), lab.ctrl = items{1}; end
@@ -269,6 +282,12 @@ function app = enr312_lab()
 
     function setLabCtrl(c)
         lab.ctrl = c; ui.labCtrl.Value = c;
+        swingPanel = false; ui.labels.kp.Text = 'Kp rotor'; ui.labels.kd.Text = 'Kd rotor';
+        ui.uon.UserData.name.Text = 'u on (deg/s²)';
+        if startsWith(c, 'Energy')
+            cfg = swingCfg(ui.ptarget.Value); pl = odyssix.sim.plant(3); physicsToSliders();
+            showSwingPanel(); simSwing(ui.ptarget.Value); return;
+        end
         e = labExp();
         cfg = odyssix.sim.defaults(e); cfg.seq = 0; cfg.seconds = 24;
         pl = odyssix.sim.plant(e); physicsToSliders();
@@ -282,9 +301,21 @@ function app = enr312_lab()
         update();
     end
 
+    function showSwingPanel()
+        % the energy controller's own parameters; the PID ones do nothing here
+        if swingPanel, return; end
+        swingPanel = true; d = odyssix.sim.defaults(24);
+        enableFor(24);
+        for f = {'uon', 'kp', 'kd', 'k1', 'k2', 'k3', 'k4'}, setSlider(ui.(f{1}), d.(f{1})); end
+        ui.labels.kp.Text = 'Kp arm centring'; ui.labels.kd.Text = 'Kd arm centring';
+        ui.uon.UserData.name.Text = 'pump strength (deg/s²)';
+        ui.brief.Text = ['Energy control. PENDULUM 180 swings it up and the LQR (k1..k4) catches it; ' ...
+                         'any other angle sets the swing height; 0 stops it.'];
+    end
+
     function e = labExp()
         if strcmp(lab.mode, 'hanging')
-            e = 21; if strcmp(lab.ctrl, 'State feedback'), e = 9; elseif strcmp(lab.ctrl, 'On-off'), e = 22; end
+            e = 21; if strcmp(lab.ctrl, 'State feedback'), e = 9; elseif strcmp(lab.ctrl, 'On-off'), e = 22; elseif startsWith(lab.ctrl, 'Energy'), e = 24; end
         else
             e = 6; if strcmp(lab.ctrl, 'LQR'), e = 23; end
         end
@@ -319,13 +350,13 @@ function app = enr312_lab()
 
     function enableFor(e)
         % only what this experiment uses is shown
-        pid = any(e == [2:8 21]); inner = any(e == [3:8 21]); sf = any(e == [9 10 23]);
+        pid = any(e == [2:8 21 24]); inner = any(e == [3:8 21]); sf = any(e == [9 10 23 24]);
         isLab = strcmp(MIS(mis).tag, 'LAB');
         vis = struct('kp', pid, 'kd', pid, 'kpp', inner, 'kdp', inner, 'ki', any(e == [6 8 21]), ...
-            'k1', sf, 'k2', sf, 'k3', e == 23, 'k4', e == 23, 'bv', any(e == [9 10]) && ~isLab, ...
-            'uon', e == 22, 'db', e == 22, 'imp', e == 7, 'step', ~isLab && ~any(e == [7 21]), ...
-            'dist', any(e == [2 8]), 'ulim', e >= 2, 'fdr', any(e == [6 7 8 21]), ...
-            'fdp', any(e == [6 7 8 21 23]), 'div', e >= 6, 'ma', e >= 6);
+            'k1', sf, 'k2', sf, 'k3', any(e == [23 24]), 'k4', any(e == [23 24]), 'bv', any(e == [9 10]) && ~isLab, ...
+            'uon', any(e == [22 24]), 'db', e == 22, 'imp', e == 7, 'step', ~isLab && ~any(e == [7 21]), ...
+            'dist', any(e == [2 8]), 'ulim', e >= 2 && e ~= 24, 'fdr', any(e == [6 7 8 21]), ...
+            'fdp', any(e == [6 7 8 21 23]), 'div', e >= 6 && e ~= 24, 'ma', e >= 6 && e ~= 24);
         f = fieldnames(vis);
         for i = 1:numel(f), showSlider(ui.(f{i}), vis.(f{i})); end
         lq = any(e == [10 23]);
@@ -354,13 +385,23 @@ function app = enr312_lab()
     function update()
         readControls();
         try
-            if cfg.exp >= 6, [o, c] = simScript(cfg); S = odyssix.sim.runCtrl(c, pl, o); cfg.target = c.target; cfg.target_t = c.target_t;
-            else, S = odyssix.sim.runTutorial(cfg, pl); end
+            if cfg.exp >= 6, [o, c] = simScript(cfg); o.onTick = @feedRig; S = odyssix.sim.runCtrl(c, pl, o); cfg.target = c.target; cfg.target_t = c.target_t;
+            else, S = odyssix.sim.runTutorial(cfg, pl, struct('onTick', @feedRig)); end
             if cfg.exp >= 2, lp = odyssix.sim.loop(cfg, pl); else, lp = []; end
         catch err
             say(['simulation: ' err.message], 'warn'); return;
         end
         drawTrace(S, 'sim'); drawAnalysis(); fillTable(); poseAt(S, height(S));
+    end
+
+    function safeUpdate()
+        try, if isvalid(fig), update(); end, catch err, say(['simulation: ' err.message], 'warn'); end
+    end
+
+    function feedRig()
+        % A simulation blocks MATLAB's timers, including the one that feeds the
+        % firmware's 1 s host watchdog; a run still active on the rig would stop.
+        if toc(feedT) > 0.25, feedT = tic; try, link.keepAlive(); catch, end, end
     end
 
     function [o, c] = simScript(c)
@@ -377,19 +418,25 @@ function app = enr312_lab()
     end
 
     function c = swingCfg(amp)
-        % the firmware's energy-control defaults; the pendulum constant comes
-        % from the PENDULUM sliders (measured by FREE SWING), the target from the field
+        % the firmware's energy-control defaults, with what the swing panel shows
+        % (pump, arm centring, catch LQR); the pendulum constant from the PENDULUM
+        % fields (measured by FREE SWING), the target from the field
         if nargin < 1, amp = ui.ptarget.Value; end
         c = odyssix.sim.defaults(24); c.amp = amp; if amp < 179, c.seconds = 25; end
+        if swingPanel
+            c.uon = ui.uon.Value; c.kp = ui.kp.Value; c.kd = ui.kd.Value;
+            c.k1 = ui.k1.Value; c.k2 = ui.k2.Value; c.k3 = ui.k3.Value; c.k4 = ui.k4.Value;
+        end
         pl.wg2 = 9.81 / (ui.L.Value * 0.6805); pl.Q = ui.Q.Value; pl.wr2 = ui.r.Value * pl.wg2 / 9.81;
         c.wg2 = min(120, max(20, pl.wg2));
     end
 
     function simSwing(amp)
         c = swingCfg(amp);
-        o = struct(); if amp < 1, o.psi0 = 40; end                  % 'stop the swing': start swinging
+        o = struct('onTick', @feedRig); if amp < 1, o.psi0 = 40; end   % 'stop the swing': start swinging
         S = odyssix.sim.runCtrl(c, pl, o); lp = []; cfg = c;
-        drawTrace(S, 'sim'); drawAnalysis(); fillTable(); animate(S, 'sim');
+        drawTrace(S, 'sim'); drawAnalysis(); fillTable(); poseAt(S, height(S));
+        player.D = S; player.kind = 'sim'; player.t = S.t(1); player.playing = false; ui.play.Text = '▶  PLAY';
     end
 
     % =================================================================== drawing
@@ -446,24 +493,59 @@ function app = enr312_lab()
         ui.tPhase.Text = phaseName(D, D.phase(k));
     end
 
+    % ---- player: plays a simulation or a recorded run on the 3-D rig and the
+    %      plot cursor; timer-driven, so the window stays live; pause / seek / speed
     function animate(D, kind)
         if isempty(D), return; end
-        t0 = tic; set([ui.sim ui.replayBtn], 'Enable', 'off'); c_ = onCleanup(@() set([ui.sim ui.replayBtn], 'Enable', 'on'));
-        for k = 1:10:height(D)
-            while toc(t0) < D.t(k) - D.t(1), end
-            if ~isvalid(fig), return; end
-            poseAt(D, k); set(tr.cur, 'Value', D.t(k)); drawnow limitrate;
+        if hwRun.on, say('A rig run is live: the rig view shows it.', 'warn'); return; end
+        player.D = D; player.kind = kind; player.t = D.t(1);
+        ui.scrub.Limits = [D.t(1), max(D.t(end), D.t(1) + 0.01)]; ui.scrub.Value = D.t(1);
+        player.playing = true; ui.play.Text = '❚❚  PAUSE';
+        if strcmp(get(player.timer, 'Running'), 'off'), start(player.timer); end
+    end
+    function onPlay()
+        if isempty(player.D)
+            if ~isempty(replay), animate(replay, 'replay'); elseif ~isempty(S), animate(S, 'sim'); end
+            return;
         end
-        poseAt(D, height(D)); set(tr.cur, 'Value', nan);
-        if strcmp(kind, 'replay'), say('Replay done.', 'ok'); end
+        player.playing = ~player.playing;
+        ui.play.Text = ternary(player.playing, '❚❚  PAUSE', '▶  PLAY');
+        if player.playing
+            if player.t >= player.D.t(end), player.t = player.D.t(1); end
+            if strcmp(get(player.timer, 'Running'), 'off'), start(player.timer); end
+        end
+    end
+    function playerTick()
+        try
+            if ~isvalid(fig) || ~player.playing || isempty(player.D), return; end
+            sp = sscanf(ui.speed.Value, '%fx'); player.t = player.t + 0.05 * sp;
+            if player.t >= player.D.t(end)
+                player.t = player.D.t(end); player.playing = false; ui.play.Text = '▶  PLAY';
+            end
+            showAt(player.t);
+        catch
+        end
+    end
+    function onScrub(t)
+        if isempty(player.D)
+            if ~isempty(replay), player.D = replay; player.kind = 'replay'; elseif ~isempty(S), player.D = S; player.kind = 'sim'; else, return; end
+            ui.scrub.Limits = [player.D.t(1), max(player.D.t(end), player.D.t(1) + 0.01)];
+        end
+        player.t = t; showAt(t);
+    end
+    function showAt(t)
+        D = player.D; k = find(D.t >= t, 1); if isempty(k), k = height(D); end
+        poseAt(D, k); set(tr.cur, 'Value', D.t(k)); ui.scrub.Value = min(max(D.t(k), ui.scrub.Limits(1)), ui.scrub.Limits(2));
+        ui.tTime.Text = sprintf('%s  %5.1f / %.1f s', upper(player.kind), D.t(k) - D.t(1), D.t(end) - D.t(1));
     end
 
     function drawAnalysis()
         cla(axA, 'reset'); styleAx(axA); hold(axA, 'on');
         e = cfg.exp; D = H; if isempty(D), D = replay; end
+        dc = ternary(isempty(H), K.violet, K.cyan);              % a replayed run keeps its violet
         if strcmp(MIS(mis).tag, 'LAB') || e == 24
             plot(axA, S.t, S.u, 'Color', K.ghost, 'LineWidth', 1);
-            if ~isempty(D), plot(axA, D.t, D.u, 'Color', K.cyan, 'LineWidth', 1.2); end
+            if ~isempty(D), plot(axA, D.t, D.u, 'Color', dc, 'LineWidth', 1.2); end
             title(axA, 'INPUT  u  (deg/s²)'); axis(axA, 'tight'); return;
         end
         switch e
@@ -492,7 +574,7 @@ function app = enr312_lab()
                 ms = metricsOf(S); v = [getf(ms, 'ce_total') NaN];
                 if ~isempty(D), mh = metricsOf(D); v(2) = getf(mh, 'ce_total'); end
                 b = bar(axA, categorical({'sim', 'rig'}), v, 'FaceColor', 'flat', 'EdgeColor', 'none');
-                b.CData = [K.ghost; K.cyan]; title(axA, 'CONTROL EFFORT  ∫|u|dt');
+                b.CData = [K.ghost; dc]; title(axA, 'CONTROL EFFORT  ∫|u|dt');
             case 7
                 r = odyssix.sim.impulseAverage(S.t, S.alpha, S.rotor, S.phase);
                 if r.n > 0, plot(axA, r.t, r.alpha - mean(r.alpha(r.t < 0)), 'Color', K.ghost, 'LineWidth', 1.5); end
@@ -552,6 +634,11 @@ function app = enr312_lab()
     end
 
     function m = metricsOf(D)
+        % a simulation (500 Hz) is scored at the rig's 50 Hz stream, so both
+        % columns see the same samples (control effort and peaks depend on it)
+        if height(D) > 20 && median(diff(D.t(1:20))) < 0.01
+            ud = D.Properties.UserData; D = D(1:10:end, :); D.Properties.UserData = ud;
+        end
         c = cfg; u_ = D.Properties.UserData;
         if isstruct(u_) && isfield(u_, 'cfg') && isstruct(u_.cfg) && isfield(u_.cfg, 'exp'), c = u_.cfg; end
         try, m = odyssix.sim.metrics(D, c); catch, m = struct(); end
@@ -640,6 +727,9 @@ function app = enr312_lab()
     % =================================================================== rig: runs
     function onRunRig()
         M = MIS(mis);
+        if strcmp(M.tag, 'LAB') && startsWith(lab.ctrl, 'Energy')        % RUN = SWING with the target
+            onPendulumTarget(ui.ptarget.Value, false); return;
+        end
         if strcmp(M.tag, 'LAB') && cfg.exp ~= labExp()          % e.g. after a swing-up
             cfg = odyssix.sim.defaults(labExp()); cfg.seq = 0;
         end
@@ -678,19 +768,34 @@ function app = enr312_lab()
         if nargin < 2, noPrompt = false; end
         ui.ptarget.Value = amp; pendTargetChanged();
         if hwRun.on && isfield(hwRun.cfg, 'exp') && hwRun.cfg.exp == 24, return; end   % changed live above
-        if ~strcmp(MIS(mis).tag, 'LAB') || ~strcmp(lab.mode, 'hanging'), selectLab('hanging'); end
+        if ~strcmp(MIS(mis).tag, 'LAB') || ~strcmp(lab.mode, 'hanging') || ~startsWith(lab.ctrl, 'Energy')
+            selectLab('hanging', 'Energy (swing / swing-up)');
+        end
         if hwRun.on, onStopRun(); t0 = tic; while hwRun.on && toc(t0) < 5, pause(0.1); drawnow; end, end
+        showSwingPanel();
         if ~link.isOpen() || ~strcmp(link.state, 'RUNNING')
             simSwing(amp); say('Simulated. On the rig: CONNECT, ARM, START, then SWING.', 'ok'); return;
         end
         cfg = swingCfg(amp);
         if ~gateOk(), return; end
         if ~noPrompt && amp >= 179
+            % the energy controller is only as good as its pendulum constant: on
+            % 2026-10-21 the rig ran with 57.01 (Tutorial) while it measured 47.6-49.5
+            rp = odyssix.rigParams().pendulum; off = abs(cfg.wg2 - rp.wg2) / rp.wg2 > 0.08;
+            note = ''; opts = {'SWING UP', 'Cancel'};
+            if off
+                note = sprintf(['\n\n⚠  Pendulum constant in use: ωg² %.1f. This rig measured %.1f (%s).\n' ...
+                    '   A wrong ωg² makes the pump overshoot the top. FREE SWING measures yours.'], cfg.wg2, rp.wg2, rp.source);
+                opts = {sprintf('SWING UP with ωg² %.1f', rp.wg2), sprintf('SWING UP with %.1f', cfg.wg2), 'Cancel'};
+            end
             sel = uiconfirm(fig, sprintf(['The arm swings the pendulum over the top and balances it.\n\n' ...
                 '•  arm sweep up to about ±160°: clear the area\n•  the pendulum passes overhead: hands away\n' ...
-                '•  ABORT any time; if it falls after the catch, the motor stops']), 'SWING UP', ...
-                'Options', {'SWING UP', 'Cancel'}, 'DefaultOption', 2, 'CancelOption', 2, 'Icon', 'warning');
-            if ~strcmp(sel, 'SWING UP'), return; end
+                '•  ABORT any time; if it falls after the catch, the motor stops%s'], note), 'SWING UP', ...
+                'Options', opts, 'DefaultOption', numel(opts), 'CancelOption', numel(opts), 'Icon', 'warning');
+            if strcmp(sel, 'Cancel'), return; end
+            if off && strcmp(sel, opts{1})
+                cfg.wg2 = rp.wg2; setSlider(ui.L, 9.81 / (rp.wg2 * 0.6805));   % saved with the run's config
+            end
         end
         H = []; clearTrace('rig');
         c = cfg; if isfield(c, 'target'), c = rmfield(c, {'target', 'target_t'}); end
@@ -764,12 +869,13 @@ function app = enr312_lab()
 
     function setParam(name, v)
         h = ui.(name);
-        if isa(h, 'matlab.ui.control.Slider'), setSlider(h, v); else, h.Value = v; end
+        if isfield(h.UserData, 'fmt'), setSlider(h, v); else, h.Value = v; end
         if strcmp(name, 'div'), intSlider(h, 'div'); return; end
-        paramChanged(name);
+        paramChanged(name, true);
     end
 
-    function paramChanged(name)
+    function paramChanged(name, immediate)
+        if nargin < 2, immediate = false; end
         if hwRun.on && isfield(hwRun.cfg, 'exp') && hwRun.cfg.exp >= 6 && ...
                 any(strcmp(name, {'kp', 'ki', 'kd', 'kpp', 'kdp', 'k1', 'k2', 'k3', 'k4', 'bv', 'uon', 'db', ...
                                   'ulim', 'fdr', 'fdp', 'div', 'ma'}))
@@ -783,7 +889,9 @@ function app = enr312_lab()
             end
             return;                                   % keep the rig traces; no re-simulation mid-run
         end
-        update();
+        if immediate, update(); return; end
+        % typing several values in a row re-simulates once, 0.25 s after the last
+        stop(pending); start(pending);
     end
 
     function logEvent(what, val)
@@ -810,8 +918,7 @@ function app = enr312_lab()
     end
 
     function s = firmwareLine()
-        s = ''; k = find(contains(link.lines, 'Firmware:'), 1, 'last');
-        if ~isempty(k), s = strtrim(extractAfter(link.lines{k}, 'Firmware:')); end
+        s = link.firmware;                    % kept by RigLink; the line buffer rolls over
     end
 
     function s = runLabel()
@@ -880,7 +987,9 @@ function app = enr312_lab()
         % phase (the stream reports it while idle): mark them -1
         ph = d.phase; ph(d.run_exp == 0) = -1;
         H = mkH(t, d, ph);
-        drawTrace(H, 'rig'); poseAt(H, height(H));
+        drawCount = drawCount + 1;
+        if mod(drawCount, 2) == 0, drawTrace(H, 'rig'); end   % plots at 5 Hz, rig and numbers at 10 Hz
+        poseAt(H, height(H));
         cue(H);
         ev = link.runEvent;
         if contains(ev, 'FINISHED') || contains(ev, 'ABORTED') || ~strcmp(link.state, 'RUNNING')
@@ -1003,8 +1112,14 @@ function app = enr312_lab()
     end
 
     function onPickRun(e)
+        % selecting a run only selects it; OVERLAY RUN draws it, PLAY replays it
         if isempty(e.Indices), return; end
-        loadReplay(ui.runs.UserData{e.Indices(1, 1)});
+        ui.runs.Tag = ui.runs.UserData{e.Indices(1, 1)};
+        say(sprintf('Selected %s  ·  OVERLAY RUN to compare, then ▶ PLAY', ui.runs.Tag), 'ok');
+    end
+    function onOverlay()
+        if isempty(ui.runs.Tag), say('Select a run in the list first.', 'warn'); return; end
+        loadReplay(ui.runs.Tag);
     end
 
     function loadReplay(id)
@@ -1015,7 +1130,9 @@ function app = enr312_lab()
         c = cfg; if isfield(M, 'config') && isstruct(M.config) && isfield(M.config, 'exp'), c = M.config; end
         D.Properties.UserData = struct('cfg', c, 'phaseNames', {phaseList(getf(c, 'exp'))});
         replay = D; drawTrace(D, 'replay'); fillTable(); drawAnalysis();
-        say(sprintf('REPLAY  %s  ·  %s  ·  press ▶ REPLAY to animate', id, getf(M, 'result', '')), 'ok');
+        player.D = D; player.kind = 'replay'; player.t = D.t(1); player.playing = false; ui.play.Text = '▶  PLAY';
+        ui.scrub.Limits = [D.t(1), max(D.t(end), D.t(1) + 0.01)]; ui.scrub.Value = D.t(1);
+        say(sprintf('Overlaid %s  ·  %s  ·  ▶ PLAY to replay it on the rig view', id, getf(M, 'result', '')), 'ok');
     end
 
     function plan = sessionPlan()
@@ -1054,23 +1171,22 @@ function app = enr312_lab()
         place(h, next(ht), cols);
     end
     function s = slider(key, txt, lims, fmt_)
-        l = uilabel(L, 'Text', txt, 'FontSize', 11, 'FontColor', K.dim); place(l, next(16), 1); r1 = row;
-        v = uilabel(L, 'Text', '', 'FontSize', 11.5, 'FontWeight', 'bold', 'HorizontalAlignment', 'right', ...
-            'FontColor', K.cyan, 'FontName', K.mono);
-        place(v, row, 2);
-        s = uislider(L, 'Limits', lims, 'Value', lims(1), 'MajorTicks', [], 'MinorTicks', []);
-        place(s, next(20), [1 2]);
-        s.UserData = struct('label', v, 'fmt', fmt_, 'name', l, 'rows', [r1 row]);
-        s.ValueChangingFcn = @(~, e) set(v, 'Text', sprintf(fmt_, e.Value));
+        % one row: name on the left, a number field on the right (type, or use
+        % the arrow keys); the value is applied when the field is left
+        l = uilabel(L, 'Text', txt, 'FontSize', 11.5, 'FontColor', K.text); place(l, next(26), 1); r1 = row;
+        s = uieditfield(L, 'numeric', 'Limits', lims, 'Value', lims(1), 'ValueDisplayFormat', fmt_, ...
+            'FontName', K.mono, 'FontSize', 12.5, 'HorizontalAlignment', 'right', ...
+            'BackgroundColor', K.field, 'FontColor', K.cyan, 'Tooltip', sprintf('%g … %g', lims(1), lims(2)));
+        place(s, row, 2);
+        s.UserData = struct('fmt', fmt_, 'name', l, 'rows', r1, 'key', key);
         s.ValueChangedFcn = @(~, ~) paramChanged(key);
     end
     function showSlider(s, v)
-        u = s.UserData; L.RowHeight{u.rows(1)} = 16 * v; L.RowHeight{u.rows(2)} = 20 * v;
-        set([u.name u.label s], 'Visible', onoff(v));
+        u = s.UserData; L.RowHeight{u.rows(1)} = 26 * v;
+        set([u.name s], 'Visible', onoff(v));
     end
     function setSlider(s, v)
-        v = min(max(v, s.Limits(1)), s.Limits(2)); s.Value = v;
-        s.UserData.label.Text = sprintf(s.UserData.fmt, v);
+        s.Value = min(max(v, s.Limits(1)), s.Limits(2));
     end
     function intSlider(s, key)
         if strcmp(key, 'div'), setSlider(s, 500 / max(1, min(50, round(500 / s.Value))));
@@ -1130,6 +1246,8 @@ function app = enr312_lab()
     function r = getLastSaved(), r = lastSaved; end
     function onClose()
         try, stop(tick); delete(tick); catch, end
+        try, stop(player.timer); delete(player.timer); catch, end
+        try, stop(pending); delete(pending); catch, end
         if hwRun.on, try, finishRun('ABORTED: WINDOW CLOSED'); catch, end, end
         try, link.close(); catch, end
         if ~isempty(emu.pid), system(['kill ' emu.pid ' 2>/dev/null']); end

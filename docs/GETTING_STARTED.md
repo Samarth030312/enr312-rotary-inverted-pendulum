@@ -72,12 +72,13 @@ addpath(genpath('matlab'))
 enr312_lab
 ```
 
-* **Without a rig:** choose a tutorial (T1–T5), move the sliders, press
-  *Simulate*. *Use emulator* runs the firmware's control code on the PC behind the
-  real serial protocol.
+* **Without a rig:** pick a mission (T1–T10 or LAB), change a number, press
+  **PLAY SIMULATION**. **CONNECT** offers the emulator: the firmware's own control
+  code on the PC behind the real serial protocol.
 * **With a rig:** wire and check it first ([`hardware/ENR312_WIRING.md`](hardware/ENR312_WIRING.md) §4),
-  then *Detect board → Flash firmware → Connect*. The step-by-step session guide
-  for students is [`STUDENT_QUICKSTART.md`](STUDENT_QUICKSTART.md).
+  flash with `odyssix.stm32.flash()`, then **CONNECT**. The whole path from an empty
+  bench is [`REPLICATE.md`](REPLICATE.md); the session guide for students is
+  [`STUDENT_QUICKSTART.md`](STUDENT_QUICKSTART.md).
 
 ## macOS and Windows
 

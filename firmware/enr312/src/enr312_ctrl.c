@@ -279,11 +279,11 @@ double ENR312_Ctrl_Tick(ENR312_Ctrl_t *x, double theta, double thetadot, double 
                 x->sw_epeak = 0.0;
             }
             if (upr && fabs(a_raw) < 5.0 && fabs(x->dpsi) > CTRL_SW_OVER_RATE && !x->sw_over) {
-                x->sw_delta -= CTRL_SW_KA * (en - 2.0);              /* over the top too fast */
+                x->sw_delta -= CTRL_SW_KA_OVER * (en - 2.0);         /* over the top too fast */
                 x->sw_over = true;
             }
             if (fabs(a_raw) > 30.0) { x->sw_over = false; }
-            x->sw_delta = (x->sw_delta < (upr ? 0.0 : -0.3)) ? (upr ? 0.0 : -0.3)
+            x->sw_delta = (x->sw_delta < CTRL_SW_DELTA_MIN) ? CTRL_SW_DELTA_MIN
                         : ((x->sw_delta > CTRL_SW_DELTA_MAX) ? CTRL_SW_DELTA_MAX : x->sw_delta);
             x->sw_dpsi_prev = x->dpsi;
             double et = hstar + x->sw_delta;
@@ -392,7 +392,15 @@ double ENR312_Ctrl_Tick(ENR312_Ctrl_t *x, double theta, double thetadot, double 
         }
         break;
     case CTRL_PH_SWINGUP:
-        if (c->amp >= 179.0 && fabs(a_raw) <= CTRL_SW_CATCH_DEG && fabs(x->dpsi) <= CTRL_SW_CATCH_RATE &&
+        /* catch: slow anywhere inside the window, or still approaching from its
+         * edge (gravity is slowing it; the LQR completes the stop) */
+        double adot_c = -x->dpsi;                                     /* alpha = 180 - psi */
+        bool slow = fabs(x->dpsi) <= CTRL_SW_CATCH_RATE;
+        bool approaching = fabs(a_raw) >= 2.0 && a_raw * adot_c < 0.0 && fabs(x->dpsi) <= CTRL_SW_CATCH_APPROACH;
+        /* feasibility: what the catching LQR would ask for at once */
+        double u_catch = c->k2 * thetadot + c->k3 * a_raw + c->k4 * adot_c;
+        bool feasible = fabs(u_catch) <= CTRL_SW_CATCH_UMAX * c->u_limit;
+        if (c->amp >= 179.0 && fabs(a_raw) <= CTRL_SW_CATCH_DEG && (slow || approaching) && feasible &&
             x->sw_energy >= CTRL_SW_E_MIN) {
             /* start from where it caught, then bring the arm home (slewed at rrate) */
             x->ref_now = theta; x->ref_live = theta; x->home_pending = true;
