@@ -67,8 +67,13 @@ friction and the offset, and its R03 fit is visibly worse. Taken together:
 - That agrees with the evening's estimates from inside other runs: 47.6 (T10) and 49.5
   (92° swings).
 - The Tutorial-derived 57.01 is 19 % too high.
-- The equivalent simple-pendulum length is g/ωg² = 0.203 m. A uniform rod would be
-  0.30 m long.
+- The equivalent simple-pendulum length is g/ωg² = 0.203 m. A uniform rod with this
+  ωg² would be 0.30 m long.
+- The rod measures **0.26 m** with a ruler (2026-10-22), the Tutorial's length. A uniform
+  0.26 m rod would have ωg² = 3g/2L = 56.6, the Tutorial value. The rig's 48 therefore
+  means about 15 % more inertia about the pivot than an ideal rod: the encoder shaft,
+  the hub and its screw. The Tutorial model leaves these out. The arm coupling still
+  follows from ωr²/ωg² = r/g, which holds for any rigid pendulum: ωr² = 0.69.
 
 **Dry friction:** 0.33 and 0.40 rad/s² (the T10 decay gave 0.48). The fits find no
 viscous part at these amplitudes, which agrees with the evening's finding.

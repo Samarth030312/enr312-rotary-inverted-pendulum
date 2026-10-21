@@ -63,6 +63,8 @@ function p = rigParams()
     p.rotor.armLength        = 0.14;          % m [DATASHEET] STEVAL-EDUKIT01 manual, Table 2
     p.pendulum.wr2           = p.rotor.armLength * p.pendulum.wg2 / 9.81;   % 0.692 (Tutorial: 0.803)
     p.pendulum.rodEquivalent = 3 * 9.81 / (2 * p.pendulum.wg2);             % m, uniform rod with this wg2: 0.30
+    p.pendulum.rodLength     = 0.26;          % m, MEASURED 2026-10-22 (ruler); a uniform 0.26 m rod would have
+                                              % wg2 56.6: the hub and encoder shaft add ~15 % inertia
 
     % --- Masses, lengths, inertias: NOT MEASURED ------------------------------
     % Only their combinations wg2 and wr2 enter the models; wr2 follows from wg2

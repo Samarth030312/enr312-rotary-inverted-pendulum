@@ -7,7 +7,7 @@ image whose hash does not match.
 ## 2.3.3 (2026-10-22): 500 Hz crash recorder
 The 50 Hz stream shows one sample per 10 control ticks, too coarse to see how a push
 or a fall develops (`results/reports/2026-10-21c_rig_session.md`, section 3).
-**Not yet run on the rig.**
+Flashed on board 1. `k` in SAFE returned 1000 consecutive ticks; not yet used in a run.
 * The control interrupt keeps every tick of the last 2 s in RAM (16 kB,
   `src/enr312_crashrec.c`). Any run abort, or the new `k` key, freezes it 0.5 s
   later, and the main loop sends `K,BEGIN / k,… / K,END`. Control is unchanged.

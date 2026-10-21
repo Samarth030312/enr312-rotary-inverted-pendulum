@@ -272,5 +272,7 @@ pendulum_dynamics:
   q_large_swing:       { value: [57, 63], source: "EXP024 R05 energy balance at 92 deg, after the Coulomb loss" }
   arm_length:          { value: 0.14, unit: m, source: "STEVAL-EDUKIT01 manual (Edukit Rotary Inverted Pendulum Manual), Table 2" }
   wr2:                 { value: 0.692, unit: rad^2/s^2, source: "r * wg2 / g = 0.14 * 48.5 / 9.81 (Tutorial 12: wr2/wg2 = r/g); Tutorial value 0.803" }
-  rod_equivalent:      { value: 0.30, unit: m, source: "uniform rod with wg2 48.5: 3g/(2 wg2); Tutorial 12's 57.01 implies 0.258 m" }
-  open: "check the rod length with a ruler (0.30 m expected for a uniform rod); level the base (Tutorial 12: a tilt delta gives a pendulum offset delta*sin(arm angle - beta))" 
+  rod_length:          { value: 0.26, unit: m, source: "MEASURED 2026-10-22 with a ruler; Tutorial 12 uses 0.258 m" }
+  rod_equivalent:      { value: 0.30, unit: m, source: "the uniform rod that would have wg2 48.5: 3g/(2 wg2)" }
+  note_rod: "a uniform 0.26 m rod would give wg2 = 3g/(2L) = 56.6; the measured 48 means 15 % more inertia about the pivot than the ideal rod (encoder shaft, hub, set screw). wr2/wg2 = r/g holds for any rigid pendulum, so wr2 = 0.69 stands"
+  open: "level the base (Tutorial 12: a tilt delta gives a pendulum offset delta*sin(arm angle - beta))" 
