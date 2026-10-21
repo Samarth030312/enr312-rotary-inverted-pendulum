@@ -1,6 +1,5 @@
-> **Pre-registration.** Written before the hardware runs and kept unchanged as the
-> record of what was predicted. Status fields below are those of that time.
-> Hardware results (2026-10-12): [`results/reports/2026-10-12_rig_tutorials_1-5.md`](../../results/reports/2026-10-12_rig_tutorials_1-5.md); raw data in `data/raw/EXP006/`.
+> **Pre-registration, not yet run on the rig.** Every number below is a simulation
+> prediction ([`results/tables/`](../../results/tables/)), written before any hardware run.
 
 # EXP006: Integral action, dual PID (inverted)
 

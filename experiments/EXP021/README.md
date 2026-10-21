@@ -1,3 +1,6 @@
+> **Pre-registration, not yet run on the rig.** Every number below is a simulation
+> prediction ([`results/tables/`](../../results/tables/)), written before any hardware run.
+
 # EXP021 (PEND): Stop a swing, then hold an angle (suspended dual PID)
 
 | | |
