@@ -264,8 +264,9 @@ pendulum_dynamics:
   table: results/tables/PEND_identification_20261021.csv
   wg2_free_decay:      { value: 47.6, unit: rad^2/s^2, source: "EXP010 R01, arm still, 5.7 deg free decay, Coulomb fit rms 0.33 deg" }
   wg2_large_swing:     { value: 49.5, unit: rad^2/s^2, source: "EXP024 R05, 92 deg swings, elliptic-integral period" }
-  wg2_to_use:          { value: 48.5, unit: rad^2/s^2 }
+  wg2_free_swing:      { value: [48.4, 48.6], unit: rad^2/s^2, source: "EXP001 R03, R06: dedicated free swings, motor off, period from peak timing; fit 46.4/47.8" }
+  wg2_to_use:          { value: 48.5, unit: rad^2/s^2, source: "48 +- 1 over all methods; EXP024 R08 caught at 3.88 s with it (firmware 2.3.2)" }
   wg2_tutorial:        { value: 57.01, unit: rad^2/s^2, source: "Tutorial geometry; the value the rig ran with on 2026-10-21" }
-  coulomb:             { value: 0.48, unit: rad/s^2, source: "EXP010 R01 free decay; stick band +-0.57 deg" }
+  coulomb:             { value: 0.40, unit: rad/s^2, source: "free swings 0.33 (R03), 0.40 (R06); EXP010 R01 decay 0.48" }
   q_large_swing:       { value: [57, 63], source: "EXP024 R05 energy balance at 92 deg, after the Coulomb loss" }
-  open: "a dedicated free swing with the motor off (FREE SWING in enr312_lab) is still to be recorded" 
+  open: "wr2 (arm coupling) is still the Tutorial value" 

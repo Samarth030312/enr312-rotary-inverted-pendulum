@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | **Source** | PEND handout §3 C12 (energy swing-up; why linear PID cannot), plus the request to put the pendulum at a chosen angle |
-| **Status** | Rig, 2026-10-21: firmware 2.2.0 **caught 3 of 3** (7.1–8.0 s, one fell right after the catch); 2.3.0 caught **1 of 3** (38.9 s), and the pendulum target swung to **91.8°** for a 90° target. Cause identified from the data: the firmware's ωg² (57.01, Tutorial) against the measured 47.6–49.5. Firmware 2.3.2 simulated and host-tested, **not yet on the rig** |
+| **Status** | Rig, 2026-10-21: firmware 2.2.0 **caught 3 of 3** (7.1–8.0 s, one fell right after the catch); 2.3.0 caught **1 of 3** (38.9 s), and the pendulum target swung to **91.8°** for a 90° target. Cause identified from the data: the firmware's ωg² (57.01, Tutorial) against the measured 48 ± 1. Firmware 2.3.2 with the measured ωg²: **caught at 3.88 s at the first try** (R08), balanced 18.8 s, lost to a sudden kick (cause open) |
 | **Run it** | `enr312_lab` → LAB → PENDULUM [target] SWING; `$exp=24 $amp=180`; Python `rig.configure(24, amp=90)` |
 
 ## 1. Question
@@ -65,7 +65,7 @@ Normalised energy E = ψ̇²/(2ωg²) + 1 − cos ψ: 0 hanging still, 2 upright
 ## 4. Predictions and evidence
 | | Simulation | Rig |
 |---|---|---|
-| swing-up on the identified pendulum (36 cases each) | told ωg² 57.01: 2.2.0 19, 2.3.0 8, 2.3.1 18, 2.3.2 35 caught; told the measured 48.5: 36 for every version | 2.2.0: **7.1 / 7.1 / 8.0 s**; 2.3.0: 38.9 s, no catch, stopped |
+| swing-up on the identified pendulum (36 cases each) | told ωg² 57.01: 2.2.0 19, 2.3.0 8, 2.3.1 18, 2.3.2 35 caught; told the measured 48.5: 36 for every version | 2.2.0: **7.1 / 7.1 / 8.0 s**; 2.3.0: 38.9 s, no catch, stopped; **2.3.2, ωg² 48.5: 3.88 s** (simulation of the same: 4.23 s) |
 | arm travel | ≤ 156° | 99–138° (2.2.0), 85–89° (2.3.0) |
 | target 45 / 90 / 135° | 46.2 / 91.8 / 136.3° (mismatched plants) | 90°: **91.8°** (median of undisturbed peaks) |
 | stop a 40° swing | inside 4° in 9 s (free decay 19 s) | — |

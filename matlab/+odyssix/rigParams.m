@@ -51,10 +51,12 @@ function p = rigParams()
     % free swing (still to be recorded); from a T10 stretch with the arm still
     % and from the steady 92 deg swings of the pendulum-target run R05.
     p.pendulum.wg2Measured   = [47.6 49.5];   % rad^2/s^2: free decay 5.7 deg; 92 deg swings (elliptic period)
-    p.pendulum.wg2           = 48.5;          % the value to give the firmware ($wg2)
-    p.pendulum.coulomb       = 0.48;          % rad/s^2, dry pivot friction (free decay fit, rms 0.33 deg)
+    p.pendulum.wg2FreeSwing  = [48.4 48.6];   % rad^2/s^2: dedicated free swings EXP001 R03, R06 (peak period,
+                                              % 2026-10-21 19:19 UTC); 48 +- 1 over all methods
+    p.pendulum.wg2           = 48.5;          % the value to give the firmware ($wg2); swing-up caught 3.88 s with it (R08)
+    p.pendulum.coulomb       = 0.40;          % rad/s^2, dry pivot friction (free swings 0.33/0.40, T10 0.48)
     p.pendulum.QLargeSwing   = [57 63];       % viscous Q that closes the energy balance at 92 deg
-    p.pendulum.source        = 'MEASURED 2026-10-21 (EXP010 R01, EXP024 R05)';
+    p.pendulum.source        = 'MEASURED 2026-10-21 (free swings EXP001 R03/R06; EXP010 R01; EXP024 R05)';
     p.pendulum.tutorialWg2   = 57.01;         % [COURSE] from the Tutorial geometry; what the rig ran with
 
     % --- Masses, lengths, inertias: NOT MEASURED ------------------------------

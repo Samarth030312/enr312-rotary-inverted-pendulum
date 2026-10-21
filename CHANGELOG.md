@@ -10,7 +10,9 @@ From the identification of the 2026-10-21 data
 value derived from the Tutorial geometry, but it measures 47.6 (free decay) to 49.5
 (92° swings). With ωg² set too high, the energy estimate is low near the bottom and the
 pump overshoots the top. The learnt correction δ could not go below 0, so it could not
-take the excess back. **Not yet run on the rig.**
+take the excess back. **On the rig (2026-10-21, 19:22 UTC), told the free-swing value
+ωg² 48.5: caught at 3.88 s at the first try**, then lost 18.8 s later to a sudden kick
+(`results/reports/2026-10-21c_rig_session.md`).
 * δ may go down to −0.3 in swing-up too (`CTRL_SW_DELTA_MIN`), as it already could for a
   pendulum target.
 * Simulated on the identified pendulum (`matlab/experiments/PEND/swingup_versions_study.m`),

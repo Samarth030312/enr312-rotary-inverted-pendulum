@@ -294,11 +294,11 @@ afterwards. One run is one run, but this is the behaviour the simulation predict
 
 ## What is still open
 
-1. Record a free swing (T1 → FREE SWING) with the motor off and a 10–20° start. It
-   should confirm ωg² ≈ 48 and the dry friction with a cleaner decay than the T10
-   stretch.
-2. Run 2.3.2 on the rig with the measured ωg². Pass: three swing-ups out of three,
-   each caught in under 15 s.
+1. ~~Record a free swing.~~ Done the same night: ωg² 48 ± 1
+   ([late report](2026-10-21c_rig_session.md)).
+2. Run 2.3.2 on the rig with the measured ωg². The first try caught at 3.88 s
+   ([late report](2026-10-21c_rig_session.md)). Two more tries remain for the 3-of-3
+   pass.
 3. EXP021: actually pluck the pendulum before RUN.
 4. The cause of the T3 effort gap (22 against 48).
 5. Make the T3/T4 step metrics subtract the resting arm offset.

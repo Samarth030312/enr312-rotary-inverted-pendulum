@@ -18,8 +18,12 @@ function r = freeSwing(t, psiDeg, nOsc)
 %     delta   log decrement = ln(A_1 / A_{1+n}) / n
 %     zeta    damping ratio = delta / sqrt(4 pi^2 + delta^2);  Q = 1/(2 zeta)
 %     wg2     (2pi/T0)^2 [1/s^2], the model's gravity constant
-%     fit     nonlinear least-squares fit (pendulum_free_swing_fit), which
-%             uses the whole record rather than the peaks
+%     fit     nonlinear least-squares fit (pendulum_free_swing_fit) with dry
+%             and viscous friction; it also finds the release, and the peaks
+%             above are taken from that free-decay window only
+%   With dry friction (this rig, 2026-10-21) the peaks fall by a constant
+%   step, not a constant ratio, so delta, zeta and Q describe the decay over
+%   these n periods only; the fit's dry-friction value is the better model.
 %
 %   Comparing with a ruler. The rig's pendulum is a COMPOUND pendulum (a rod
 %   with a pivot fitting), so Lsimple = J/(m lc) is NOT the rod length. For a
@@ -31,6 +35,12 @@ function r = freeSwing(t, psiDeg, nOsc)
     if nargin < 3, nOsc = 10; end
     t = t(:); y = psiDeg(:);
     g = 9.81;
+    try
+        fit = pendulum_free_swing_fit(t, y);
+        w = t >= fit.tStart & t <= fit.tEnd; t = t(w); y = y(w);     % the free decay only
+    catch err
+        fit = struct('error', err.message);
+    end
     off = median(y(round(end * 3 / 4):end));
     y = y - off;
     pk = peaks_(y);
@@ -50,11 +60,7 @@ function r = freeSwing(t, psiDeg, nOsc)
     r.Q = 1 / (2 * r.zeta);
     r.wg2 = (2 * pi / r.T0)^2;
     r.offsetDeg = off;
-    try
-        r.fit = pendulum_free_swing_fit(t, psiDeg(:));
-    catch err
-        r.fit = struct('error', err.message);
-    end
+    r.fit = fit;
 end
 
 function k = peaks_(y)

@@ -13,10 +13,12 @@ simulation equals the firmware.
 The evening session of 2026-10-21 left five open items
 ([report](results/reports/2026-10-21b_rig_session.md#what-is-still-open)):
 
-1. Record a free swing with the motor off. It should confirm ωg² ≈ 48 and the pivot
-   friction, which so far are identified from stretches of other runs.
-2. Run firmware 2.3.2 on the rig with the measured ωg². Pass: three swing-ups out of
-   three, each caught in under 15 s.
+1. Find what kicks the balancing pendulum. Balance has now been lost to a sudden
+   kick of about 60 rad/s² in three sessions. Mark the arm to check for lost steps,
+   film a run, and give the encoder cable more slack
+   ([report](results/reports/2026-10-21c_rig_session.md#3-the-kicks)).
+2. Run three more swing-ups on 2.3.2 with the measured ωg². The free swing (ωg² 48 ± 1)
+   and the first 2.3.2 catch (3.88 s) are done.
 3. Run EXP021 with a real pluck.
 4. Explain why T3's control effort is 22 on the rig and 48 in simulation.
 5. Subtract the resting arm offset from the T3/T4 step metrics.

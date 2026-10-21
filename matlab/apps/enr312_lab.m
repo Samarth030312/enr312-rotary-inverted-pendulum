@@ -28,6 +28,7 @@ function app = enr312_lab()
     armOk = false; wrFail = 0; lastN = -1; dataT = tic;
     mis = 5;                                     % current mission (index into MIS; 11 = LAB)
     lab = struct('mode', 'hanging', 'ctrl', 'PID');
+    measured = [];                                 % the pendulum from FREE SWING, once USE MEASURED is pressed
     cfg = odyssix.sim.defaults(5); pl = odyssix.sim.plant(5);
     S = []; lp = []; H = []; replay = [];
     hwRun = idleRun();
@@ -256,7 +257,7 @@ function app = enr312_lab()
             setLabMode(lab.mode);
         else
             ui.preset.Items = M.presets(:, 1)'; ui.preset.Value = ui.preset.Items{1};
-            pl = odyssix.sim.plant(max(M.exp, 2)); physicsToSliders();
+            pl = basePlant(max(M.exp, 2)); physicsToSliders();
             applyPreset();
         end
         refreshRuns();
@@ -285,12 +286,12 @@ function app = enr312_lab()
         swingPanel = false; ui.labels.kp.Text = 'Kp rotor'; ui.labels.kd.Text = 'Kd rotor';
         ui.uon.UserData.name.Text = 'u on (deg/s²)';
         if startsWith(c, 'Energy')
-            cfg = swingCfg(ui.ptarget.Value); pl = odyssix.sim.plant(3); physicsToSliders();
+            cfg = swingCfg(ui.ptarget.Value); pl = basePlant(3); physicsToSliders();
             showSwingPanel(); simSwing(ui.ptarget.Value); return;
         end
         e = labExp();
         cfg = odyssix.sim.defaults(e); cfg.seq = 0; cfg.seconds = 24;
-        pl = odyssix.sim.plant(e); physicsToSliders();
+        pl = basePlant(e); physicsToSliders();
         enableFor(e); loadControls(cfg);          % limits first: a value must never be clamped by the previous mission's range
         if e == 23, ui.lqrQ.Value = '1 1 10 1'; ui.lqrR.Value = 0.01; end
         ui.brief.Text = ternary(strcmp(lab.mode, 'hanging'), ...
@@ -555,7 +556,7 @@ function app = enr312_lab()
                 else
                     plot(axA, fitRes.t, fitRes.yDeg, '.', 'Color', K.dim, 'MarkerSize', 5);
                     plot(axA, fitRes.t, fitRes.yFitDeg, 'Color', K.orange, 'LineWidth', 1.4);
-                    title(axA, sprintf('FREE SWING  ωg² %.2f  Q %.1f', fitRes.wg2, fitRes.Q));
+                    title(axA, sprintf('FREE SWING  ωg² %.2f  ·  dry friction %.2f rad/s²  ·  rms %.2f°', fitRes.wg2, getf(fitRes, 'coulomb'), fitRes.rmsDeg));
                 end
             case {2, 4}
                 w = logspace(-1, 2, 400); s = 1j * w; Lj = polyval(lp.L.num, s) ./ polyval(lp.L.den, s);
@@ -1060,7 +1061,8 @@ function app = enr312_lab()
         z = zeros(height(d), 1);
         X = table(d.t_s - d.t_s(1), d.rotor_deg, d.psi_deg, mod(180 - d.psi_deg + 180, 360) - 180, z, z, z, ...
             'VariableNames', {'t', 'rotor', 'psi', 'alpha', 'u', 'ref', 'phase'});
-        m = struct('wg2_fit', fitRes.wg2, 'Q_fit', fitRes.Q, 'rms_fit_deg', fitRes.rmsDeg);
+        m = struct('wg2_fit', fitRes.wg2, 'Q_fit', fitRes.Q, 'coulomb_fit', fitRes.coulomb, 'rms_fit_deg', fitRes.rmsDeg, ...
+                   't_release_s', fitRes.tStart - d.t_s(1));
         if isfield(fs, 'T'), m.period_s = fs.T; m.L_simple_m = fs.Lsimple; m.L_rod_predicted_m = fs.LrodPredicted; m.zeta = fs.zeta; end
         try
             R = odyssix.data.saveRun(X, struct('exp', 1, 'label', 'free-swing', 'synthetic', link.emulator, ...
@@ -1070,16 +1072,29 @@ function app = enr312_lab()
         catch err
             say(['SAVE FAILED: ' err.message], 'warn');
         end
-        say(sprintf('FREE SWING  T %.3f s  ·  L %.3f m  ·  ζ %.4f  ·  ωg² %.2f  ·  Q %.1f  ·  saved', ...
-            getf(fs, 'T'), getf(fs, 'Lsimple'), getf(fs, 'zeta'), fitRes.wg2, fitRes.Q), 'ok');
+        say(sprintf('FREE SWING  released at %.1f s  ·  ωg² %.2f  ·  dry friction %.2f rad/s²  ·  fit rms %.2f°  ·  saved', ...
+            fitRes.tStart - d.t_s(1), fitRes.wg2, fitRes.coulomb, fitRes.rmsDeg), 'ok');
         if MIS(mis).exp == 1, drawAnalysis(); end
         refreshRuns();
     end
 
     function onUseFit()
+        % wg2 and the dry friction from the free swing. A small swing cannot see the
+        % viscous part when dry friction dominates (fit Q very large): then Q stays.
         if isempty(fitRes), return; end
-        setSlider(ui.L, 9.81 / (fitRes.wg2 * 0.6805)); setSlider(ui.Q, fitRes.Q);
-        update(); say('Simulation and swing-up now use the measured pendulum.', 'ok');
+        measured = struct('wg2', fitRes.wg2, 'coulomb', getf(fitRes, 'coulomb'), 'Q', NaN);
+        if isfinite(fitRes.Q) && fitRes.Q < 200, measured.Q = fitRes.Q; end
+        pl = basePlant(max(MIS(mis).exp, 2)); physicsToSliders();
+        update(); say(sprintf('Simulation and swing-up now use the measured pendulum: ωg² %.2f, dry friction %.2f rad/s².', ...
+            measured.wg2, measured.coulomb), 'ok');
+    end
+
+    function p = basePlant(e)
+        p = odyssix.sim.plant(e);
+        if ~isempty(measured)
+            p.wg2 = measured.wg2; p.coulomb = measured.coulomb;
+            if ~isnan(measured.Q), p.Q = measured.Q; end
+        end
     end
 
     function onLqr()

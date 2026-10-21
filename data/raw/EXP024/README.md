@@ -11,3 +11,4 @@ Recorded on the real rig, never edited. Metadata for each file (gains, firmware,
 | `EXP024_20261021-161554_pendulum-090_R05` | 2026-10-21 16:15 | ABORTED: OPERATOR | 53 s |
 | `EXP024_20261021-163022_swing-up_R06` | 2026-10-21 16:30 | FINISHED | 40 s |
 | `EXP024_20261021-163243_swing-up_R07` | 2026-10-21 16:32 | FINISHED | 24 s |
+| `EXP024_20261021-192231_swing-up_R08` | 2026-10-21 19:22 | ABORTED: PENDULUM_LOST | 23 s |

@@ -20,13 +20,16 @@ pendulum upright, integral action, root locus, state feedback and LQR.
 
 **Status.**
 - **All ten tutorials have run on the rig**, along with the energy swing-up and a
-  pendulum-height controller: 33 recorded runs over two sessions, all in [`data/`](data/).
+  pendulum-height controller: 39 recorded runs over four sessions, all in [`data/`](data/).
 - The swing-up caught the pendulum upright 3 of 3 times on firmware 2.2.0. On 2.3.0 it
   caught only 1 of 3. Identifying the pendulum from that day's data showed why: the
   firmware was given the pendulum constant ωg² = 57 from the Tutorial geometry, while the
-  rig measures 48–50
-  ([evening report](results/reports/2026-10-21b_rig_session.md)). Firmware 2.3.2
-  tolerates that error in simulation, but it has not yet run on the rig.
+  rig measures 48 ± 1
+  ([evening report](results/reports/2026-10-21b_rig_session.md)). A free swing confirmed
+  the value. Firmware 2.3.2, told the measured ωg², **caught the pendulum upright at the
+  first try, in 3.9 s** ([late report](results/reports/2026-10-21c_rig_session.md)).
+- Still open: three times now, balance has been lost to a sudden kick whose cause is
+  not yet known.
 - Numbers marked as predictions are predictions.
 
 <p align="center">
@@ -161,6 +164,32 @@ alt="Six panels: Tutorials 1, 2, 3, 4, 9 and 10, rig over simulation."></p>
 
 Report, with what does not fit yet (T3 control effort, 22 against 48):
 [`results/reports/2026-10-21b_rig_session.md`](results/reports/2026-10-21b_rig_session.md).
+
+## Results on the hardware (2026-10-21, late): the prediction tested
+
+The evening analysis predicted two things: that the pendulum constant is about 48, not
+57, and that with the right value the swing-up would catch reliably. Both were tested
+the same night.
+
+| | Prediction | Rig |
+|---|---|---|
+| ωg² from a free swing, motor off | 48 ± 1.5 (from stretches of other runs) | **48.4 / 48.6** (period); 48 ± 1 over three methods |
+| dry pivot friction | 0.48 rad/s² | 0.33 / 0.40 rad/s² |
+| swing-up, firmware 2.3.2, ωg² 48.5 | caught in 4.23 s (simulation of this configuration) | **caught in 3.88 s, first try** |
+
+<p align="center"><img src="results/figures/2026-10-21c_swingup_232_rig.png" width="900"
+alt="Top: pendulum height on the rig and in simulation, caught at 3.88 s and 4.23 s. Middle: alpha while balancing, rms 0.66 deg, two sudden kicks. Bottom: the arm walks home after the catch."></p>
+
+It balanced for 18.8 s (α rms 0.66°) and recovered from one sudden kick. A second, larger
+kick 3 s later ended the run. In 0.14 s that kick drives the pendulum with about
+60 rad/s², where gravity at that tilt supplies less than 1. The cause is not yet known:
+a touch, the encoder cable, or lost motor steps. It is the first item on the
+[roadmap](ROADMAP.md).
+
+The app's own free-swing fit failed on these real records at first: it assumed the
+release was at the start and the damping was viscous. It now finds the release itself
+and fits dry friction. Report:
+[`results/reports/2026-10-21c_rig_session.md`](results/reports/2026-10-21c_rig_session.md).
 
 ## Predictions (simulation)
 

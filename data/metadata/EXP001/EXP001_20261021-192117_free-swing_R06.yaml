@@ -1,0 +1,37 @@
+run_id: "EXP001_20261021-192117_free-swing_R06"
+experiment_id: "EXP001"
+data_class: "HARDWARE"
+label: "free-swing"
+date_utc: "2026-10-21 19:21:17"
+result: "RECORDED"
+duration_s: 15.068
+samples: 754
+sampling: "50 Hz stream of the 500 Hz control loop, MCU time stamps"
+raw_data_file: "data/raw/EXP001/EXP001_20261021-192117_free-swing_R06.csv"
+raw_serial_log: "results/evidence/logs/rig_20261022-004820.log"
+firmware: "enr312-target-2.3.2 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)"
+firmware_protocol: 5
+board: ""
+serial_port: "/dev/ttyACM0"
+repository_rev: "0f50a83"
+repository_dirty: false
+operator: ""
+notes: ""
+config: {}
+plant_model: {}
+events: []
+metrics:
+  wg2_fit: 30.851379
+  Q_fit: 3.501491609e+15
+  rms_fit_deg: 6.000958766
+  period_s: 1.0728
+  L_simple_m: 0.2854295332
+  L_rod_predicted_m: 0.4194409011
+  zeta: -0.04111807105
+units:
+  t: "s"
+  rotor: "deg"
+  psi: "deg, encoder, 0 = hanging datum"
+  alpha: "deg from upright"
+  u: "deg/s^2 (plant input)"
+  ref: "deg"
