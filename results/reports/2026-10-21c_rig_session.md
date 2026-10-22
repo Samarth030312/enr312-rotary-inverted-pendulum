@@ -75,7 +75,11 @@ friction and the offset, and its R03 fit is visibly worse. Taken together:
   for example a mass at the tip of about 28 % of the rod's (it gives
   (m/2 + M)/(m/3 + M) = ωg²L/g), or a pivot not at the very end of the rod. Mass on the
   pivot axis itself (encoder shaft, hub) changes neither J nor m·lc, so it cannot explain
-  it. *(Corrected 2026-10-22: the first version of this paragraph blamed the hub.)* The
+  it. *(Corrected 2026-10-22: the first version of this paragraph blamed the hub.)*
+  **Most likely cause (added 2026-10-22):** the rig carries a small black paper holder
+  clipped at the end of the rod. With its centre 0.24–0.28 m from the pivot, a holder of
+  0.47–0.19 times the rod's mass gives exactly ωg² = 48. To confirm, weigh the holder and
+  the rod, or record a free swing without the holder: the prediction is ωg² ≈ 56.6. The
   arm coupling follows from ωr²/ωg² = r/g, which holds for any rigid pendulum:
   ωr² = 0.685.
 

@@ -178,6 +178,7 @@ used for simulation and rig alike.
 | ωr² | arm coupling | rad²/s² | **0.685** (Tutorial 0.803) | ωg²·r/g |
 | r | arm length | m | 0.14 | STEVAL-EDUKIT01 manual, Table 2 |
 | L | rod length | m | 0.26 | measured with a ruler |
+| — | tip accessory | | a small paper holder clipped at the rod end | the likely reason ωg² is 48, not 56.6 |
 | c | dry pivot friction | rad/s² | 0.35–0.40 small swings | free swings |
 | Q | viscous quality factor | | ≈ 60 at 92° swings | energy balance, R05 |
 | E | normalised pendulum energy | | 0 hanging, 2 upright | ψ̇²/(2ωg²) + 1 − cos ψ |

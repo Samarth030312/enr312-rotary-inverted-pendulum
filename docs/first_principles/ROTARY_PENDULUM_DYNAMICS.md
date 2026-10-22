@@ -9,7 +9,10 @@ compared with the rig on 2026-10-21 (update below).
 > - **ωg².** Six free swings give ωg² = 48.0 ± 0.5 rad²/s², not the Tutorial's 57.01 or
 >   55.85 (`results/reports/2026-10-21d_rig_session.md`). The rod is 0.26 m, the
 >   Tutorial's length. So the rig's pendulum is not the uniform rod of §6: its mass sits
->   further from the pivot (a tip mass of about 28 % of the rod's would do it).
+>   further from the pivot. The rig carries a small paper holder clipped at the tip, and
+>   a tip mass of 0.19–0.47 of the rod's (depending on where its centre sits) gives
+>   exactly 48. With m the rod mass and M the tip mass at distance d,
+>   ωg² = g(mL/2 + Md)/(mL²/3 + Md²).
 > - **ωr².** It follows from ωr² = ωg²·r/g (§6) with r = 0.14 m: 0.685, not 0.803.
 > - **Damping.** Assumption A3 (viscous damping) is wrong for this pivot. Small swings
 >   decay by dry (Coulomb) friction, about 0.35–0.40 rad/s², and large swings lose more

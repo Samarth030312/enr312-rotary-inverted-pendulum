@@ -37,7 +37,8 @@ state feedback and LQR, plus an energy-based swing-up.
   within half a microstep. The simulation is checked against the C code on every
   change ([results](docs/RESULTS.md)).
 - **The textbook pendulum was not ours.** Six free swings gave a pendulum constant of
-  ωg² = 48.0 ± 0.5, not the Tutorial's 57. With the wrong value the swing-up caught 1
+  ωg² = 48.0 ± 0.5, not the Tutorial's 57. The rod is the Tutorial's; the difference is
+  most likely the small paper holder clipped at its tip. With the wrong value the swing-up caught 1
   of 3; with the measured one, 4 of 4.
 - **The pivot has dry friction.** It explains, to 0.01°, arm offsets that had looked
   like controller errors.

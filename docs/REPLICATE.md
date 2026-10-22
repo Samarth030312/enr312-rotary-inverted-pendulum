@@ -124,7 +124,11 @@ it caught one swing-up in three. Told the measured value, it caught at the first
 in 3.9 s
 ([evening report, section 1](../results/reports/2026-10-21b_rig_session.md)).
 
-Our pivot also has dry friction, about 0.5 rad/s². A small swing dies within two
+Anything you attach to the pendulum changes ωg². Our rig carries a small paper holder
+clipped at the tip, which is most likely why it measures 48 rather than the 56.6 of a
+bare 0.26 m rod. Measure again after any change to the pendulum.
+
+Our pivot also has dry friction, about 0.4 rad/s². A small swing dies within two
 cycles, and the pendulum stops slightly off vertical. If yours does the same, that is
 the pivot, not your wiring.
 

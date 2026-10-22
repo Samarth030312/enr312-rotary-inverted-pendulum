@@ -65,8 +65,9 @@ function p = rigParams()
     p.pendulum.wr2           = p.rotor.armLength * p.pendulum.wg2 / 9.81;   % 0.685 (Tutorial: 0.803)
     p.pendulum.rodEquivalent = 3 * 9.81 / (2 * p.pendulum.wg2);             % m, uniform rod with this wg2: 0.31
     p.pendulum.rodLength     = 0.26;          % m, MEASURED 2026-10-22 (ruler). A uniform 0.26 m rod pivoted at its
-                                              % end would have wg2 56.6: the mass sits further out (e.g. a tip mass
-                                              % of ~28 % of the rod's). Mass on the axis cannot change wg2.
+                                              % end would have wg2 56.6. The rig carries a small paper holder clipped
+                                              % at the tip: a tip mass of 0.19-0.47 of the rod's explains 48.0.
+    p.pendulum.tipAccessory  = 'paper holder clipped at the rod end (mass not measured)';
 
     % --- Masses, lengths, inertias: NOT MEASURED ------------------------------
     % Only their combinations wg2 and wr2 enter the models; wr2 follows from wg2

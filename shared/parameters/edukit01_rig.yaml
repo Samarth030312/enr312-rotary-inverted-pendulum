@@ -274,5 +274,6 @@ pendulum_dynamics:
   wr2:                 { value: 0.685, unit: rad^2/s^2, source: "r * wg2 / g = 0.14 * 48.0 / 9.81 (Tutorial 12: wr2/wg2 = r/g); Tutorial value 0.803" }
   rod_length:          { value: 0.26, unit: m, source: "MEASURED 2026-10-22 with a ruler; Tutorial 12 uses 0.258 m" }
   rod_equivalent:      { value: 0.31, unit: m, source: "the uniform rod that would have wg2 48.0: 3g/(2 wg2)" }
-  note_rod: "a uniform 0.26 m rod pivoted at its end would give wg2 = 3g/(2L) = 56.6; the measured 48.0 means the mass sits further from the pivot (e.g. a tip mass of ~28 % of the rod mass, or a pivot not at the rod end). Mass on the pivot axis changes neither J nor m*lc. wr2/wg2 = r/g holds for any rigid pendulum, so wr2 = 0.685"
+  tip_accessory: "a small black paper holder clipped at the end of the rod (added by the operators before the 2026-10-21 sessions; mass and position not yet measured)"
+  note_rod: "a uniform 0.26 m rod pivoted at its end would give wg2 = 3g/(2L) = 56.6, the Tutorial value; the measured 48.0 needs a tip mass of 0.19-0.47 of the rod mass (holder centre 0.28-0.24 m from the pivot). The paper holder at the tip is the likely cause. Test: weigh holder and rod, or a free swing without the holder (prediction 56.6). Mass on the pivot axis changes neither J nor m*lc. wr2/wg2 = r/g holds for any rigid pendulum, so wr2 = 0.685"
   open: "level the base (Tutorial 12: a tilt delta gives a pendulum offset delta*sin(arm angle - beta))" 
