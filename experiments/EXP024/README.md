@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | **Source** | PEND handout §3 C12 (energy swing-up; why linear PID cannot), plus the request to put the pendulum at a chosen angle |
-| **Status** | Rig, 2026-10-21: firmware 2.2.0 **caught 3 of 3** (7.1–8.0 s, one fell right after the catch); 2.3.0 caught **1 of 3** (38.9 s), and the pendulum target swung to **91.8°** for a 90° target. Cause identified from the data: the firmware's ωg² (57.01, Tutorial) against the measured 48 ± 1. Firmware 2.3.2 with the measured ωg²: **caught at 3.88 s at the first try** (R08), balanced 18.8 s, lost to a sudden kick (cause open) |
+| **Status** | Rig, 2026-10-21: firmware 2.2.0 **caught 3 of 3** (7.1–8.0 s, one fell right after the catch); 2.3.0 caught **1 of 3** (38.9 s), and the pendulum target swung to **91.8°** for a 90° target. Cause identified from the data: the firmware's ωg² (57.01, Tutorial) against the measured 48 ± 1. Firmware 2.3.2/2.3.3 with the measured ωg²: **caught 4 of 4** (3.88, 5.60, 5.80, 5.64 s); while balancing, 15 of 17 hand pushes recovered |
 | **Run it** | `enr312_lab` → LAB → PENDULUM [target] SWING; `$exp=24 $amp=180`; Python `rig.configure(24, amp=90)` |
 
 ## 1. Question

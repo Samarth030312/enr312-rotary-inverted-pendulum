@@ -17,7 +17,7 @@ for 200 ms: SATURATION; arm speed at its ceiling too long: VELOCITY_LIMIT; 1 s w
 de-energise the stepper.
 
 ## Steps
-1. Flash **2.1.0** (the app's Flash firmware; check the banner says protocol 3).
+1. Flash the current release (`odyssix.stm32.flash()` in MATLAB; the boot banner names the version and protocol).
 2. Connect. The pendulum hangs still: **Zero datums**.
 3. ARM (confirm the dialog), START.
 4. Select the experiment and preset. Simulate first, and read the predicted overshoot and arm excursion.

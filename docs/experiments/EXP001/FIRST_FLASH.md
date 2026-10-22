@@ -27,7 +27,7 @@ RAM  USE     4 352 /  98 304 B  =  4.43 %  (static; + 0x800 stack  0x200 heap)
 
 ## The easy way: from MATLAB
 
-`enr312_lab` → **Detect board** → **Flash firmware** flashes the release above
+`odyssix.stm32.flash()` in MATLAB flashes the release above
 through the programmer inside STM32CubeIDE, after three refusal gates (ENR312
 banner, release hash, device ID 0x433). Steps 5–7 below are the same thing by
 hand. Before the first flash, run `scripts/flash_ready_check.sh` (16 gates, no

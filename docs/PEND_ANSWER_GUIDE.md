@@ -30,7 +30,7 @@ NOT_EXECUTED); Tutorials 1–5 ran on the rig on 2026-10-12
 |---|---|---|
 | 1 | Identify components | Tower, pendulum, NEMA-17 stepper, LPD3806-600BM-G5-24C encoder, NUCLEO-F401RE, X-NUCLEO-IHM01A1 (L6474), 12 V supply, USB cable. Photograph them for the report. |
 | 2 | UCLA site | Background only. The UCLA firmware is reference material (`docs/references/`), **not** what runs here. |
-| 3 | STM32CubeProgrammer | Flashing here is the app's **Flash firmware** button (STM32_Programmer_CLI, the command-line CubeProgrammer; st-flash as fallback). CubeProgrammer works as well: write `firmware/enr312/target/build/enr312_pendulum.bin` at 0x08000000. See `docs/GETTING_STARTED.md`. |
+| 3 | STM32CubeProgrammer | Flashing here is `odyssix.stm32.flash()` in MATLAB (STM32_Programmer_CLI, the command-line CubeProgrammer, after three checks: banner, hash, chip). CubeProgrammer works as well: write `firmware/enr312/target/build/enr312_pendulum.bin` at 0x08000000. See `docs/GETTING_STARTED.md`. |
 | 4 | Arduino STM32 boards | Not used: the firmware is built with arm-none-eabi-gcc + make (`make -C firmware/enr312/target`). Explain why in A3. |
 | 5 | Python + pendulum-pid | Use `python/enr312_rig.py` (our protocol, same idea: send commands and gains, receive angles). |
 | 6 | Run a demo | Run **T1** (open-loop moves) then **T3** (suspended PID) in the app. |
@@ -53,7 +53,7 @@ the rows below say what on this rig to point at.
 | 5 Servo vs DC motor | The rig uses neither: a **stepper** moves exact 1/16 microsteps (open loop, no position sensor needed unless steps are missed). Compare: DC motor = torque/speed from voltage, needs feedback; servo = DC motor + internal position loop. |
 | 6 Motor driver | The L6474 (IHM01A1) switches 12 V and the coil currents (with current limiting) from STEP/DIR logic signals. An MCU pin gives ~20 mA at 3.3 V; a coil needs amps at 12 V and produces back-EMF. |
 | 7 On-Off control | **LAB · hanging · On-off** (`experiments/EXP022`). Prediction: the arm never settles; it oscillates ±r forever (100 % overshoot), and the pendulum is shaken to 36°. Drawbacks: no settling on an acceleration-driven plant, chatter, violent actuation. |
-| 8 Moving-average filter | The firmware has one on the pendulum angle (`ma` = 1–32 samples, app slider on T6–T10 and LAB). `odyssix.pend.derivativeNoise`: an 8-point MA on the 500 Hz derivative cuts rms noise from 31.8 to 5.8 deg/s at the cost of 7 ms delay. A first-order filter at 10 Hz gives 4.3 deg/s with 16 ms delay. Delay costs phase margin: sweep `ma` with `gainSweep`. |
+| 8 Moving-average filter | The firmware has one on the pendulum angle (`ma` = 1–32 samples, app field on T6–T10 and LAB). `odyssix.pend.derivativeNoise`: an 8-point MA on the 500 Hz derivative cuts rms noise from 31.8 to 5.8 deg/s at the cost of 7 ms delay. A first-order filter at 10 Hz gives 4.3 deg/s with 16 ms delay. Delay costs phase margin: sweep `ma` with `gainSweep`. |
 | 9 P controller | On this rig P alone on the rotor is **T9 with k2 = 0**: an undamped oscillation (±19.7°, period 3.1 s at k1 = 4). On the pendulum, Kdp = 0 falls (`PEND_sim_kdp.csv`). In Arduino-style code: `u = Kp*(ref - angle)` every fixed period, then write it to the actuator; our C equivalent is `enr312_ctrl.c`. |
 | 10 High Kp oscillates | Inner loop: s² + (γ + ωr²Kdp)s + (ωr²Kpp − ωg²), ζ = (γ + ωr²Kdp)/(2√(ωr²Kpp − ωg²)). Raising Kpp raises the natural frequency and **lowers the damping**. Plus the loop delay (filters, sampling) costs more phase at higher crossover. Show it with the Kpp slider on T7 (inner poles in the analysis panel) or `gainSweep(6,'kpp',…)`. |
 | 11 PID roles | P: stiffness; I: removes the offset from a constant load (T8: −4.1° → −0.7°); D: damping (Kdp = 0 falls; too much amplifies encoder noise, Kdp ≥ 150 hits the velocity limit). |
@@ -86,8 +86,8 @@ steps/rev × 16 microsteps = 3200/rev → **0.1125°** per microstep. The minimu
 **S3-3 (A3) Uno vs STM32.** ATmega328P: 16 MHz, 8-bit, no FPU. STM32F401: 84 MHz,
 32-bit Cortex-M4F with a single-precision FPU (the firmware computes in double; that is
 software emulated, yet the control interrupt measured at most **129 µs of the 2000 µs**
-period on the rig on 2026-10-12 with firmware 2.0.x (`isr_max_us`, rig session logs;
-2.1.0 not yet measured). The stepper is **acceleration-commanded** here: the controller output u
+period on the rig on 2026-10-12 with firmware 2.0.x, and at most 216 µs with the
+general controller core of 2.3.x on 2026-10-21 (`isr_max_us`, rig session logs). The stepper is **acceleration-commanded** here: the controller output u
 [deg/s²] is integrated to a velocity and sent as a step rate. Torque is not commanded,
 and that is why the model input is θ̈ (rotor plant 1/s²) rather than a voltage. A
 stepper that misses steps loses its position silently. Watch for it in A7.
@@ -107,8 +107,8 @@ RUN, for three gain sets (change Kd pendulum between runs); the app's table give
 largest effect; without it the decay is the free decay (2 ln 20/γ = 21.4 s).
 
 **S3-6 (A6) Inverted: gains, one at a time, Kp range.** **T6** (or T5), then change one
-slider at a time in the app (simulate first). On the rig, **Apply gains live** while it
-balances in HOLD. Predictions (`PEND_sim_kpp/kdp/kp/kd/ki.csv`):
+gain at a time in the app (simulate first). On the rig, type the new gain while it
+balances in HOLD: it is applied at once and logged with its time. Predictions (`PEND_sim_kpp/kdp/kp/kd/ki.csv`):
 
 | Gain | Balances for | Outside the range |
 |---|---|---|
@@ -127,14 +127,20 @@ model has none. On the rig, compare the arm angle after recovery with a mark on 
 base. If it differs from the reported θ the stepper lost steps (the firmware cannot
 know: θ is the count of issued steps).
 
+*On the rig (2026-10-21, the swing-up's balancing LQR, not the T6 PID):* 15 of 17 hand
+pushes up to 83 deg/s were recovered, close to the simulated curve for that controller
+(recoverable up to 100 deg/s); a 115 deg/s push was lost
+(`results/reports/2026-10-21d_rig_session.md`, section 4). Press **PUSH MARK** after each
+push to get a 500 Hz record of it.
+
 ### B. Simulation
 
 **S3-8 (B8) Nonlinear model, discrete PID, slowest loop rate.** No Simulink here
 (base MATLAB only). The equivalent is `odyssix.sim.runCtrl`: the nonlinear rigid
 pendulum, the firmware's discrete controller at 500 Hz line for line (proved identical
 to the C code by `matlab/tests/test_sim_matches_firmware.m`), quantisation and limits.
-Put your measured L and ζ in the app's Physics sliders (**Use measured wg2, Q**).
-Compare the tap recovery with A7. Slowest loop rate: the `div` slider (500/div Hz) or
+Measure your pendulum (T1 → FREE SWING) and press **USE MEASURED PENDULUM**.
+Compare the tap recovery with A7. Slowest loop rate: the `div` field (500/div Hz) or
 `gainSweep(6,'div',1:50)`. Prediction: balances down to **16.7 Hz**, fails at 14.3 Hz
 (`PEND_sim_div.csv`); this can be tried on the rig with `$div` as well. If you build a
 Simulink model on a machine that has it, check it against these numbers.
@@ -158,7 +164,7 @@ weights instead of two interacting loops and a sign puzzle.
 change is a 75 deg/s derivative spike, × Kdp 30 = 2250 deg/s² of plant input, more than
 the 1500 limit. The firmware's first-order D filter (fdp 10 Hz) reduces the rms from
 31.8 to 4.3 deg/s with 16 ms of lag (`odyssix.pend.derivativeNoise`, `PEND_sim_dnoise.csv`).
-On the rig: raise the fdp slider (less filtering) and Kdp, and watch u become noise.
+On the rig: raise the fdp field (less filtering) and Kdp, and watch u become noise.
 
 **S3-12 (C12) Swing-up.** Energy E = ψ̇²/(2ωg²) + 1 − cos ψ (0 hanging, 2 upright);
 dE/dt = (ψ̇/ωg²)(ωr² cos ψ · u − γψ̇), so u = u_max·sign(ψ̇ cos ψ) pumps energy in, and

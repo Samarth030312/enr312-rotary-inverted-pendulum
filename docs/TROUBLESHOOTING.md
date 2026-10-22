@@ -7,9 +7,9 @@ cause that was found and the fix. Firmware versions are listed in
 
 ```mermaid
 flowchart TD
-    A[Something is wrong] --> B{Does Detect board<br/>find the ST-LINK?}
+    A[Something is wrong] --> B{Does the PC see the ST-LINK?<br/>odyssix.stm32.listBoards}
     B -- no --> C[USB / ST-LINK section]
-    B -- yes --> D{Does Connect show<br/>live telemetry?}
+    B -- yes --> D{Does CONNECT show<br/>live telemetry?}
     D -- no --> E[Serial link section]
     D -- yes --> F{Does ARM succeed?}
     F -- no --> G[Motor driver section]
@@ -20,7 +20,7 @@ flowchart TD
 
 ## USB and ST-LINK
 
-### Detect board finds nothing; `/dev/ttyACM0` is missing; flashing says `DEV_CONNECT_ERR`
+### The board is not found; `/dev/ttyACM0` is missing; flashing says `DEV_CONNECT_ERR`
 * **Seen:** twice, on the same board. `lsusb` lists `0483:374b STMicroelectronics
   ST-LINK/V2.1`, but there is no serial port and `STM32_Programmer_CLI` cannot connect.
   The kernel log showed `error -71` the first time.
@@ -28,8 +28,8 @@ flowchart TD
   (`/sys/bus/usb/devices/<port>/bConfigurationValue` is empty), so it exposes no
   interfaces.
 * **Fix:** unplug the Nucleo's USB cable, wait 5 s, plug it back in. `usbreset 0483:374b`
-  fixed it once; another time it did not and only the replug worked. *Detect board*
-  now reports this state explicitly ("ST-LINK is on USB but not configured").
+  fixed it once; another time it did not and only the replug worked. `odyssix.stm32.listBoards()`
+  reports this state explicitly ("ST-LINK is on USB but not configured").
 * Also check: the cable carries data, and the CN2 jumpers on the Nucleo are fitted.
 
 ### Permission denied on `/dev/ttyACM0`
@@ -126,12 +126,11 @@ unless the pendulum has read within 10° of its datum for half a second.
 
 ## Control behaviour
 
-### "There are no Kp/Kd sliders" / nothing happens in closed loop
-Tutorial 1 has no controller: *Run on rig* makes open-loop arm moves. Pick T2–T5
-with the buttons under the Tutorial dropdown; the gain sliders become active and
-the run button names the tutorial it will run. There is no Ki by design: the
-tutorials use PD controllers, and Tutorial 2's steady disturbance offset D/Kp is
-the point of the exercise.
+### "There are no gains" / nothing happens in closed loop
+Tutorial 1 has no controller: RUN makes open-loop arm moves. Pick another mission:
+its gains appear under CONTROLLER. Tutorials 2–5 have no Ki by design: they use PD
+controllers, and Tutorial 2's steady disturbance offset D/Kp is the point of the
+exercise. Integral action comes in T6 and T8.
 
 ### Tutorials 3 and 4: the arm settles 0.5–1° away from the reference
 * **Not a fault.** The pendulum came to rest 0.3–0.6° off vertical (pivot friction;

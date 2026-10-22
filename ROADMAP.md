@@ -10,20 +10,21 @@ simulation equals the firmware.
 
 ## 0. Finish what the rig told us (now)
 
-The evening session of 2026-10-21 left five open items
-([report](results/reports/2026-10-21b_rig_session.md#what-is-still-open)):
+Open items from the rig sessions of 2026-10-21
+([evening](results/reports/2026-10-21b_rig_session.md#what-is-still-open),
+[last](results/reports/2026-10-21d_rig_session.md#6-what-this-settles)):
 
-1. Measure how much push the balance takes. Push it by hand with growing force and press
-   PUSH MARK after each push, so that each one comes with a 500 Hz record (firmware
-   2.3.3). Then compare with the simulated limit of a 100 deg/s tap
-   ([report](results/reports/2026-10-21c_rig_session.md#3-pushing-it-how-much-disturbance-the-balance-takes)).
-2. Run three more swing-ups on 2.3.2 with the measured ωg². The free swing (ωg² 48 ± 1)
-   and the first 2.3.2 catch (3.88 s) are done.
+1. Measure the push limit more finely. The first push test bracketed it between 83 and
+   115 deg/s, against a simulated 100. Repeat with pushes of growing size, each marked
+   with PUSH MARK, so that every push has a 500 Hz record
+   ([report](results/reports/2026-10-21d_rig_session.md#4-the-push-test-15-of-17-pushes-recovered)).
+2. ~~Swing-ups with the measured ωg².~~ Done: 4 of 4 caught (3.9–5.8 s), and the push
+   test (15 of 17 recovered) ([report](results/reports/2026-10-21d_rig_session.md)).
 3. Run EXP021 with a real pluck.
 4. Explain why T3's control effort is 22 on the rig and 48 in simulation.
 5. Subtract the resting arm offset from the T3/T4 step metrics.
 
-Everything below uses the pendulum constants from item 2, so it comes first.
+The measured pendulum (ωg² = 48.0 ± 0.5, dry pivot friction) is the starting point for everything below.
 
 ## 1. Model predictive control
 

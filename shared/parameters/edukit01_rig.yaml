@@ -261,18 +261,18 @@ mechanical:
 pendulum_dynamics:
   status: MEASURED
   date: 2026-10-21
-  method: matlab/identification/identify_pendulum_20261021.m
-  table: results/tables/PEND_identification_20261021.csv
+  method: matlab/identification/pendulum_free_swing_fit.m (free swings); identify_pendulum_20261021.m (earlier estimates)
+  table: results/tables/PEND_free_swings.csv; results/tables/PEND_identification_20261021.csv
   wg2_free_decay:      { value: 47.6, unit: rad^2/s^2, source: "EXP010 R01, arm still, 5.7 deg free decay, Coulomb fit rms 0.33 deg" }
   wg2_large_swing:     { value: 49.5, unit: rad^2/s^2, source: "EXP024 R05, 92 deg swings, elliptic-integral period" }
-  wg2_free_swing:      { value: [48.4, 48.6], unit: rad^2/s^2, source: "EXP001 R03, R06: dedicated free swings, motor off, period from peak timing; fit 46.4/47.8" }
-  wg2_to_use:          { value: 48.5, unit: rad^2/s^2, source: "48 +- 1 over all methods; EXP024 R08 caught at 3.88 s with it (firmware 2.3.2)" }
+  wg2_free_swing:      { value: [47.1, 48.4], unit: rad^2/s^2, source: "six free swings EXP001 R03, R06-R10, motor off: model fit 47.1-48.4, period 47.3-48.3" }
+  wg2_to_use:          { value: 48.0, tolerance: 0.5, unit: rad^2/s^2, source: "six free swings; the swing-ups of 2026-10-21 ran with 48.5 (within 1 %) and caught 4 of 4" }
   wg2_tutorial:        { value: 57.01, unit: rad^2/s^2, source: "Tutorial geometry; the value the rig ran with on 2026-10-21" }
-  coulomb:             { value: 0.40, unit: rad/s^2, source: "free swings 0.33 (R03), 0.40 (R06); EXP010 R01 decay 0.48" }
+  coulomb:             { value: 0.37, unit: rad/s^2, source: "10 deg free swings 0.35-0.40 (R03, R06); EXP010 R01 0.48; larger swings fit a dry + viscous mix, so the split is uncertain" }
   q_large_swing:       { value: [57, 63], source: "EXP024 R05 energy balance at 92 deg, after the Coulomb loss" }
   arm_length:          { value: 0.14, unit: m, source: "STEVAL-EDUKIT01 manual (Edukit Rotary Inverted Pendulum Manual), Table 2" }
-  wr2:                 { value: 0.692, unit: rad^2/s^2, source: "r * wg2 / g = 0.14 * 48.5 / 9.81 (Tutorial 12: wr2/wg2 = r/g); Tutorial value 0.803" }
+  wr2:                 { value: 0.685, unit: rad^2/s^2, source: "r * wg2 / g = 0.14 * 48.0 / 9.81 (Tutorial 12: wr2/wg2 = r/g); Tutorial value 0.803" }
   rod_length:          { value: 0.26, unit: m, source: "MEASURED 2026-10-22 with a ruler; Tutorial 12 uses 0.258 m" }
-  rod_equivalent:      { value: 0.30, unit: m, source: "the uniform rod that would have wg2 48.5: 3g/(2 wg2)" }
-  note_rod: "a uniform 0.26 m rod would give wg2 = 3g/(2L) = 56.6; the measured 48 means 15 % more inertia about the pivot than the ideal rod (encoder shaft, hub, set screw). wr2/wg2 = r/g holds for any rigid pendulum, so wr2 = 0.69 stands"
+  rod_equivalent:      { value: 0.31, unit: m, source: "the uniform rod that would have wg2 48.0: 3g/(2 wg2)" }
+  note_rod: "a uniform 0.26 m rod pivoted at its end would give wg2 = 3g/(2L) = 56.6; the measured 48.0 means the mass sits further from the pivot (e.g. a tip mass of ~28 % of the rod mass, or a pivot not at the rod end). Mass on the pivot axis changes neither J nor m*lc. wr2/wg2 = r/g holds for any rigid pendulum, so wr2 = 0.685"
   open: "level the base (Tutorial 12: a tilt delta gives a pendulum offset delta*sin(arm angle - beta))" 

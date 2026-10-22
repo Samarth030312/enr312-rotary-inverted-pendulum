@@ -88,7 +88,11 @@ function m = metrics(D, cfg)
             end
             m.pend_peak_deg = max(abs(ps));
         case 21
-            w = ph == 10; tw = t(w) - firstOr(t(w)); y = ps(w);
+            % the swing that was plucked: up to the first live set-point, if any
+            % (moving the arm starts a new swing)
+            w = ph == 10;
+            if isfield(cfg, 'target_t') && isscalar(cfg.target_t) && isfinite(cfg.target_t), w = w & t < cfg.target_t; end
+            tw = t(w) - firstOr(t(w)); y = ps(w);
             m.swing_start_deg = NaN; m.stop_time_s = NaN;
             if any(w)
                 m.swing_start_deg = max(abs(y(tw <= 1)));
@@ -104,6 +108,9 @@ function m = metrics(D, cfg)
     if isfield(cfg, 'target') && isfield(cfg, 'target_t') && isscalar(cfg.target_t) && isfinite(cfg.target_t) ...
             && isscalar(cfg.target) && isfinite(cfg.target)
         w = t >= cfg.target_t;
+        % the hold lasts until the next set-point, when one is known (the simulated
+        % operator of the app sends the arm home 8 s later)
+        if isfield(cfg, 'target_end') && isscalar(cfg.target_end) && isfinite(cfg.target_end), w = w & t < cfg.target_end; end
         m.hold_error_deg = NaN; m.hold_reach_s = NaN;
         if any(w)
             tw = t(w) - cfg.target_t; e = th(w) - cfg.target;

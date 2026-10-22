@@ -5,11 +5,11 @@ rotary pendulum, NUCLEO-F401RE). Nothing in `raw/` is simulated, and nothing in 
 ever edited. Simulated and emulator runs go to `matlab/data/synthetic/` and are not in
 this repository.
 
-39 runs, 18 minutes of 50 Hz data, from four sessions (2026-10-12; 2026-10-21 morning, evening and late).
+47 runs, 22 minutes of 50 Hz data, from five sessions (2026-10-12; 2026-10-21 morning, evening, late and last), plus 8 records at 500 Hz.
 
 | Experiment | | Runs | Days |
 |---|---|---|---|
-| [EXP001](raw/EXP001/) | T1 actuator | 10 | 2026-10-12, 2026-10-21 |
+| [EXP001](raw/EXP001/) | T1 actuator | 14 | 2026-10-12, 2026-10-21 |
 | [EXP002](raw/EXP002/) | T2 sensitivity | 2 | 2026-10-12, 2026-10-21 |
 | [EXP003](raw/EXP003/) | T3 control effort | 2 | 2026-10-12, 2026-10-21 |
 | [EXP004](raw/EXP004/) | T4 MIMO sensitivity | 2 | 2026-10-12, 2026-10-21 |
@@ -20,13 +20,14 @@ this repository.
 | [EXP009](raw/EXP009/) | T9 pole placement | 2 | 2026-10-21 |
 | [EXP010](raw/EXP010/) | T10 LQR | 1 | 2026-10-21 |
 | [EXP021](raw/EXP021/) | stop a swing, hold an angle | 1 | 2026-10-21 |
-| [EXP024](raw/EXP024/) | energy control, swing-up | 8 | 2026-10-21 |
+| [EXP024](raw/EXP024/) | energy control, swing-up | 12 | 2026-10-21 |
 
 What each session found:
 - [2026-10-12](../results/reports/2026-10-12_rig_tutorials_1-5.md): first runs, Tutorials 1–5 (protocol 2, no `alpha` column)
 - [2026-10-21 morning](../results/reports/2026-10-21_rig_session.md): first swing-ups, 3 of 3
 - [2026-10-21 evening](../results/reports/2026-10-21b_rig_session.md): all ten tutorials, pendulum target, the pendulum identified, why 2.3.0 did not catch
 - [2026-10-21 late](../results/reports/2026-10-21c_rig_session.md): free swing (ωg² 48 ± 1), firmware 2.3.2 swing-up caught at 3.88 s
+- [2026-10-21 last](../results/reports/2026-10-21d_rig_session.md): six free swings (ωg² 48.0 ± 0.5), swing-up 4 of 4, push test 15 of 17, 500 Hz records
 
 ## Layout
 

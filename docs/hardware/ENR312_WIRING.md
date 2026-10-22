@@ -127,7 +127,7 @@ reversible, and nothing in stage A or B can make the motor move.
 | # | Measure | Pass | If it fails |
 |---|---|---|---|
 | B1 | Nucleo 5V pin and 3V3 pin to GND | 4.75–5.25 V and 3.2–3.4 V | check the USB cable and JP5 |
-| B1b | MATLAB `enr312_lab` → *Detect board* → *Flash firmware* (USB only; the firmware boots SAFE) | *Flashed and verified (0x433)* | read the message: no ST-LINK, wrong MCU, or vehicle image refused |
+| B1b | MATLAB `odyssix.stm32.flash()` (USB only; the firmware boots SAFE) | *Flashed and verified (0x433)* | read the message: no ST-LINK, wrong MCU, or vehicle image refused |
 | B2 | Shield on the Nucleo, USB only, ENR312 firmware running (SAFE): Arduino D5 and D4 to GND while turning the pendulum slowly | toggles ≈ 0 ↔ 3.3 V, **never above 3.6 V** | **unplug USB now**: a pull-up to 5 V exists that A3 missed |
 | B3 | MATLAB `enr312_lab` → *Connect*, rotate the pendulum one full turn by hand | the app shows a smooth pendulum angle; **one turn = 360° ±0.3°** | no change: E3/E4 wiring; 90° or 180° per turn: decode setting; ≠ 360° otherwise: encoder is not 600 PPR (check P3) |
 

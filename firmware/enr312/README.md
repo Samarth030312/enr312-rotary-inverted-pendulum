@@ -53,7 +53,7 @@ on where the toolchain is installed, through its debug information.
 
 ## Flashing
 
-From MATLAB (`enr312_lab` → *Flash firmware*, or `odyssix.stm32.flash()`), or:
+From MATLAB (`odyssix.stm32.flash()`), or:
 
 ```bash
 make -C firmware/enr312/target flash   # your local build, via STM32_Programmer_CLI (no hash gate)

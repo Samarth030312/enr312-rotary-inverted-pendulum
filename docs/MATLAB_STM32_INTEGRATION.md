@@ -12,10 +12,10 @@ sequenceDiagram
     participant M as MATLAB (enr312_lab)
     participant P as STM32_Programmer_CLI<br/>(inside STM32CubeIDE)
     participant B as NUCLEO-F401RE
-    U->>M: Detect board
+    U->>M: odyssix.stm32.listBoards()
     M->>P: -l st (list probes)
     P-->>M: ST-LINK serial number
-    U->>M: Flash firmware
+    U->>M: odyssix.stm32.flash()
     M->>M: gate 1: image contains the ENR312 banner
     M->>M: gate 2: SHA-256 = release/MANIFEST.txt
     M->>P: -c port=SWD mode=UR (connect)
@@ -23,7 +23,7 @@ sequenceDiagram
     M->>P: -w image -v -rst
     P->>B: program, verify, reset
     B-->>M: boot banner on the serial port (SAFE)
-    U->>M: Connect, ARM, START, Run on rig
+    U->>M: enr312_lab: CONNECT, ARM, START, RUN
     M->>B: $exp, $kp, … $cfg
     B-->>M: C,… (configuration echo)
     M->>M: echo == sent values? else refuse

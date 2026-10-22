@@ -388,7 +388,7 @@ function app = enr312_lab()
     function update()
         readControls();
         try
-            if cfg.exp >= 6, [o, c] = simScript(cfg); o.onTick = @feedRig; S = odyssix.sim.runCtrl(c, pl, o); cfg.target = c.target; cfg.target_t = c.target_t;
+            if cfg.exp >= 6, [o, c] = simScript(cfg); o.onTick = @feedRig; S = odyssix.sim.runCtrl(c, pl, o); cfg.target = c.target; cfg.target_t = c.target_t; cfg.target_end = c.target_end;
             else, S = odyssix.sim.runTutorial(cfg, pl, struct('onTick', @feedRig)); end
             if cfg.exp >= 2, lp = odyssix.sim.loop(cfg, pl); else, lp = []; end
         catch err
@@ -409,12 +409,12 @@ function app = enr312_lab()
 
     function [o, c] = simScript(c)
         % the simulated operator, so the preview shows the mission
-        o = struct(); c.target = NaN; c.target_t = NaN;
+        o = struct(); c.target = NaN; c.target_t = NaN; c.target_end = NaN;
         if strcmp(MIS(mis).tag, 'LAB')
             if strcmp(lab.mode, 'hanging'), o.psi0 = 20; ts = 6; else, ts = 8; end
             v = ui.target.Value;
             o.events = struct('t', {ts, ts + 8}, 'key', {'ref', 'ref'}, 'val', {v, 0});
-            c.target = v; c.target_t = ts; c.seconds = 24;
+            c.target = v; c.target_t = ts; c.target_end = ts + 8; c.seconds = 24;   % holds v until it goes home
         elseif c.exp == 21
             o.psi0 = 20;
         end
@@ -549,7 +549,7 @@ function app = enr312_lab()
         if strcmp(MIS(mis).tag, 'LAB') || e == 24
             plot(axA, S.t, S.u, 'Color', K.ghost, 'LineWidth', 1);
             if ~isempty(D), plot(axA, D.t, D.u, 'Color', dc, 'LineWidth', 1.2); end
-            title(axA, 'INPUT  u  (deg/s²)'); axis(axA, 'tight'); return;
+            title(axA, 'INPUT  u  (deg/s²)'); axLabels('t (s)', ''); axis(axA, 'tight'); return;
         end
         switch e
             case 1
@@ -559,25 +559,27 @@ function app = enr312_lab()
                     plot(axA, fitRes.t, fitRes.yDeg, '.', 'Color', K.dim, 'MarkerSize', 5);
                     plot(axA, fitRes.t, fitRes.yFitDeg, 'Color', K.orange, 'LineWidth', 1.4);
                     title(axA, sprintf('FREE SWING  ωg² %.2f  ·  dry friction %.2f rad/s²  ·  rms %.2f°', fitRes.wg2, getf(fitRes, 'coulomb'), fitRes.rmsDeg));
+                    axLabels('t from the start of the decay (s)', 'ψ (deg)');
                 end
             case {2, 4}
                 w = logspace(-1, 2, 400); s = 1j * w; Lj = polyval(lp.L.num, s) ./ polyval(lp.L.den, s);
                 if e == 2
                     plot(axA, w, 20*log10(abs(1 ./ (1 + Lj))), 'Color', K.cyan, 'LineWidth', 1.5);
                     plot(axA, w, 20*log10(abs(Lj ./ (1 + Lj))), 'Color', K.orange, 'LineWidth', 1.5);
-                    set(axA, 'XScale', 'log'); title(axA, '|S| (cyan)  |T| (orange)  dB');
+                    set(axA, 'XScale', 'log'); title(axA, '|S| (cyan)  |T| (orange)  dB'); axLabels('ω (rad/s)', 'dB');
                 else
                     plot(axA, real(Lj), imag(Lj), 'Color', K.cyan, 'LineWidth', 1.5);
                     plot(axA, -1, 0, '+', 'Color', K.red, 'MarkerSize', 12, 'LineWidth', 2);
                     th = linspace(0, 2*pi, 100); r0 = 1 / 10^(lp.margins.MsdB / 20);
                     plot(axA, -1 + r0*cos(th), r0*sin(th), '--', 'Color', K.orange);
                     xlim(axA, [-3 1]); ylim(axA, [-2 2]); title(axA, sprintf('NYQUIST  M_S %.2f dB', lp.margins.MsdB));
+                    axLabels('Re L(jω)', 'Im L(jω)');
                 end
             case 3
                 ms = metricsOf(S); v = [getf(ms, 'ce_total') NaN];
                 if ~isempty(D), mh = metricsOf(D); v(2) = getf(mh, 'ce_total'); end
-                b = bar(axA, categorical({'sim', 'rig'}), v, 'FaceColor', 'flat', 'EdgeColor', 'none');
-                b.CData = [K.ghost; dc]; title(axA, 'CONTROL EFFORT  ∫|u|dt');
+                b = bar(axA, categorical({'sim', 'rig'}, {'sim', 'rig'}), v, 'FaceColor', 'flat', 'EdgeColor', 'none');   % fixed order: not alphabetical
+                b.CData = [K.ghost; dc]; title(axA, 'CONTROL EFFORT  ∫|u|dt'); axLabels('', 'deg/s');
             case 7
                 r = odyssix.sim.impulseAverage(S.t, S.alpha, S.rotor, S.phase);
                 if r.n > 0, plot(axA, r.t, r.alpha - mean(r.alpha(r.t < 0)), 'Color', K.ghost, 'LineWidth', 1.5); end
@@ -585,7 +587,7 @@ function app = enr312_lab()
                     q = odyssix.sim.impulseAverage(D.t, mod(180 - D.psi + 180, 360) - 180, D.rotor, D.phase);
                     if q.n > 0, plot(axA, q.t, q.alpha - mean(q.alpha(q.t < 0)), 'Color', K.orange, 'LineWidth', 1.7); end
                 end
-                title(axA, sprintf('IMPULSE RESPONSE  ·  average of %d', r.n));
+                title(axA, sprintf('IMPULSE RESPONSE  ·  average of %d', r.n)); axLabels('t from the impulse (s)', 'α (deg)');
             otherwise
                 if isempty(lp), return; end
                 if isfield(lp, 'L') && ~isempty(lp.L)
@@ -599,7 +601,12 @@ function app = enr312_lab()
                 xline(axA, 0, 'Color', K.dim);
                 Lm = min(40, 1.3 * max(abs([lp.cl; 1]))); xlim(axA, [-Lm 0.5 * Lm]); ylim(axA, [-Lm Lm]);
                 title(axA, sprintf('CLOSED-LOOP POLES  ·  %s', ternary(lp.stable, 'stable', 'UNSTABLE')));
+                axLabels('Re s (1/s)', 'Im s (1/s)');
         end
+    end
+
+    function axLabels(xl, yl)
+        xlabel(axA, xl, 'Color', K.dim, 'FontSize', 9.5); ylabel(axA, yl, 'Color', K.dim, 'FontSize', 9.5);
     end
 
     function fillTable()
@@ -745,7 +752,7 @@ function app = enr312_lab()
             hwRun.label = runLabel(); ui.rec.Visible = 'on'; say('Arm out and back.', 'ok'); return;
         end
         c = cfg;
-        if isfield(c, 'target'), c = rmfield(c, {'target', 'target_t'}); end
+        c = rmfield(c, intersect(fieldnames(c), {'target', 'target_t', 'target_end'}));
         startCfg(c, runLabel());
     end
 
@@ -801,7 +808,7 @@ function app = enr312_lab()
             end
         end
         H = []; clearTrace('rig');
-        c = cfg; if isfield(c, 'target'), c = rmfield(c, {'target', 'target_t'}); end
+        c = cfg; c = rmfield(c, intersect(fieldnames(c), {'target', 'target_t', 'target_end'}));
         startCfg(c, ternary(amp >= 179, 'swing-up', sprintf('pendulum-%03.0f', amp)));
     end
 
@@ -843,7 +850,7 @@ function app = enr312_lab()
         i0 = link.n + 1;
         try, link.go(); catch, end
         hwRun = idleRun(); hwRun.on = true; hwRun.i0 = i0; hwRun.cfg = c; hwRun.t0 = tic; hwRun.label = label;
-        hwRun.cfg.target = NaN; hwRun.cfg.target_t = NaN;
+        hwRun.cfg.target = NaN; hwRun.cfg.target_t = NaN; hwRun.cfg.target_end = NaN;
         logEvent('go', c.exp);
         ui.rec.Visible = 'on';
         say(sprintf('RUN  %s  ·  %s  ·  recording', upper(label), ternary(link.emulator, 'EMULATOR', 'RIG')), 'ok');

@@ -119,7 +119,7 @@ and its Q. Press **USE MEASURED PENDULUM**: from then on the simulation and the
 swing-up use your pendulum instead of the textbook values.
 
 Do not skip this step before a swing-up. The swing-up computes the pendulum's energy
-from ωg². Our rig ran with the Tutorial's 57 while it really measures 48 ± 1, and
+from ωg². Our rig ran with the Tutorial's 57 while it really measures 48.0 ± 0.5, and
 it caught one swing-up in three. Told the measured value, it caught at the first try
 in 3.9 s
 ([evening report, section 1](../results/reports/2026-10-21b_rig_session.md)).

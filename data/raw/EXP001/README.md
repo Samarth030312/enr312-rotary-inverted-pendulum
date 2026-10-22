@@ -14,3 +14,7 @@ Recorded on the real rig, never edited. Metadata for each file (gains, firmware,
 | `EXP001_20261021-192020_t1-first-motion-5-deg_R04` | 2026-10-21 19:20 | FINISHED | 7 s |
 | `EXP001_20261021-192039_t1-first-motion-5-deg_R05` | 2026-10-21 19:20 | FINISHED | 7 s |
 | `EXP001_20261021-192117_free-swing_R06` | 2026-10-21 19:21 | RECORDED | 15 s |
+| `EXP001_20261021-205447_free-swing_R07` | 2026-10-21 20:54 | RECORDED | 15 s |
+| `EXP001_20261021-205720_free-swing_R08` | 2026-10-21 20:57 | RECORDED | 15 s |
+| `EXP001_20261021-205757_free-swing_R09` | 2026-10-21 20:57 | RECORDED | 15 s |
+| `EXP001_20261021-205831_free-swing_R10` | 2026-10-21 20:58 | RECORDED | 15 s |

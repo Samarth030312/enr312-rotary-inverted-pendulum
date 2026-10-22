@@ -2,7 +2,23 @@
 
 **Date:** 2026-10-11 · **Status:** derivation complete; numerically validated in
 MATLAB R2026a (14/14, `matlab/validation/rotary_pendulum_validate_physics.m`);
-**not yet compared with the rig.**
+compared with the rig on 2026-10-21 (update below).
+
+> **Status update, 2026-10-22: compared with the rig.**
+>
+> - **ωg².** Six free swings give ωg² = 48.0 ± 0.5 rad²/s², not the Tutorial's 57.01 or
+>   55.85 (`results/reports/2026-10-21d_rig_session.md`). The rod is 0.26 m, the
+>   Tutorial's length. So the rig's pendulum is not the uniform rod of §6: its mass sits
+>   further from the pivot (a tip mass of about 28 % of the rod's would do it).
+> - **ωr².** It follows from ωr² = ωg²·r/g (§6) with r = 0.14 m: 0.685, not 0.803.
+> - **Damping.** Assumption A3 (viscous damping) is wrong for this pivot. Small swings
+>   decay by dry (Coulomb) friction, about 0.35–0.40 rad/s², and large swings lose more
+>   than that, about a viscous Q of 60 on top. The host plant and the MATLAB
+>   simulation now include dry friction with sticking.
+> - **Linearisation.** The linearisation and the sign flip (§5) are confirmed by every
+>   balancing run.
+>
+> The derivation below is unchanged.
 
 This document answers one question: *are the dynamics in the MATLAB simulations
 right?* Short answer:

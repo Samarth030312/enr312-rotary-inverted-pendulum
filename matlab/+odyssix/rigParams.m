@@ -45,26 +45,28 @@ function p = rigParams()
     p.limits.rotorDeg        = 240;                      % [REF]
     p.limits.pendulumDeg     = 120;                      % [REF]
 
-    % --- Pendulum dynamics: IDENTIFIED from rig runs of 2026-10-21 ----------
-    % matlab/identification/identify_pendulum_20261021.m, table
-    % results/tables/PEND_identification_20261021.csv. Not from a dedicated
-    % free swing (still to be recorded); from a T10 stretch with the arm still
-    % and from the steady 92 deg swings of the pendulum-target run R05.
+    % --- Pendulum dynamics: MEASURED on this rig, 2026-10-21 --------------------
+    % Six dedicated free swings (motor off), fitted by pendulum_free_swing_fit and
+    % timed by their period: results/tables/PEND_free_swings.csv. Earlier
+    % estimates from stretches of other runs agree:
+    % results/tables/PEND_identification_20261021.csv.
     p.pendulum.wg2Measured   = [47.6 49.5];   % rad^2/s^2: free decay 5.7 deg; 92 deg swings (elliptic period)
-    p.pendulum.wg2FreeSwing  = [48.4 48.6];   % rad^2/s^2: dedicated free swings EXP001 R03, R06 (peak period,
-                                              % 2026-10-21 19:19 UTC); 48 +- 1 over all methods
-    p.pendulum.wg2           = 48.5;          % the value to give the firmware ($wg2); swing-up caught 3.88 s with it (R08)
-    p.pendulum.coulomb       = 0.40;          % rad/s^2, dry pivot friction (free swings 0.33/0.40, T10 0.48)
+    p.pendulum.wg2FreeSwing  = [47.1 48.4];   % rad^2/s^2: six free swings, EXP001 R03, R06-R10 (fit and period)
+    p.pendulum.wg2           = 48.0;          % +-0.5: the value to give the firmware ($wg2). The swing-ups of
+                                              % 2026-10-21 ran with 48.5 (within 1 %) and caught 4 of 4
+    p.pendulum.coulomb       = 0.37;          % rad/s^2, dry pivot friction (10 deg free swings 0.35-0.40; T10 0.48;
+                                              % larger swings fit a dry + viscous mix: the split is uncertain)
     p.pendulum.QLargeSwing   = [57 63];       % viscous Q that closes the energy balance at 92 deg
-    p.pendulum.source        = 'MEASURED 2026-10-21 (free swings EXP001 R03/R06; EXP010 R01; EXP024 R05)';
+    p.pendulum.source        = 'MEASURED 2026-10-21 (six free swings, EXP001 R03, R06-R10)';
     p.pendulum.tutorialWg2   = 57.01;         % [COURSE] from the Tutorial geometry; what the rig ran with
     % Arm coupling. For a rod pendulum on an arm of length r (Tutorial 12, both
     % hanging and inverted forms) wr2 / wg2 = r / g exactly, whatever the rod.
     p.rotor.armLength        = 0.14;          % m [DATASHEET] STEVAL-EDUKIT01 manual, Table 2
-    p.pendulum.wr2           = p.rotor.armLength * p.pendulum.wg2 / 9.81;   % 0.692 (Tutorial: 0.803)
-    p.pendulum.rodEquivalent = 3 * 9.81 / (2 * p.pendulum.wg2);             % m, uniform rod with this wg2: 0.30
-    p.pendulum.rodLength     = 0.26;          % m, MEASURED 2026-10-22 (ruler); a uniform 0.26 m rod would have
-                                              % wg2 56.6: the hub and encoder shaft add ~15 % inertia
+    p.pendulum.wr2           = p.rotor.armLength * p.pendulum.wg2 / 9.81;   % 0.685 (Tutorial: 0.803)
+    p.pendulum.rodEquivalent = 3 * 9.81 / (2 * p.pendulum.wg2);             % m, uniform rod with this wg2: 0.31
+    p.pendulum.rodLength     = 0.26;          % m, MEASURED 2026-10-22 (ruler). A uniform 0.26 m rod pivoted at its
+                                              % end would have wg2 56.6: the mass sits further out (e.g. a tip mass
+                                              % of ~28 % of the rod's). Mass on the axis cannot change wg2.
 
     % --- Masses, lengths, inertias: NOT MEASURED ------------------------------
     % Only their combinations wg2 and wr2 enter the models; wr2 follows from wg2

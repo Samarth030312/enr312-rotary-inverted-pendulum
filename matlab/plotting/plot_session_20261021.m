@@ -75,7 +75,7 @@ function plot_session_20261021(outDir)
     cb = odyssix.sim.defaults(23); cb.seq = 0; cb.seconds = 60; pb = odyssix.sim.plant(5); pb.bias = 0.6;
     St = odyssix.sim.runCtrl(cb, pb);
     plot(ax, St.t, St.rotor, 'Color', C.ok, 'LineWidth', 1.6);
-    yline(ax, -382.789 / -10 * -0.6, '--', 'without trim: k_3/k_1 \cdot 0.6° = 23°', 'Color', C.bad);
+    yline(ax, -382.789 / -10 * -0.6, '--', 'without trim: -k_3/k_1 \cdot (-0.6°) = -23°  (the offset reads as \alpha = -0.6° at balance)', 'Color', C.bad);
     yline(ax, 0, ':'); xlabel(ax, 't (s)'); ylabel(ax, 'arm \theta (deg)'); ylim(ax, [-30 30]);
     title(ax, 'SIMULATION, firmware 2.3.0: 0.6° encoder offset, the auto-trim (\tau 8 s) brings the arm home');
     save_(f, outDir, '2026-10-21_upright_offset_and_trim.png');

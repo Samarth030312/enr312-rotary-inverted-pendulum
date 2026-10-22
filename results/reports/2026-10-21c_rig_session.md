@@ -70,10 +70,14 @@ friction and the offset, and its R03 fit is visibly worse. Taken together:
 - The equivalent simple-pendulum length is g/ωg² = 0.203 m. A uniform rod with this
   ωg² would be 0.30 m long.
 - The rod measures **0.26 m** with a ruler (2026-10-22), the Tutorial's length. A uniform
-  0.26 m rod would have ωg² = 3g/2L = 56.6, the Tutorial value. The rig's 48 therefore
-  means about 15 % more inertia about the pivot than an ideal rod: the encoder shaft,
-  the hub and its screw. The Tutorial model leaves these out. The arm coupling still
-  follows from ωr²/ωg² = r/g, which holds for any rigid pendulum: ωr² = 0.69.
+  0.26 m rod pivoted at its end would have ωg² = 3g/2L = 56.6, the Tutorial value. The
+  rig's 48 means the pendulum's mass sits further from the pivot than a uniform rod's:
+  for example a mass at the tip of about 28 % of the rod's (it gives
+  (m/2 + M)/(m/3 + M) = ωg²L/g), or a pivot not at the very end of the rod. Mass on the
+  pivot axis itself (encoder shaft, hub) changes neither J nor m·lc, so it cannot explain
+  it. *(Corrected 2026-10-22: the first version of this paragraph blamed the hub.)* The
+  arm coupling follows from ωr²/ωg² = r/g, which holds for any rigid pendulum:
+  ωr² = 0.685.
 
 **Dry friction:** 0.33 and 0.40 rad/s² (the T10 decay gave 0.48). The fits find no
 viscous part at these amplitudes, which agrees with the evening's finding.

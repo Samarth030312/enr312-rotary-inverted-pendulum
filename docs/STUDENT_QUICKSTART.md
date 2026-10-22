@@ -1,7 +1,9 @@
 # ENR312 rotary pendulum lab: student quickstart
 
 One MATLAB app runs every experiment, in simulation and on the real rig, and records
-every rig run. For the PEND lab report, start from [the PEND answer guide](PEND_ANSWER_GUIDE.md).
+every rig run. This page is the short version; [the simulator guide](guide/README.md)
+explains every screen with pictures. For the PEND lab report, start from
+[the PEND answer guide](PEND_ANSWER_GUIDE.md).
 
 ```matlab
 cd <this repository>
