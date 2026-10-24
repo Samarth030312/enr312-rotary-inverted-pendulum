@@ -42,7 +42,8 @@ gitclone("https://github.com/Samarth030312/steval-edukit.git", Depth=1); cd stev
 
 It downloads the repository, checks the computer, says what is missing, and opens
 the lab. The simulator needs only MATLAB. Drivers, the board, flashing and computer
-requirements for each system: **[install guide](docs/INSTALL.md)**.
+requirements for each system: **[install guide](docs/INSTALL.md)**. Then everything,
+step by step: **[the sequence](docs/SEQUENCE.md)**.
 
 ## What we found
 
@@ -67,6 +68,7 @@ requirements for each system: **[install guide](docs/INSTALL.md)**.
 
 | I want to … | Go to |
 |---|---|
+| run everything, in order | [the sequence](docs/SEQUENCE.md) |
 | install it on Windows, macOS or Linux | [install guide](docs/INSTALL.md) |
 | try the simulator, no hardware needed | [the simulator guide](docs/guide/README.md) |
 | run the Simulink model, answer Assignment 3 (PEND) | [Simulink model](docs/SIMULINK.md) |

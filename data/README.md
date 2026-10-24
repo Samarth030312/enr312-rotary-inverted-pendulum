@@ -7,6 +7,11 @@ this repository.
 
 47 runs, 22 minutes of 50 Hz data, from five sessions (2026-10-12; 2026-10-21 morning, evening, late and last), plus 8 records at 500 Hz.
 
+`check_all_runs()` (MATLAB) loads every run the way the app does, checks it and draws
+all of them on one sheet: [overview](../results/figures/all_runs_overview.png),
+[table](../results/tables/ALL_RUNS_check.csv). On 2026-10-24 all 47 passed; the median
+load took 0.13 s and the 500 Hz records were placed on their runs within 0.12° rms.
+
 | Experiment | | Runs | Days |
 |---|---|---|---|
 | [EXP001](raw/EXP001/) | T1 actuator | 14 | 2026-10-12, 2026-10-21 |

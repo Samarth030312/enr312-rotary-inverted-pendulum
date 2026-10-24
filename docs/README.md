@@ -2,6 +2,7 @@
 
 | Start with | |
 |---|---|
+| [Run everything, in order](SEQUENCE.md) | one page: simulator, Simulink, data, rig, analysis |
 | [Install](INSTALL.md) | one line in MATLAB, then drivers and tools for Windows, macOS, Linux |
 | [Simulator guide](guide/README.md) | the lab app, screen by screen, mission by mission |
 | [Build one yourself](REPLICATE.md) | from an empty bench to a balancing pendulum |
