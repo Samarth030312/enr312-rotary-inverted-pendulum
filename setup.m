@@ -12,7 +12,7 @@ function ok = setup(varargin)
     addpath(genpath(fullfile(root, 'matlab')));
     d = fullfile(root, 'matlab', 'data');                        % recorded runs, not code
     if isfolder(d), rmpath(genpath(d)); end
-    fprintf('\nWobble, the ENR312 rotary inverted pendulum: setup check\n%s\n', repmat('-', 1, 72));
+    fprintf('\nSTEVAL-EDUKIT01 rotary inverted pendulum (ENR312): setup check\n%s\n', repmat('-', 1, 72));
     R = {};
     os = 'Linux'; if ispc, os = 'Windows'; elseif ismac, os = 'macOS'; end
 

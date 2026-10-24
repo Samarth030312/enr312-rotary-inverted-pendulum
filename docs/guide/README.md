@@ -60,7 +60,7 @@ You need MATLAB (the base product; no toolboxes). Paste this into the Command
 Window; it downloads the repository, checks the computer and opens the app:
 
 ```matlab
-gitclone("https://github.com/Samarth030312/wobble.git", Depth=1); cd wobble; setup open
+gitclone("https://github.com/Samarth030312/steval-edukit.git", Depth=1); cd steval-edukit; setup open
 ```
 
 Next time, `cd` into the folder and run `setup open`. Windows, macOS and drivers:

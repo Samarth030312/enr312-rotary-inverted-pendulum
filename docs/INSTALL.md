@@ -5,7 +5,7 @@
 Open MATLAB and paste this into the Command Window:
 
 ```matlab
-gitclone("https://github.com/Samarth030312/wobble.git", Depth=1); cd wobble; setup open
+gitclone("https://github.com/Samarth030312/steval-edukit.git", Depth=1); cd steval-edukit; setup open
 ```
 
 That downloads the repository (about 35 MB) into the current folder, checks this
@@ -19,7 +19,7 @@ rebuilding the firmware.
 **Next time,** in MATLAB:
 
 ```matlab
-cd wobble; setup open
+cd steval-edukit; setup open
 ```
 
 Or run `setup save` once and type `enr312_lab` from anywhere after that.
@@ -31,7 +31,7 @@ folder in MATLAB and run `setup open`.
 ## What `setup` checks
 
 ```
-Wobble, the ENR312 rotary inverted pendulum: setup check
+STEVAL-EDUKIT01 rotary inverted pendulum (ENR312): setup check
 ------------------------------------------------------------------------
   MATLAB                      ok      R2026a (26.1). Tested on R2026a; R2023b or newer recommended
   toolboxes                   ok      none needed (the LQR and the fits are written in base MATLAB)

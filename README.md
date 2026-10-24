@@ -1,8 +1,8 @@
-# Wobble
+# STEVAL-EDUKIT01 rotary inverted pendulum
 
-**A rotary inverted pendulum that learns to stand on its head: from first principles to a balancing rig.**
+**The ST STEVAL-EDUKIT01 kit, from first principles to a balancing, swinging-up rig: bare-metal STM32 firmware, a MATLAB lab app, a Simulink model and every measurement.**
 
-[![CI](https://github.com/Samarth030312/wobble/actions/workflows/ci.yml/badge.svg)](https://github.com/Samarth030312/wobble/actions/workflows/ci.yml)
+[![CI](https://github.com/Samarth030312/steval-edukit/actions/workflows/ci.yml/badge.svg)](https://github.com/Samarth030312/steval-edukit/actions/workflows/ci.yml)
 ![MCU](https://img.shields.io/badge/MCU-STM32F401RE-03234B)
 ![Firmware](https://img.shields.io/badge/firmware-bare--metal%20C%2C%20v2.3.3-blue)
 ![MATLAB](https://img.shields.io/badge/MATLAB-base%20only-orange)
@@ -37,7 +37,7 @@ state feedback and LQR, plus an energy-based swing-up.
 Paste this into the MATLAB Command Window, on Windows, macOS or Linux:
 
 ```matlab
-gitclone("https://github.com/Samarth030312/wobble.git", Depth=1); cd wobble; setup open
+gitclone("https://github.com/Samarth030312/steval-edukit.git", Depth=1); cd steval-edukit; setup open
 ```
 
 It downloads the repository, checks the computer, says what is missing, and opens

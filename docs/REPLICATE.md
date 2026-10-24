@@ -27,8 +27,8 @@ Tested only on Ubuntu 22.04.5. The exact versions are in
 ```bash
 sudo apt install build-essential git
 sudo usermod -aG dialout "$USER"          # serial port without sudo; log out and back in
-git clone https://github.com/Samarth030312/wobble.git
-cd wobble
+git clone https://github.com/Samarth030312/steval-edukit.git
+cd steval-edukit
 make -C firmware/enr312 test              # C unit tests, a few seconds: must end in 0 failures
 ```
 
