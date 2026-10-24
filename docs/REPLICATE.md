@@ -115,8 +115,8 @@ The stop controls:
 
 T1 → **FREE SWING · record 15 s**, with the motor off. Lift the pendulum 10–20° and let
 it go. The app fits the period and the damping, and gives you ωg², the pendulum length
-and its Q. Press **USE MEASURED PENDULUM**: from then on the simulation and the
-swing-up use your pendulum instead of the textbook values.
+and its Q. The app asks whether to use it for the rest of the session: **Use it**, and
+the simulation and the swing-up use your pendulum instead of the textbook values.
 
 Do not skip this step before a swing-up. The swing-up computes the pendulum's energy
 from ωg². Our rig ran with the Tutorial's 57 while it really measures 48.0 ± 0.5, and
@@ -134,7 +134,7 @@ the pivot, not your wiring.
 
 ## 8. The tutorials, in order
 
-Press **NEXT ›** in the app; it walks through T1 to T10. Each experiment has its own
+Press **NEXT EXPERIMENT ›** (under the mission buttons); it walks through T1 to T10. Each experiment has its own
 page under [`experiments/`](../experiments/) with:
 
 - the physics;

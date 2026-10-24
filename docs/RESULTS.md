@@ -11,11 +11,15 @@ Numbers marked as predictions are predictions.
 |---|---|---|
 | T2 overshoot, load offset | 20 %, 0.198° | 20 %, 0.153° |
 | T3 / T4 arm offset | 2.25° / 3.49° | 2.25° / 3.50° (friction rest angle × Kpp/Kp) |
-| T9 / T10 settling | 6.24 s / 4.58 s | 5.94 s / 4.39 s |
-| pendulum constant ωg² | 48.0 ± 0.5 (six free swings) | Tutorial: 57.01 |
-| swing-up with the measured ωg² | 4 of 4, caught in 3.9–5.8 s | 4.2–7.6 s |
+| T3 / T4 arm offset, 24 Oct (pendulum rested on the other side) | 1.25° / 1.52° | 1.25° / 1.51° |
+| T9 / T10 settling | 6.24 s / 4.58 s; 24 Oct: 6.24 s / 4.50 s | 5.94 s / 4.39 s |
+| pendulum constant ωg² | 48.0 ± 0.5 (six free swings); 24 Oct: 48.2 | Tutorial: 57.01 |
+| swing-up with the measured ωg² | 5 of 5, caught in 3.9–5.8 s | 4.2–7.6 s |
 | pushes while balancing | 15 of 17 recovered (30–83 deg/s); lost at 115 deg/s | recoverable up to 100 deg/s |
 | pendulum target 90° | 91.8° | 91.8° |
+| on-off control (first rig run, 24 Oct) | never settles; pendulum up to 18.0° | never settles; 17.9° |
+| upright LQR from a hand release (first, 24 Oct) | balanced 59 s, 0.47° rms | 0.43° rms (with the measured base tilt) |
+| motor axis tilt (24 Oct) | 0.57°, from the steady lean against arm angle | explains the arm's slow creep and the smaller step overshoot |
 
 ## On the rig (2026-10-12)
 
@@ -52,7 +56,8 @@ Report: [`results/reports/2026-10-21_rig_session.md`](../results/reports/2026-10
 | T3 overshoot | 35 % | 35 % |
 | T3 / T4 arm offset | 2.25° / 3.49° | 2 + (Kpp/Kp)·ψ_rest = 2.25° / 3.50° |
 | T8 load offset with Ki | 0.13° | 0 |
-| T9 / T10 settling | 6.24 s / 4.58 s | 5.94 s / 4.39 s |
+| T3 / T4 arm offset, 24 Oct (pendulum rested on the other side) | 1.25° / 1.52° | 1.25° / 1.51° |
+| T9 / T10 settling | 6.24 s / 4.58 s; 24 Oct: 6.24 s / 4.50 s | 5.94 s / 4.39 s |
 | T7 gain changed live | lost at pendulum Kd 146 and at rotor Kd 25 | gain sweep: unstable from Kd 150 and near rotor Kd 30 |
 | Pendulum target 90° | swings to 91.8° | 91.8° |
 | Swing-up, firmware 2.3.0 | 1 of 3 caught (38.9 s) | 8 of 36 on the identified pendulum (the app's own simulation said 5–11 s, see below) |
@@ -151,12 +156,31 @@ the simulated 100 deg/s limit. Report:
 <p align="center"><img src="../results/figures/2026-10-21d_pushes.png" width="900"
 alt="Peak pendulum angle against push size: rig pushes over the simulated tap curve; 15 recovered, 2 lost."></p>
 
+## On the rig (2026-10-24)
+
+Every experiment in one sitting, two on the rig for the first time: on-off control, which
+never settles as predicted, and the LQR balancing from a hand release. The pendulum
+constant, the tutorial settling times, the friction offsets and the swing-up repeated.
+The data showed three things the simulation had wrong:
+- balancing feels about 0.12 rad/s² of pivot friction, not the 0.37 of a free swing;
+- the motor axis leans 0.57°, which makes the arm creep to a new set-point while
+  balancing (fix: level the base);
+- a free swing with the motor off loses 7–10° in its first cycle, with the motor on 2°.
+
+The app's faults found on the way are fixed (it used the textbook pendulum by default;
+the free-swing fit kept the textbook arm coupling; saved settings were those at the end
+of a run). Report:
+[`results/reports/2026-10-24_rig_session.md`](../results/reports/2026-10-24_rig_session.md).
+
+<p align="center"><img src="../results/figures/2026-10-24_tilt.png" width="900"
+alt="Upright LQR on the rig: the arm creeps to each new set-point; a simulation with the motor axis tilted 0.57 degrees creeps the same way, a level one does not."></p>
+
 ## Predictions (simulation)
 
 From the firmware-exact simulation with the Tutorial plant values
 ([`results/tables/`](../results/tables/), `matlab/experiments/PEND/pend_predictions.m`).
-Written before the rig runs. T7, T9, T10 and the pendulum target have since been
-checked on the rig (above). The rest are still to be tested.
+Written before the rig runs. T6–T10, on-off, the upright LQR and the pendulum target have
+since been run on the rig (above); stopping a plucked swing (EXP021) has not been recorded.
 
 | Experiment | Prediction to test on the rig |
 |---|---|

@@ -18,9 +18,10 @@ enr312_lab
 | left | **MISSION** buttons (T1–T10 and LAB), the preset, and only the parameters this mission uses (type a number, Enter) |
 | centre | the rig in 3-D, big live numbers (arm θ, pendulum, input u, phase), one status line |
 | right | arm, pendulum, and one analysis plot (poles, Nyquist, impulse response, …). Grey = simulation, blue/orange = rig, violet = a replayed run |
-| bottom left | CONNECT · ARM · START · RUN · STOP · ZERO DATUMS · SIMULATE |
+| left, under the missions | **NEXT EXPERIMENT ›**: every experiment in order, one press at a time |
+| bottom left | CONNECT · ARM · START · RUN · STOP · ZERO DATUMS · SIMULATE. STOP ends any run gently; with nothing running it reads MOTOR OFF |
 | bottom centre | the numbers that matter (SIM / RIG / REF) and the live controls **ARM** and **PENDULUM** |
-| bottom right | **RUNS**: every recorded run. Select one, then **OVERLAY RUN** draws it over the plots. **▶ PLAY** plays the run (or the simulation) on the 3-D rig; press again to pause, drag the time bar to scrub, pick 0.5×–4×. Nothing plays until you press PLAY. **NEXT ›** walks you through all experiments in order |
+| bottom right | **RUNS**: every recorded run. Select one, then **OVERLAY RUN** draws it over the plots. **▶ PLAY** plays the run (or the simulation) on the 3-D rig; press again to pause, drag the time bar to scrub, pick 0.5×–4×. Nothing plays until you press PLAY. Runs read like *24 Oct 10:46 · T5 Inverted · R01* |
 
 ## Missions
 
@@ -70,12 +71,17 @@ any run in MATLAB with `[D, M] = odyssix.data.loadRun('<run id>')`.
 
 ## First, measure your pendulum
 T1 → **FREE SWING · record 15 s** (motor SAFE): displace 10–20° and let go. You get the
-period, L, the ruler length to expect, ζ, ωg² and Q (PEND A4). Then **USE MEASURED
-PENDULUM**: the simulation and the swing-up use your pendulum from then on.
+period, L, the ruler length to expect, ζ, ωg² and Q (PEND A4). The app then asks whether
+to use it for the rest of the session; **Use it**, and the simulation and the swing-up use
+your pendulum until you close the app. **PENDULUM VALUES …** changes it later.
 
 ## Safety on the rig
 
 * **ABORT**, **Esc** or **Space** stops everything at once. Pulling the 12 V plug always works.
+* **STOP** is the normal way to end any run: the arm slows down, the run is saved as
+  *ended by STOP*, and the board stays ready. With nothing running the same button reads
+  **MOTOR OFF**. Keep ABORT for when something is going wrong; the run is then saved as
+  aborted.
 * ARM energises the motor (it holds; it does not move). START allows motion. Nothing
   moves until RUN or SWING.
 * The firmware stops by itself on:
@@ -103,4 +109,4 @@ the firmware's own code on your PC.
 3. Flash: `odyssix.stm32.flash()` (checks the image hash and the chip). CONNECT, turn the
    pendulum one full turn by hand, and check that it reads 360°.
 4. T1 → RUN: check the +5° move with a protractor.
-5. T1 → FREE SWING, then USE MEASURED PENDULUM.
+5. T1 → FREE SWING, then **Use it** when the app asks.

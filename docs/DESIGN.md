@@ -18,7 +18,7 @@ angle, and u = θ̈ the arm acceleration the firmware commands:
 | ωr² cos ψ · u | the arm's acceleration pushes the pivot sideways; ωr² = m r lc / J | 0.685 = ωg²·r/g with r = 0.14 m |
 | θ̇² sin ψ cos ψ | centrifugal | small: about 1.6 % of gravity at 50 deg/s |
 | −γ ψ̇ | viscous loss, γ = ωg/Q | Q ≈ 60 at large swings; not measurable at small ones |
-| −c sgn ψ̇ | dry (Coulomb) pivot friction, with sticking below c | 0.35–0.40 rad/s² from small free swings |
+| −c sgn ψ̇ | dry (Coulomb) pivot friction, with sticking below c | 0.35–0.44 rad/s² in swings; about 0.12 while balancing, where the bearing barely moves |
 
 Upright, the gravity term changes sign and the pendulum is unstable, with a pole at
 +√ωg² = 6.9 rad/s. In the deviation δ = ψ − 180° the arm coupling also changes sign:
@@ -179,7 +179,9 @@ used for simulation and rig alike.
 | r | arm length | m | 0.14 | STEVAL-EDUKIT01 manual, Table 2 |
 | L | rod length | m | 0.26 | measured with a ruler |
 | — | tip accessory | | a small paper holder clipped at the rod end | the likely reason ωg² is 48, not 56.6 |
-| c | dry pivot friction | rad/s² | 0.35–0.40 small swings | free swings |
+| c | dry pivot friction | rad/s² | 0.35–0.44 in swings (motor on or off) | free swings, hand plucks |
+| c_up | dry friction while balancing | rad/s² | 0.12 (0.05–0.2) | upright runs of 2026-10-24 |
+| β | tilt of the motor axis | deg | 0.57 (a fault: level the base) | steady lean against arm angle, 2026-10-24 |
 | Q | viscous quality factor | | ≈ 60 at 92° swings | energy balance, R05 |
 | E | normalised pendulum energy | | 0 hanging, 2 upright | ψ̇²/(2ωg²) + 1 − cos ψ |
 | δ | learnt energy correction | | −0.3 … 0.6 | swing-up |

@@ -5,27 +5,30 @@ rotary pendulum, NUCLEO-F401RE). Nothing in `raw/` is simulated, and nothing in 
 ever edited. Simulated and emulator runs go to `matlab/data/synthetic/` and are not in
 this repository.
 
-47 runs, 22 minutes of 50 Hz data, from five sessions (2026-10-12; 2026-10-21 morning, evening, late and last), plus 8 records at 500 Hz.
+64 runs, 33 minutes of 50 Hz data, from six sessions (2026-10-12; 2026-10-21 morning, evening, late and last; 2026-10-24), plus 11 records at 500 Hz.
 
 `check_all_runs()` (MATLAB) loads every run the way the app does, checks it and draws
 all of them on one sheet: [overview](../results/figures/all_runs_overview.png),
-[table](../results/tables/ALL_RUNS_check.csv). On 2026-10-24 all 47 passed; the median
-load took 0.13 s and the 500 Hz records were placed on their runs within 0.12° rms.
+[table](../results/tables/ALL_RUNS_check.csv). On 2026-10-24 all 64 passed; the median
+load took 0.05 s, the slowest 0.6 s, and every 500 Hz record was placed on its run within
+0.12° rms.
 
 | Experiment | | Runs | Days |
 |---|---|---|---|
-| [EXP001](raw/EXP001/) | T1 actuator | 14 | 2026-10-12, 2026-10-21 |
-| [EXP002](raw/EXP002/) | T2 sensitivity | 2 | 2026-10-12, 2026-10-21 |
-| [EXP003](raw/EXP003/) | T3 control effort | 2 | 2026-10-12, 2026-10-21 |
-| [EXP004](raw/EXP004/) | T4 MIMO sensitivity | 2 | 2026-10-12, 2026-10-21 |
-| [EXP005](raw/EXP005/) | T5 inverted | 6 | 2026-10-12, 2026-10-21 |
-| [EXP006](raw/EXP006/) | T6 integral | 1 | 2026-10-21 |
-| [EXP007](raw/EXP007/) | T7 pendulum PD | 3 | 2026-10-21 |
-| [EXP008](raw/EXP008/) | T8 disturbance | 1 | 2026-10-21 |
-| [EXP009](raw/EXP009/) | T9 pole placement | 2 | 2026-10-21 |
-| [EXP010](raw/EXP010/) | T10 LQR | 1 | 2026-10-21 |
+| [EXP001](raw/EXP001/) | T1 actuator | 17 | 2026-10-12, 2026-10-21, 2026-10-24 |
+| [EXP002](raw/EXP002/) | T2 sensitivity | 3 | 2026-10-12, 2026-10-21, 2026-10-24 |
+| [EXP003](raw/EXP003/) | T3 control effort | 3 | 2026-10-12, 2026-10-21, 2026-10-24 |
+| [EXP004](raw/EXP004/) | T4 MIMO sensitivity | 3 | 2026-10-12, 2026-10-21, 2026-10-24 |
+| [EXP005](raw/EXP005/) | T5 inverted | 7 | 2026-10-12, 2026-10-21, 2026-10-24 |
+| [EXP006](raw/EXP006/) | T6 integral | 3 | 2026-10-21, 2026-10-24 |
+| [EXP007](raw/EXP007/) | T7 pendulum PD | 4 | 2026-10-21, 2026-10-24 |
+| [EXP008](raw/EXP008/) | T8 disturbance | 2 | 2026-10-21, 2026-10-24 |
+| [EXP009](raw/EXP009/) | T9 pole placement | 4 | 2026-10-21, 2026-10-24 |
+| [EXP010](raw/EXP010/) | T10 LQR | 2 | 2026-10-21, 2026-10-24 |
 | [EXP021](raw/EXP021/) | stop a swing, hold an angle | 1 | 2026-10-21 |
-| [EXP024](raw/EXP024/) | energy control, swing-up | 12 | 2026-10-21 |
+| [EXP022](raw/EXP022/) | on-off | 1 | 2026-10-24 |
+| [EXP023](raw/EXP023/) | upright LQR from a hand release | 1 | 2026-10-24 |
+| [EXP024](raw/EXP024/) | energy control, swing-up | 13 | 2026-10-21, 2026-10-24 |
 
 What each session found:
 - [2026-10-12](../results/reports/2026-10-12_rig_tutorials_1-5.md): first runs, Tutorials 1–5 (protocol 2, no `alpha` column)

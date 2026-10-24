@@ -16,7 +16,7 @@ Drivers and per-system notes: [install guide](INSTALL.md).
 
 ## 1. The simulator (no rig)
 
-In the app, press **NEXT ›** repeatedly: it walks through T1 to T10, then LAB hanging
+In the app, press **NEXT EXPERIMENT ›** (under the mission buttons) repeatedly: it walks through T1 to T10, then LAB hanging
 PID, on-off, upright LQR and the swing-up. For each one press **PLAY SIMULATION**, then
 **▶ PLAY** to watch it in 3-D. Change a gain, press Enter, and simulate again.
 [Simulator guide](guide/README.md).
@@ -57,8 +57,8 @@ Then, with the 12 V supply off:
    The board starts in SAFE: the motor is off.
 3. **CONNECT**. Let the pendulum hang still, press **ZERO DATUMS**.
 4. Turn on 12 V. **T1 → FREE SWING** (motor stays off): lift the pendulum 10–20°, let
-   go. Then **USE MEASURED PENDULUM**.
-5. **NEXT ›** through T1 to T10 again, now with **ARM → START → RUN** on each. Upright
+   go. When the app asks, press **Use it**.
+5. **NEXT EXPERIMENT ›** through T1 to T10 again, now with **ARM → START → RUN** on each. Upright
    tutorials need two people: one holds the pendulum up, one keeps a hand on **ABORT**
    (or Esc / Space). [Upright procedure](../experiments/PROCEDURE_UPRIGHT.md).
 6. **LAB → hanging → SWING → 180°**: the swing-up. Clear half a turn of space for the arm.

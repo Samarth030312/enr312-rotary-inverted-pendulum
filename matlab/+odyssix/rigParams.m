@@ -56,6 +56,16 @@ function p = rigParams()
                                               % 2026-10-21 ran with 48.5 (within 1 %) and caught 4 of 4
     p.pendulum.coulomb       = 0.37;          % rad/s^2, dry pivot friction (10 deg free swings 0.35-0.40; T10 0.48;
                                               % larger swings fit a dry + viscous mix: the split is uncertain)
+    p.rotor.tiltDeg          = 0.57;          % deg, MEASURED 2026-10-24: the motor axis leans; the steady lean while
+                                              % balancing falls 0.008 deg per deg of arm in every upright run of the
+                                              % day. Reproduces the arm's slow creep and the smaller step overshoot.
+                                              % A fault to remove (level the base), so the app simulates a level rig.
+    p.pendulum.coulombUpright = 0.12;         % rad/s^2, the dry friction that reproduces BALANCING (small, slow
+                                              % motion): T6/T7/T8 pendulum rms on 2026-10-24 match 0.05-0.2, the
+                                              % T8 load peak < 0.1; 0.37 gives 2x the hunting seen on the rig.
+                                              % (10-21 afternoon, before the mechanics were gone over, matched 0.37.)
+                                              % A bearing at micro-motion is not a constant-torque Coulomb contact.
+                                              % results/reports/2026-10-24_rig_session.md, section 4
     p.pendulum.QLargeSwing   = [57 63];       % viscous Q that closes the energy balance at 92 deg
     p.pendulum.source        = 'MEASURED 2026-10-21 (six free swings, EXP001 R03, R06-R10)';
     p.pendulum.tutorialWg2   = 57.01;         % [COURSE] from the Tutorial geometry; what the rig ran with

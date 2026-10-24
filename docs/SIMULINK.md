@@ -1,12 +1,16 @@
 # The Simulink model, and Assignment 3 (PEND)
 
-A Simulink model of the rig: the nonlinear pendulum on its rotating arm, the
-firmware's two balancing controllers, the stepper's microsteps and the encoder's
-counts. It answers the five PEND questions of ENR312 Assignment 3 and is checked
-against the firmware's own control code.
+A Simulink model of the rig. Every experiment of the lab runs in it: Tutorials 1–10, and
+the PEND ones (stop a swing, on-off, upright LQR, swing-up). The control is the
+firmware's own code; the pendulum, the stepper's microsteps and the encoder's counts are
+blocks. It answers the five PEND questions of ENR312 Assignment 3, and it is checked
+against the firmware's code for every experiment.
+
+New to this? [How it works](HOW_IT_WORKS.md) explains in two pages how Simulink, the
+simulator app, the emulator and the rig relate.
 
 <p align="center"><img src="../results/figures/simulink_model.png" width="900"
-alt="The Simulink model: a discrete Controller block feeds the arm (two integrators, the first limited to the arm speed ceiling), a Pendulum dynamics block with two integrators, a Tap block driven by a clock, quantisers for the microsteps and the encoder, scopes and To Workspace blocks."></p>
+alt="The Simulink model: a discrete Firmware block outputs the arm velocity, which an integrator turns into the arm angle and a quantiser into microsteps; a Pendulum dynamics block with two integrators, a Tap block driven by a clock, the encoder offset and quantiser, scopes and To Workspace blocks."></p>
 
 - [Run it](#run-it)
 - [What is in the model](#what-is-in-the-model)
@@ -23,21 +27,26 @@ Simulink is needed (MATLAB alone runs the [simulator app](guide/README.md)).
 From the repository folder, after `setup`:
 
 ```matlab
-P = enr312_simulink_params();          % measured pendulum, LQR
-open_system('enr312_pendulum')         % then press Run; double-click the scopes
+enr312_simulink          % lists the experiments
+enr312_simulink(9)       % runs Tutorial 9: opens the model, runs it, plots arm, pendulum and u
 ```
 
-Or from the command line:
+To change something, take the settings, change a field, run again:
 
 ```matlab
-P = enr312_simulink_params('measured', 'pid');    % or 'tutorial' pendulum, 'lqr' controller
-P.alpha0 = 5;                                     % released 5 deg from upright
-out = sim('enr312_pendulum');
-plot(out.psi_deg.Time, 180 - out.psi_deg.Data)    % tilt from upright, deg
-animate_enr312_simulink(out)                      % the rig in 3-D
+P = enr312_simulink_params(5);    % Tutorial 5 settings, this rig's pendulum
+P.kpp = 200;                      % the same names as the app's fields
+enr312_simulink(P)
+enr312_simulink(23, 'animate')    % the upright LQR, then the rig in 3-D
 ```
 
-Every figure on this page comes from one command, in about 7 minutes:
+Or open the model and press **Run** yourself:
+
+```matlab
+P = enr312_simulink_params(9); open_system('enr312_pendulum')   % double-click the scopes
+```
+
+Every figure on this page comes from one command, in about 10 minutes:
 
 ```matlab
 run_enr312_simulink()      % writes results/figures/simulink_*.png and results/tables/SIMULINK_*.csv
@@ -49,10 +58,12 @@ and reviewed as code. If the committed `.slx` will not open in an older MATLAB, 
 
 | File (`matlab/simulink/`) | What it does |
 |---|---|
+| `enr312_simulink.m` | run one experiment and plot it; no argument lists them |
 | `enr312_pendulum.slx` | the model |
 | `build_enr312_simulink.m` | builds the model from scratch |
 | `enr312_simulink_params.m` | every parameter, with its unit and source |
-| `run_enr312_simulink.m` | the five PEND situations, figures and tables |
+| `Enr312Firmware.m`, `enr312_fw_tick.m` | the firmware's control loop, one 2 ms tick per call |
+| `run_enr312_simulink.m` | the PEND situations and every experiment against the firmware's code |
 | `animate_enr312_simulink.m` | 3-D animation of a run, or an animated GIF |
 | `matlab/tests/test_simulink_matches_runctrl.m` | the check against the firmware's control code |
 
@@ -60,53 +71,65 @@ and reviewed as code. If the committed `.slx` will not open in an older MATLAB, 
 
 | Block | Type | What it is |
 |---|---|---|
-| **Controller** | MATLAB Function, discrete, every `P.Ts·P.div` s | the firmware's control law, line for line from `firmware/enr312/src/enr312_ctrl.c`: the LQR of experiments 23/24 or the dual PID of Tutorial 6, with the same derivative filters, input clamp and anti-windup. Degrees in, deg/s² out, as on the board |
-| **deg2rad u** → **arm velocity** → **arm angle** | Gain, Integrator (limited), Integrator | the stepper: the firmware commands the arm's acceleration u; the arm's speed is limited to `P.vMax` |
-| **Pendulum dynamics** | MATLAB Function, continuous | the nonlinear equation of motion below, in rad |
-| **pendulum rate**, **pendulum angle** | Integrators | ψ̇ and ψ; the initial angle sets hanging or upright |
+| **Firmware** | MATLAB Function, discrete, every 2 ms | the firmware's control loop for the chosen experiment, from the sensor readings to the arm velocity the step generator runs: the controller (PD, PID, state feedback, LQR, on-off, energy swing-up), its filters, the input limit, the set-point sequence, the operator's hand at an upright start, and the stop rules. The same arithmetic as the firmware's MATLAB copy (`odyssix.sim.runTutorial` / `runCtrl`), which is checked against the C code |
+| **arm angle** | Integrator | the arm angle is the integral of the velocity the firmware asks for |
+| **Pendulum dynamics** | MATLAB Function, continuous | the nonlinear equation of motion below, in rad. It is integrated in ψ and w = ψ̇ − ωr² cos ψ θ̇, so that the arm's velocity steps every 2 ms act on the pendulum exactly as on the rig |
 | **Tap** | MATLAB Function of the clock | a push: `P.tapRate` deg/s added to the pendulum's rate over `P.tapWidth` = 10 ms |
-| **microsteps**, **encoder** | Quantizers | what the controller sees: the arm in 0.1125° microsteps, the pendulum in 0.15° counts |
-| scopes and **log** blocks | Scope, To Workspace | θ, ψ and u, saved as timeseries in `out` |
-
-The two halves run at different rates on purpose, as on the rig: the pendulum and
-the arm are continuous (ode45, 1 ms maximum step), the controller samples them at
-500 Hz and holds its output in between.
+| **microsteps**, **encoder zero**, **encoder** | Quantizer, Bias, Quantizer | what the firmware sees: the arm in 0.1125° microsteps, the pendulum in 0.15° counts, with an optional encoder offset |
+| scopes and **log** blocks | Scope, To Workspace | θ, ψ, u, v, the set-point and the phase, saved as timeseries in `out` |
 
 ## Parameters
 
+`P = enr312_simulink_params(exp)` takes the experiment's default settings from
+`odyssix.sim.defaults(exp)`, the same as the app. The pendulum:
+
 | Symbol | Value | Unit | Source |
 |---|---|---|---|
-| ωg² | 48.0 ± 0.5 | rad²/s² | six free swings on this rig ([results](RESULTS.md)); the Tutorial's 57.01 with `'tutorial'` |
+| ωg² | 48.0 ± 0.5 | rad²/s² | six free swings on this rig ([results](RESULTS.md)); the Tutorial's value with `enr312_simulink_params(exp, 'tutorial')` |
 | ωr² | 0.685 | – | ωg²·r/g with the arm radius r = 0.14 m (STEVAL-EDUKIT01 manual) |
 | Q | 60 (57–63) | – | energy balance of a 92° swing on the rig; γ = √ωg²/Q = 0.115 1/s |
-| c | 0.37 | rad/s² | dry pivot friction from 10° free swings, smoothed as c·tanh(ψ̇/0.01) |
+| c, hanging and swing-up | 0.37 | rad/s² | dry pivot friction from free swings, smoothed as c·tanh(ψ̇/0.01) |
+| c, balancing (5, 6, 7, 8, 23) | 0.12 | rad/s² | the friction that reproduces balancing on the rig ([2026-10-24 report](../results/reports/2026-10-24_rig_session.md), section 4) |
 | encoder | 0.15 | deg/count | 600 lines × 4 |
 | microstep | 0.1125 | deg | 200 steps × 16 |
 | T_s | 2 | ms | firmware control period (500 Hz); `P.div` slows it |
-| u limit | ±1500 | deg/s² | firmware clamp |
-| v_max | 360 | deg/s | firmware arm speed ceiling |
-| LQR k | [−10, −13.787, 382.789, 50.787] | deg units | firmware, experiments 23/24 |
-| PID | Kp 15, Ki 3, Kd 7.5; Kpp 300, Kdp 30 | deg units | firmware, Tutorial 6 |
-| filters | 50 Hz (arm D), 10 Hz (pendulum D), 5 Hz for the LQR | Hz | firmware |
+
+Every controller setting has the app's name: `kp kd ki kpp kdp fdr fdp k1 k2 k3 k4 uon db
+step dist imp rrate div ma seq ulim vmax amp`. The scenario: `psi0` (start angle, 180 =
+upright), `stopTime`, `closedLoop`, `safety` (the firmware's stop rules), `tapTime`,
+`tapRate`, `refEvents` (set-points during the run).
 
 ## Is it right? Checked against the firmware
 
-The firmware's control code also runs in MATLAB (`odyssix.sim.runCtrl`), and that
-copy is checked against the C code itself on every change
-(`test_sim_matches_firmware`). The Simulink model is checked against that copy by
-`test_simulink_matches_runctrl`: the LQR on the measured pendulum, a tap while
-balanced.
+The firmware's control code also runs in MATLAB (`odyssix.sim.runTutorial` and
+`runCtrl`), and that copy is checked against the C code itself on every change
+(`test_sim_matches_firmware`). The Simulink model is checked against that copy, for
+every experiment, by `test_simulink_matches_runctrl`:
+
+<p align="center"><img src="../results/figures/simulink_all_experiments.png" width="900"
+alt="Fourteen small plots, one per experiment, of the arm angle against time: the Simulink model in blue over the firmware's own code in grey; they lie on top of each other, except a small difference in the first two seconds of T3 and T4."></p>
+
+| | Arm, rms difference | |
+|---|---|---|
+| T1, T2, T9, T10 | 0.02–0.06° | the same within a microstep |
+| T3, T4 | 0.15° | the firmware's code overshoots to 2.8° in the first 2 s, Simulink to 2.25°; the same after that |
+| stop a swing | 0.24° | |
+| T5, T7, T23 (upright) | 0.5–0.9° | the same peaks within 2 % |
+| T6, T8, on-off, swing-up | 1.4–2.0° | peaks of 40–90° within 1 % |
+
+(`results/tables/SIMULINK_all_experiments.csv`.) Every experiment ends in the same
+phase in both. The one visible difference, the start of T3 and T4, has a known cause:
+the firmware's copy models the pivot's dry friction as stick-slip (the pendulum stops
+dead, then breaks free), Simulink smooths it (c·tanh(ψ̇/0.01)), so the two treat the
+moment the pendulum starts to move a little differently.
+
+A tap while the LQR balances (the test also checks this):
 
 | Tap | Firmware's code (peak tilt / arm swing) | Simulink |
 |---|---|---|
-| 30 deg/s | 2.40° / 19.8° | 2.77° / 20.2° |
-| 60 deg/s | 5.10° / 42.9° | 5.65° / 40.4° |
+| 30 deg/s | 2.55° / 20.0° | 2.40° / 18.6° |
+| 60 deg/s | 5.25° / 42.2° | 5.10° / 41.6° |
 | 90 deg/s | lost | lost |
-
-The outcomes agree, the arm swing within 6 % and the peak within 15 %. The
-remaining difference has a known cause: in the firmware the arm's velocity changes
-in 2 ms steps, in Simulink it is integrated continuously. The test passes when the
-outcomes match, the peaks agree within 25 % and the arm swings within 20 %.
 
 ## Assignment 3, PEND: the five questions
 
@@ -162,20 +185,21 @@ of upright.
 ### 3. A controller that balances the nonlinear model
 
 <p align="center"><img src="../results/figures/simulink_balance.png" width="900"
-alt="Released 5 degrees from upright, both the LQR and the dual PID bring the pendulum back within about a degree in under a second. The LQR then holds it within 0.3 degrees with the arm within 3 degrees; the PID keeps a slow oscillation of about 1 degree with the arm swinging plus or minus 10 degrees."></p>
+alt="Released 5 degrees from upright, both the LQR and the dual PID bring the pendulum back within about a degree in under a second. The LQR then holds it within about 0.2 degrees with the arm within 1 degree; the PID keeps a slow oscillation of about 0.3 degrees with the arm swinging plus or minus 3 degrees."></p>
 
 Both of the firmware's controllers, released 5° from upright:
 
 - **LQR** (experiments 23/24): u = −(k₁(θ − θ_ref) + k₂θ̇ + k₃α + k₄α̇). On the
   linear model above its closed-loop poles are −8.0 ± 7.3j, −4.1 and −1.0 rad/s, all
-  stable. It catches the pendulum in about 0.5 s and then holds it within 0.3°.
+  stable. It catches the pendulum in about 0.5 s and then holds it within about 0.2°.
 - **Dual PID** (Tutorial 6): a PD on the pendulum (Kpp 300, Kdp 30) and a PID on
   the arm (Kp 15, Ki 3, Kd 7.5), u = −u_arm + u_pendulum. The arm loop's sign is
   flipped because, upright, moving the arm one way tips the pendulum the other way.
-  It balances, but keeps hunting: about ±1° on the pendulum and ±10° on the arm,
-  period 2.3 s. The cause is the dry friction of the pivot: with `P.coulomb = 0` the
-  hunting shrinks to 0.2° peak to peak, and the firmware's own code shows the same
-  (2.4° with friction, 0.3° without). The rig's Tutorial 5 runs drifted the same way.
+  It balances, but keeps hunting: about ±0.3° on the pendulum and ±3° on the arm,
+  period 2.3 s. The cause is the dry friction of the pivot: with `P.coulomb = 0` it
+  almost disappears, and with the 0.37 of a free swing it is three times larger. The
+  rig balanced with 0.55° rms and a few degrees of arm motion on 2026-10-24, which is
+  why balancing uses 0.12 ([report](../results/reports/2026-10-24_rig_session.md), section 4).
 
 The first 0.1 s shows u at its ±1500 deg/s² limit: a 5° release is already a large
 disturbance for this rig.
@@ -183,21 +207,20 @@ disturbance for this rig.
 ### 4. A tap while balanced
 
 <p align="center"><img src="../results/figures/simulink_taps.png" width="900"
-alt="Tilt from upright after taps of 20, 40 and 60 deg/s, for the LQR (left) and the dual PID (right). The peak tilt grows with the tap; the LQR is back within 1.5 degrees in under 0.7 s, the PID within 1.7 s."></p>
+alt="Tilt from upright after taps of 20, 40 and 60 deg/s, for the LQR (left) and the dual PID (right). The peak tilt grows with the tap; both are back within 1.5 degrees in under 0.8 s."></p>
 
 A tap is an impulse: it changes the pendulum's rate, not its angle, so the model
 adds `P.tapRate` deg/s over 10 ms (`P.tapTime` = 3 s here).
 
 | Tap | LQR: peak tilt | LQR: back within 1.5° | dual PID: peak tilt | dual PID: back within 1.5° |
 |---|---|---|---|---|
-| 20 deg/s | 1.46° | never left | 1.75° | 0.49 s |
-| 40 deg/s | 3.04° | 0.49 s | 3.46° | 1.61 s |
-| 60 deg/s | 5.19° | 0.61 s | 5.38° | 1.68 s |
+| 20 deg/s | 1.50° | never left | 1.65° | 0.37 s |
+| 40 deg/s | 3.15° | 0.49 s | 3.45° | 0.63 s |
+| 60 deg/s | 5.10° | 0.61 s | 5.40° | 0.73 s |
 
-(`results/tables/SIMULINK_taps.csv`; the PID's band is 1.5° because it hunts by
-about 1° even without a tap.)
+(`results/tables/SIMULINK_taps.csv`.)
 
-The peak tilt is nearly proportional to the tap: 0.07–0.09° per deg/s. The
+The peak tilt is nearly proportional to the tap: 0.075–0.09° per deg/s. The
 controller's first reaction is to move the arm hard enough to throw the pendulum
 back past upright, which is why the plots overshoot to the other side. On the rig,
 15 of 17 hand pushes up to 83 deg/s were recovered ([results](RESULTS.md)), and the
@@ -207,30 +230,30 @@ simulation of the same firmware puts the limit at 100 deg/s.
 
 Released at rest at a growing tilt, each controller recovers up to:
 
-| Controller | Largest tilt recovered |
-|---|---|
-| LQR | 12° |
-| dual PID | 12° |
+| Controller | Largest tilt recovered | the control law alone (`P.safety = false`) |
+|---|---|---|
+| LQR | 12° | 12° |
+| dual PID | 12° | 12° |
 
 (`results/tables/SIMULINK_max_tilt.csv`: released at rest, 1° steps; recovered means
-within 3° after 6 s with the arm inside its 240° limit.)
+within 3° after 6 s with the arm inside its 240° limit. The firmware's stop rules do not
+change the answer.)
 
 The limit is the actuator, not the gains. At 12° the input sits at its ±1500 deg/s²
 clamp for half of the first second and the arm reaches 338 of its 360 deg/s; at 13° the
-input stays at the clamp for the whole first second and the pendulum falls. On the rig the firmware gives up at 15°
-from upright anyway, so this limit cannot be reached there. The animation of a
-recovery from the largest angle:
+input stays at the clamp for the whole first second and the pendulum falls. The animation
+of a recovery from the largest angle:
 
 ```matlab
-P = enr312_simulink_params('measured', 'lqr'); P.alpha0 = 12; P.stopTime = 6;
-out = sim('enr312_pendulum');
-animate_enr312_simulink(out, 'recovery.gif')
+P = enr312_simulink_params(23); P.startBalancing = true; P.seq = 0; P.psi0 = 168; P.stopTime = 6;
+out = enr312_simulink(P, 'animate');
+animate_enr312_simulink(out, 'recovery.gif')     % or save it as an animated GIF
 ```
 
 ### Also asked in the PEND handout (S3-8): the slowest loop rate
 
 `P.div` runs the controller every `div` ticks of 2 ms. The dual PID still balances
-at **14.3 Hz** (div 35) and falls at 12.5 Hz (see `results/tables/SIMULINK_loop_rate.csv`). The rule of thumb
+at **16.7 Hz** (div 30) and falls at 14.3 Hz (see `results/tables/SIMULINK_loop_rate.csv`). The rule of thumb
 from the unstable pole: a tilt grows by e in 1/6.87 = 0.15 s, so a few samples
 within that time are needed, which is 20–30 Hz.
 
@@ -238,21 +261,23 @@ within that time are needed, which is 20–30 Hz.
 
 | Ask | Do |
 |---|---|
-| a new arm set-point | `P.ref = 30;` (deg), then Run |
+| another experiment | `enr312_simulink(9)` (any of 1–10, 21–24) |
+| a bigger step | `P = enr312_simulink_params(9); P.step = 40; enr312_simulink(P)` |
+| a set-point during the run | `P.refEvents = [5 30; 12 -20];` (at 5 s go to 30°, at 12 s to −20°) |
 | a tap, now and bigger | `P.tapTime = 4; P.tapRate = 80;` |
-| the other controller | `P = enr312_simulink_params('measured', 'pid');` |
-| the textbook pendulum | `P = enr312_simulink_params('tutorial');` |
+| a different gain | `P.kpp = 200;` or `P.k2 = 0.5;` (the app's names) |
+| the textbook pendulum | `P = enr312_simulink_params(5, 'tutorial');` |
 | no friction | `P.coulomb = 0;` |
 | a slower controller | `P.div = 10;` (50 Hz) |
 | the open loop | `P.closedLoop = false;` |
-| start hanging | `P.upright = false; P.alpha0 = 10;` (from hanging) |
+| the control law without the firmware's stop rules | `P.safety = false;` |
 
-`P` is read when the simulation starts, so change it, then Run.
+`P` is read when the simulation starts: change it, then `enr312_simulink(P)` or Run.
 
 ## Writing the report
 
 - **Model screenshot:** `print('-senr312_pendulum', '-dpng', '-r150', 'model.png')`,
-  and double-click the **Controller** and **Pendulum dynamics** blocks to show the
+  and double-click the **Firmware** and **Pendulum dynamics** blocks to show the
   code inside them. Add your name and enrolment number as a text annotation:
   double-click an empty part of the canvas and type.
 - **Inputs:** a screenshot of `P` in the workspace, or of the Tap block, is the
@@ -266,11 +291,9 @@ within that time are needed, which is 20–30 Hz.
 
 - the stepper can lose steps if it is asked for too much torque; here the arm
   always follows;
-- the firmware's safety stops (15° from upright, 240° of arm, sustained
-  saturation);
-- the encoder's offset from true upright (0.6° on the rig, which firmware 2.3.0
-  learns);
+- the tilt of the motor axis found on the rig (0.57°): the model is a level rig;
+  `odyssix.sim.runCtrl` has it as the plant option `tiltDeg`;
+- the extra loss in the first cycle of a free swing with the motor off;
 - the 50 Hz data stream that the app sees: the model logs every step.
 
-Each of these is in the firmware's own simulation (`odyssix.sim.runCtrl`), which the
-lab app uses.
+The firmware's stop rules and the encoder's offset (`P.bias`) are in the model.

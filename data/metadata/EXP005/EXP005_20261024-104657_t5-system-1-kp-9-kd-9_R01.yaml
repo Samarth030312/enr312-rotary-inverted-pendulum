@@ -1,0 +1,63 @@
+run_id: "EXP005_20261024-104657_t5-system-1-kp-9-kd-9_R01"
+experiment_id: "EXP005"
+data_class: "HARDWARE"
+label: "T5-System 1  Kp 9, Kd 9"
+date_utc: "2026-10-24 10:46:57"
+result: "FINISHED"
+duration_s: 30.628
+samples: 1458
+sampling: "50 Hz stream of the 500 Hz control loop, MCU time stamps"
+raw_data_file: "data/raw/EXP005/EXP005_20261024-104657_t5-system-1-kp-9-kd-9_R01.csv"
+raw_serial_log: "results/evidence/logs/rig_20261024-161009.log"
+firmware: "enr312-target-2.3.3 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)"
+firmware_protocol: 5
+board: ""
+serial_port: "/dev/ttyACM0"
+repository_rev: "0503e6f"
+repository_dirty: false
+operator: ""
+notes: ""
+config:
+  exp: 5
+  kp: 9
+  kd: 9
+  kpp: 300
+  kdp: 30
+  step: 2
+  dist: 0
+  ulim: 1500
+  vmax: 360
+  seconds: 25
+  target: null
+  target_t: null
+  target_end: null
+plant_model:
+  wg2: 48.21611343
+  Q: 14.68509703
+  wr2: 0.803
+  nonlinear: true
+  quant: true
+  coulomb: 3.789074906e-14
+events:
+  - {t: 0, what: "go", value: 5}
+  - {t: 17, what: "push (operator)", value: 1}
+  - {t: 19.606, what: "push (operator)", value: 1}
+  - {t: 20.896, what: "500 Hz record: OPERATOR", value: 776063}
+  - {t: 22.196, what: "push (operator)", value: 1}
+  - {t: 26.008, what: "500 Hz record: OPERATOR", value: 778660}
+  - {t: 30.508, what: "stop", value: 0}
+metrics:
+  undershoot_pct: -33.75
+  overshoot_pct: 580.65
+  peak_time_s: 8.1
+  settling_s: null
+  alpha_peak_deg: 2.25
+  hunting_deg: 5.288
+  balanced: true
+units:
+  t: "s"
+  rotor: "deg"
+  psi: "deg, encoder, 0 = hanging datum"
+  alpha: "deg from upright"
+  u: "deg/s^2 (plant input)"
+  ref: "deg"

@@ -1,0 +1,43 @@
+{
+  "run_id": "EXP001_20261024-104242_free-swing_R02",
+  "experiment_id": "EXP001",
+  "data_class": "HARDWARE",
+  "label": "free-swing",
+  "date_utc": "2026-10-24 10:42:42",
+  "result": "RECORDED",
+  "duration_s": 15.060000000000002,
+  "samples": 754,
+  "sampling": "50 Hz stream of the 500 Hz control loop, MCU time stamps",
+  "raw_data_file": "data/raw/EXP001/EXP001_20261024-104242_free-swing_R02.csv",
+  "raw_serial_log": "results/evidence/logs/rig_20261024-161009.log",
+  "firmware": "enr312-target-2.3.3 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)",
+  "firmware_protocol": 5,
+  "board": "",
+  "serial_port": "/dev/ttyACM0",
+  "repository_rev": "0503e6f",
+  "repository_dirty": false,
+  "operator": "",
+  "notes": "",
+  "config": {},
+  "plant_model": {},
+  "events": [],
+  "metrics": {
+    "wg2_fit": 48.216113431750713,
+    "Q_fit": 14.68509703292867,
+    "coulomb_fit": 3.7890749063534568E-14,
+    "rms_fit_deg": 1.0509746633341297,
+    "t_release_s": 8.0600000000000023,
+    "period_s": 0.913333333333334,
+    "L_simple_m": 0.20611355628055436,
+    "L_rod_predicted_m": 0.30288546110294545,
+    "zeta": 0.032249105399456995
+  },
+  "units": {
+    "t": "s",
+    "rotor": "deg",
+    "psi": "deg, encoder, 0 = hanging datum",
+    "alpha": "deg from upright",
+    "u": "deg/s^2 (plant input)",
+    "ref": "deg"
+  }
+}

@@ -1,0 +1,43 @@
+run_id,experiment,metric,rig,simulation,simulation_note
+EXP001_20261024-104117_t1-first-motion-5-deg_R01,1,rotor_after_move_deg,4.95,4.95,
+EXP001_20261024-104117_t1-first-motion-5-deg_R01,1,pend_swing_pp_deg,2.4,6.15,
+EXP001_20261024-104308_t1-first-motion-5-deg_R03,1,rotor_after_move_deg,4.95,4.95,
+EXP001_20261024-104308_t1-first-motion-5-deg_R03,1,pend_swing_pp_deg,2.7,6.15,
+EXP002_20261024-104410_t2-kp-5-kd-2-5_R01,2,overshoot_pct,29.4,29.375,
+EXP002_20261024-104410_t2-kp-5-kd-2-5_R01,2,settling_s,1.81999999999999,1.732,
+EXP002_20261024-104410_t2-kp-5-kd-2-5_R01,2,dist_offset_deg,0.213921568627451,0.221631736526947,
+EXP003_20261024-104500_t3-design-1-kp-6-kd-4-8_R01,3,overshoot_pct,0,40.625,
+EXP003_20261024-104500_t3-design-1-kp-6-kd-4-8_R01,3,pend_peak_deg,0.9,0.6,
+EXP004_20261024-104553_t4-reference-kp-6-kd-4-8_R01,4,overshoot_pct,0,40.625,
+EXP004_20261024-104553_t4-reference-kp-6-kd-4-8_R01,4,pend_peak_deg,1.2,0.6,
+EXP005_20261024-104657_t5-system-1-kp-9-kd-9_R01,5,alpha_peak_deg,2.25,2.25,operator pushes not simulated
+EXP005_20261024-104657_t5-system-1-kp-9-kd-9_R01,5,balanced,1,1,operator pushes not simulated
+EXP006_20261024-104854_t6-tutorial-6-kp-15-ti-5-td-0-5_R01,6,overshoot_pct,15.6284760845384,19.4138039710053,4 live commands replayed
+EXP006_20261024-104854_t6-tutorial-6-kp-15-ti-5-td-0-5_R01,6,settling_s,14.52,13.32,4 live commands replayed
+EXP006_20261024-104854_t6-tutorial-6-kp-15-ti-5-td-0-5_R01,6,alpha_rms_deg,0.554005408350138,0.551451386965678,4 live commands replayed
+EXP006_20261024-104854_t6-tutorial-6-kp-15-ti-5-td-0-5_R01,6,balanced,1,1,4 live commands replayed
+EXP007_20261024-105046_t7-300-30_R01,7,pend_peak_deg,-1.44900000000001,-1.62,1 live commands replayed
+EXP007_20261024-105046_t7-300-30_R01,7,rotor_peak_deg,5.737,-3.76875,1 live commands replayed
+EXP007_20261024-105046_t7-300-30_R01,7,alpha_rms_deg,0.47776089077068,0.489206752015285,1 live commands replayed
+EXP008_20261024-105226_t8-tutorial-8-kp-15-ti-2-td-0-5_R01,8,overshoot_pct,29.194976322833,35.2818371607516,
+EXP008_20261024-105226_t8-tutorial-8-kp-15-ti-2-td-0-5_R01,8,ld_peak_deg,4.5,3.6,
+EXP008_20261024-105226_t8-tutorial-8-kp-15-ti-2-td-0-5_R01,8,ld_final_deg,0.23280198019802,-0.0175324675324676,
+EXP008_20261024-105226_t8-tutorial-8-kp-15-ti-2-td-0-5_R01,8,alpha_rms_deg,0.456416123692075,0.484750427958933,
+EXP009_20261024-105328_t9-n-1-1-k-1-2_R01,9,overshoot_pct,0,0,
+EXP009_20261024-105328_t9-n-1-1-k-1-2_R01,9,settling_s,6.24000000000001,5.94,
+EXP009_20261024-105328_t9-n-1-1-k-1-2_R01,9,final_value_deg,19.688,19.8000000000001,
+EXP009_20261024-105328_t9-n-1-1-k-1-2_R01,9,pend_peak_deg,1.05,0.45,
+EXP010_20261024-105420_t10-q-i-r-1-k-1-1-7321_R01,10,overshoot_pct,0,0.124999999999997,
+EXP010_20261024-105420_t10-q-i-r-1-k-1-1-7321_R01,10,settling_s,4.5,4.392,
+EXP010_20261024-105420_t10-q-i-r-1-k-1-1-7321_R01,10,final_value_deg,19.912,20.025,
+EXP010_20261024-105420_t10-q-i-r-1-k-1-1-7321_R01,10,pend_peak_deg,0.75,0.45,
+EXP023_20261024-105734_lab-up-lqr_R01,23,alpha_rms_deg,0.471688927952842,0.427184271745845,2 live commands replayed
+EXP023_20261024-105734_lab-up-lqr_R01,23,balanced,1,1,2 live commands replayed
+EXP009_20261024-110027_lab-hang-statefeedback_R02,9,overshoot_pct,NaN,NaN,3 live commands replayed
+EXP009_20261024-110027_lab-hang-statefeedback_R02,9,settling_s,NaN,NaN,3 live commands replayed
+EXP009_20261024-110027_lab-hang-statefeedback_R02,9,final_value_deg,NaN,NaN,3 live commands replayed
+EXP009_20261024-110027_lab-hang-statefeedback_R02,9,pend_peak_deg,20.1,0.45,3 live commands replayed
+EXP006_20261024-110155_lab-up-pid_R02,6,overshoot_pct,NaN,NaN,start kd from the preset; 11 live commands replayed
+EXP006_20261024-110155_lab-up-pid_R02,6,settling_s,NaN,NaN,start kd from the preset; 11 live commands replayed
+EXP006_20261024-110155_lab-up-pid_R02,6,alpha_rms_deg,1.51519932639227,1.20786508865612,start kd from the preset; 11 live commands replayed
+EXP006_20261024-110155_lab-up-pid_R02,6,balanced,1,0,start kd from the preset; 11 live commands replayed

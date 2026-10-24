@@ -17,6 +17,7 @@ function m = metrics(D, cfg)
         case 2
             w = ph == 1; tw = t(w) - firstOr(t(w));
             [m.overshoot_pct, m.peak_time_s, m.settling_s] = stepInfo(tw, th(w), s, 2 * 360 / 3200);
+            m.peak_pct = peakPct(th(w), s);
             w3 = ph == 3; tw3 = t(w3); m.dist_offset_deg = NaN;
             if any(w3), m.dist_offset_deg = mean(th(w3 & t >= max(tw3) - 1)); end
             m.dist_offset_pred_deg = cfg.dist / cfg.kp;
@@ -24,6 +25,7 @@ function m = metrics(D, cfg)
         case {3, 4}
             w = ph == 1; tw = t(w) - firstOr(t(w));
             [m.overshoot_pct, m.peak_time_s, m.settling_s] = stepInfo(tw, th(w), s, 2 * 360 / 3200);
+            m.peak_pct = peakPct(th(w), s);
             if ~any(w), [m.ce_max, m.ce_power, m.ce_total, m.pend_peak_deg, m.pend_end_deg] = deal(NaN); return; end
             m.ce_max = max(abs(u(w))); m.ce_power = m.ce_max^2;
             m.ce_total = trapz(tw, abs(u(w)));
@@ -39,6 +41,12 @@ function m = metrics(D, cfg)
             m.hunting_deg = NaN;                            % aborted before balancing: no samples
             if any(ctl), tail = ctl & t >= max(t(ctl)) - 2; m.hunting_deg = range_(th(tail)) / 2; end
             m.balanced = any(ctl) && ~any(ph == 5);
+            % a step smaller than the arm's own balancing hunt cannot be measured: the
+            % numbers would describe the hunt (rig 2026-10-24: 2 deg step, +/-5 deg hunt,
+            % "overshoot" 580 %). Not defined, rather than wrong.
+            if isfinite(m.hunting_deg) && m.hunting_deg > 0.5 * abs(s)
+                [m.undershoot_pct, m.overshoot_pct, m.peak_time_s, m.settling_s] = deal(NaN);
+            end
 
         % ---- general core (enr312_ctrl.c phases: 2 BALANCE 3 STEP 4 STEP_BACK
         %      5 DIST 6 DIST_OFF 7 IMPULSES 8 HOLD 9 IDLE 10 REGULATE 13 ABORTED)
@@ -54,6 +62,9 @@ function m = metrics(D, cfg)
             m.rotor_wobble_deg = NaN; if any(w), m.rotor_wobble_deg = range_(th(w & t >= max(t(w)) - 2)); end
             m.undershoot_pct = NaN; if any(w), m.undershoot_pct = 100 * min(0, min(th(w) - y0)) / (s - y0); end
             m.ss_error_deg = NaN; if any(w), m.ss_error_deg = s - mean(th(w & t >= max(t(w)) - 2)); end
+            if isfinite(m.rotor_wobble_deg) && m.rotor_wobble_deg / 2 > 0.5 * abs(s - y0)   % step lost in the wobble
+                [m.overshoot_pct, m.peak_time_s, m.settling_s, m.undershoot_pct] = deal(NaN);
+            end
             m.alpha_rms_deg = NaN; if any(ctl), m.alpha_rms_deg = sqrt(mean(al(ctl).^2)); end
             m.balanced = any(ctl) && ~any(ph == 13);
             if cfg.exp == 8
@@ -81,6 +92,7 @@ function m = metrics(D, cfg)
         case {9, 10, 22}
             w = ph == 3; tw = t(w) - firstOr(t(w));
             [m.overshoot_pct, m.peak_time_s, m.settling_s] = stepInfo(tw, th(w), s, 2 * 360 / 3200);
+            m.peak_pct = peakPct(th(w), s);
             m.final_value_deg = NaN; m.limit_cycle_deg = NaN;
             if any(w)
                 m.final_value_deg = mean(th(w & t >= max(t(w)) - 2));
@@ -128,11 +140,18 @@ end
 function [os, tp, ts] = stepInfo(t, y, s, minBand, frac)
     if nargin < 5, frac = 0.02; end
     if isempty(y) || s == 0, os = NaN; tp = NaN; ts = NaN; return; end
-    [pk, k] = max(y * sign(s)); os = 100 * (pk / abs(s) - 1); tp = t(k);
+    % overshoot is how far the peak goes PAST the step, so never negative; a response
+    % that stops short (dry friction on the rig) has 0 % overshoot, and its peak as a
+    % percentage of the step is reported as peak_pct by the callers
+    [pk, k] = max(y * sign(s)); os = max(0, 100 * (pk / abs(s) - 1)); tp = t(k);
     % frac of the step (2 % default), never tighter than 2 microsteps
     band = max(frac * abs(s), minBand);
     out = abs(y - s) > band;
     if out(end), ts = NaN; elseif ~any(out), ts = 0; else, ts = t(find(out, 1, 'last')); end
+end
+function p = peakPct(y, s)
+% the furthest the response got toward the step, as a percentage of the step
+    if isempty(y) || s == 0, p = NaN; else, p = 100 * max(y * sign(s)) / abs(s); end
 end
 function v = last(x), if isempty(x), v = NaN; else, v = x(end); end, end
 function v = firstOr(x), if isempty(x), v = 0; else, v = x(1); end, end

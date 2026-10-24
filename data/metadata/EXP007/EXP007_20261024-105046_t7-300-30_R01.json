@@ -1,0 +1,98 @@
+{
+  "run_id": "EXP007_20261024-105046_t7-300-30_R01",
+  "experiment_id": "EXP007",
+  "data_class": "HARDWARE",
+  "label": "T7-300 / 30",
+  "date_utc": "2026-10-24 10:50:46",
+  "result": "FINISHED",
+  "duration_s": 65.731999999999971,
+  "samples": 3287,
+  "sampling": "50 Hz stream of the 500 Hz control loop, MCU time stamps",
+  "raw_data_file": "data/raw/EXP007/EXP007_20261024-105046_t7-300-30_R01.csv",
+  "raw_serial_log": "results/evidence/logs/rig_20261024-161009.log",
+  "firmware": "enr312-target-2.3.3 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)",
+  "firmware_protocol": 5,
+  "board": "",
+  "serial_port": "/dev/ttyACM0",
+  "repository_rev": "0503e6f",
+  "repository_dirty": false,
+  "operator": "",
+  "notes": "",
+  "config": {
+    "exp": 7,
+    "kp": 15,
+    "kd": 7.5,
+    "kpp": 300,
+    "kdp": 30,
+    "step": 0,
+    "dist": 0,
+    "ulim": 1500,
+    "vmax": 360,
+    "seconds": 53,
+    "ki": 0,
+    "fdr": 50,
+    "fdp": 10,
+    "k1": 0,
+    "k2": 0,
+    "k3": 0,
+    "k4": 0,
+    "bv": 0,
+    "imp": 10,
+    "uon": 0,
+    "db": 0,
+    "rrate": 90,
+    "div": 1,
+    "ma": 1,
+    "seq": 1,
+    "wg2": 48.216113431750713,
+    "amp": 180,
+    "target": 30,
+    "target_t": 51.711999999999989,
+    "target_end": null
+  },
+  "plant_model": {
+    "wg2": 48.216113431750713,
+    "Q": 14.68509703292867,
+    "wr2": 0.803,
+    "nonlinear": true,
+    "quant": true,
+    "coulomb": 3.7890749063534568E-14
+  },
+  "events": [
+    {
+      "t": 0,
+      "what": "go",
+      "value": 7
+    },
+    {
+      "t": 51.711999999999989,
+      "what": "goto",
+      "value": 30
+    },
+    {
+      "t": 65.491999999999962,
+      "what": "stop",
+      "value": 0
+    }
+  ],
+  "metrics": {
+    "n_impulses": 8,
+    "pend_peak_deg": -1.4490000000000078,
+    "pend_settling_s": 4.26,
+    "rotor_peak_deg": 5.737,
+    "rotor_settling_s": null,
+    "alpha_rms_deg": 0.47776089077068029,
+    "balanced": true,
+    "hold_error_deg": -0.059304635761589487,
+    "hold_reach_s": null,
+    "hold_band_deg": 1.5
+  },
+  "units": {
+    "t": "s",
+    "rotor": "deg",
+    "psi": "deg, encoder, 0 = hanging datum",
+    "alpha": "deg from upright",
+    "u": "deg/s^2 (plant input)",
+    "ref": "deg"
+  }
+}

@@ -56,7 +56,11 @@ step by step: **[the sequence](docs/SEQUENCE.md)**.
   most likely the small paper holder clipped at its tip. With the wrong value the swing-up caught 1
   of 3; with the measured one, 4 of 4.
 - **The pivot has dry friction.** It explains, to 0.01°, arm offsets that had looked
-  like controller errors.
+  like controller errors, on two days with the pendulum resting on opposite sides.
+  Balancing, where the pivot barely moves, feels about a third of it.
+- **The base is tilted by half a degree.** The pendulum's balance point moves with the
+  arm, so the arm creeps to a new set-point while balancing. One number, 0.57°, measured
+  from the data, reproduces the creep in simulation.
 - **The balance takes a push.** 15 of 17 hand pushes, up to 83 deg/s, were recovered,
   close to the simulated curve. Of the two lost, one hand kept pushing for 0.14 s, and
   one was a 115 deg/s push, beyond the predicted limit of 100.
@@ -68,6 +72,7 @@ step by step: **[the sequence](docs/SEQUENCE.md)**.
 
 | I want to … | Go to |
 |---|---|
+| understand the simulator and Simulink first | [how it works](docs/HOW_IT_WORKS.md) |
 | run everything, in order | [the sequence](docs/SEQUENCE.md) |
 | install it on Windows, macOS or Linux | [install guide](docs/INSTALL.md) |
 | try the simulator, no hardware needed | [the simulator guide](docs/guide/README.md) |
@@ -112,11 +117,11 @@ for line, in the MATLAB simulation. Details in [architecture](docs/ARCHITECTURE.
 
 ## Status
 
-- **On the rig:** all ten tutorials, the swing-up, the pendulum target and a push test
-  (five sessions, 47 recorded runs, plus 8 records at 500 Hz).
+- **On the rig:** all ten tutorials, the swing-up, the pendulum target, a push test,
+  on-off control and the LQR from a hand release (six sessions, 64 recorded runs, plus
+  11 records at 500 Hz).
 - **Firmware 2.3.3** is on the board.
-- **Not yet on the rig:** the on-off controller (EXP022), upright LQR from a hand
-  release (EXP023), and stopping a plucked swing (EXP021).
+- **Not yet on the rig:** stopping a plucked swing with the hanging PID (EXP021).
 - **Tested on:** Ubuntu 22.04. On Windows the app has been seen connecting to a board;
   flashing from Windows and anything on macOS have not been run yet.
 

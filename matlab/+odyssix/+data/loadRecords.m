@@ -56,9 +56,10 @@ function [t0, fit] = place(D, R, win)
 % the offset t0 (s) that best lays the record (t_s from its trigger) on the run
     k = 1:5:height(R);                                % 100 Hz is plenty for the match
     tr = R.t_s(k); rr = R.rotor_deg(k); pr = R.psi_deg(k);
-    cost = @(t0) sqrt(mean((interp1(D.t, D.rotor, tr + t0, 'linear', NaN) - rr).^2 + ...
+    pre = tr <= 0;                                    % an abort ends the run at the trigger: only the
+    cost = @(t0) sqrt(mean((interp1(D.t, D.rotor, tr + t0, 'linear', NaN) - rr).^2 + ...   % part before it must lie in the run
                            (interp1(D.t, D.psi,   tr + t0, 'linear', NaN) - pr).^2, 'omitnan') ...
-                      + 1e3 * mean(isnan(interp1(D.t, D.rotor, tr + t0))));   % penalise falling off the run
+                      + 1e3 * mean(isnan(interp1(D.t, D.rotor, tr(pre) + t0))));   % penalise falling off the run
     g = (win(1):0.02:win(2))'; c = arrayfun(cost, g); [~, i] = min(c);
     fine = g(i) - 0.02:0.002:g(i) + 0.02;
     c2 = arrayfun(cost, fine); [fit, j] = min(c2); t0 = fine(j);

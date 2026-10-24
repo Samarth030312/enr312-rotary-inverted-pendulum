@@ -1,0 +1,80 @@
+run_id: "EXP008_20261024-105226_t8-tutorial-8-kp-15-ti-2-td-0-5_R01"
+experiment_id: "EXP008"
+data_class: "HARDWARE"
+label: "T8-Tutorial 8  Kp 15, Ti 2, Td 0.5"
+date_utc: "2026-10-24 10:52:26"
+result: "FINISHED"
+duration_s: 58.46
+samples: 2924
+sampling: "50 Hz stream of the 500 Hz control loop, MCU time stamps"
+raw_data_file: "data/raw/EXP008/EXP008_20261024-105226_t8-tutorial-8-kp-15-ti-2-td-0-5_R01.csv"
+raw_serial_log: "results/evidence/logs/rig_20261024-161009.log"
+firmware: "enr312-target-2.3.3 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)"
+firmware_protocol: 5
+board: ""
+serial_port: "/dev/ttyACM0"
+repository_rev: "0503e6f"
+repository_dirty: false
+operator: ""
+notes: ""
+config:
+  exp: 8
+  kp: 15
+  kd: 7.5
+  kpp: 300
+  kdp: 30
+  step: 40
+  dist: 60
+  ulim: 1500
+  vmax: 360
+  seconds: 53
+  ki: 7.5
+  fdr: 50
+  fdp: 10
+  k1: 0
+  k2: 0
+  k3: 0
+  k4: 0
+  bv: 0
+  imp: 0
+  uon: 0
+  db: 0
+  rrate: 90
+  div: 1
+  ma: 1
+  seq: 1
+  wg2: 48.21611343
+  amp: 180
+  target: null
+  target_t: null
+  target_end: null
+plant_model:
+  wg2: 48.21611343
+  Q: 14.68509703
+  wr2: 0.803
+  nonlinear: true
+  quant: true
+  coulomb: 3.789074906e-14
+events:
+  - {t: 0, what: "go", value: 8}
+  - {t: 58.22, what: "stop", value: 0}
+metrics:
+  overshoot_pct: 29.19497632
+  peak_time_s: 1.22
+  settling_s: null
+  rotor_wobble_deg: 7.763
+  undershoot_pct: -4.888705877
+  ss_error_deg: 0.6293069307
+  alpha_rms_deg: 0.4564161237
+  balanced: true
+  ld_peak_deg: 4.5
+  ld_final_deg: 0.2328019802
+  ld_settling_s: 9.98
+  ld_offset_pred_deg: -0
+units:
+  t: "s"
+  rotor: "deg"
+  psi: "deg, encoder, 0 = hanging datum"
+  alpha: "deg from upright"
+  u: "deg/s^2 (plant input)"
+  ref: "deg"

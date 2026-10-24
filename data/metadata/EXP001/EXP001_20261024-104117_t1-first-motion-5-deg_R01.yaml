@@ -1,0 +1,47 @@
+run_id: "EXP001_20261024-104117_t1-first-motion-5-deg_R01"
+experiment_id: "EXP001"
+data_class: "HARDWARE"
+label: "T1-First motion +5 deg"
+date_utc: "2026-10-24 10:41:17"
+result: "FINISHED"
+duration_s: 7.14
+samples: 358
+sampling: "50 Hz stream of the 500 Hz control loop, MCU time stamps"
+raw_data_file: "data/raw/EXP001/EXP001_20261024-104117_t1-first-motion-5-deg_R01.csv"
+raw_serial_log: "results/evidence/logs/rig_20261024-161009.log"
+firmware: "enr312-target-2.3.3 (protocol 5: Tutorials 2-10, PEND, lab, swing-up, pendulum target; 115200 baud)"
+firmware_protocol: 5
+board: ""
+serial_port: "/dev/ttyACM0"
+repository_rev: "0503e6f"
+repository_dirty: false
+operator: ""
+notes: ""
+config:
+  exp: 1
+  kp: 0
+  kd: 0
+  kpp: 0
+  kdp: 0
+  step: 5
+  dist: 0
+  ulim: 400
+  vmax: 360
+  seconds: 8
+plant_model:
+  wg2: 57.01
+  Q: 27
+  wr2: 0.803
+  nonlinear: true
+  quant: true
+events: []
+metrics:
+  rotor_after_move_deg: 4.95
+  pend_swing_pp_deg: 2.4
+units:
+  t: "s"
+  rotor: "deg"
+  psi: "deg, encoder, 0 = hanging datum"
+  alpha: "deg from upright"
+  u: "deg/s^2 (plant input)"
+  ref: "deg"

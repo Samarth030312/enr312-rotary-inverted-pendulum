@@ -5,6 +5,9 @@ replay every experiment of this rotary inverted pendulum. It starts from zero: i
 know what a transfer function is, or are about to learn, this is enough to work
 through all ten tutorials.
 
+New to all this? [How it works](../HOW_IT_WORKS.md) explains in two pages what the
+simulator, Simulink, the emulator and the rig are, and how they relate.
+
 **Contents**
 
 1. [What the simulator is, and what it is not](#1-what-the-simulator-is-and-what-it-is-not)
@@ -66,8 +69,13 @@ gitclone("https://github.com/Samarth030312/steval-edukit.git", Depth=1); cd stev
 Next time, `cd` into the folder and run `setup open`. Windows, macOS and drivers:
 [install guide](../INSTALL.md).
 
-The window opens on **T5 · Inverted** with a simulation already run. Nothing is
-connected and nothing moves: the top bar says **OFFLINE** and **simulation**.
+The window opens on **T1 · Actuator** with a simulation already run. Nothing is
+connected and nothing moves: the top bar says **OFFLINE** and **simulation**, and
+which pendulum the simulation uses (this rig's, unless you change it).
+
+**Not sure where to start?** Press **NEXT EXPERIMENT ›**, the wide button under the
+mission buttons. Each press opens the next experiment in order, T1 to T10, the free
+swing, LAB and the swing-up. Then **PLAY SIMULATION**, then **▶ PLAY** to watch it.
 
 ![The window at start](img/g01_start.png)
 
@@ -95,8 +103,8 @@ the space bar all stop everything at once.
   can type several in a row.
 - **PENDULUM:** the physical pendulum. Length L, pivot quality factor Q and arm
   radius r set the model's ωg² and ωr² ([section 13](#13-what-each-physical-parameter-does)).
-- **FREE SWING** and **USE MEASURED PENDULUM:** measure your own pendulum
-  ([section 9](#9-your-pendulum-is-not-the-textbooks)).
+- **FREE SWING** and **PENDULUM VALUES …:** measure your own pendulum, or choose which
+  one the simulation uses ([section 9](#9-your-pendulum-is-not-the-textbooks)).
 
 </td></tr></table>
 
@@ -138,10 +146,12 @@ Colours, everywhere:
 ![bottom right](img/c7_bottom_right.png)
 
 - **Bottom right: every recorded run.**
-  - Rig runs are listed first; emulator runs are marked EMULATOR.
-  - Select a run, press **OVERLAY RUN** to draw it over the simulation, and **PLAY** to
-    watch it move the 3-D rig.
-  - **NEXT ›** walks through all experiments in a sensible order.
+  - Each run reads like *24 Oct 10:46 · T5 Inverted · R01*, with how it ended:
+    finished, ended by STOP, or aborted (and why). Rig runs come first; emulator runs
+    are marked EMULATOR.
+  - Select a run, press **OVERLAY RUN** to draw it over the simulation, and **▶ PLAY** to
+    watch it move the 3-D rig. Its numbers appear in the SIM | RIG table, recomputed.
+  - Runs with 500 Hz records show them as dots on the pendulum plot.
 
 ## 4. Your first simulation: T1
 
@@ -370,8 +380,10 @@ The Tutorials' pendulum constants came from their rig. Yours is different.
 2. Lift the pendulum 10–20° and let go. Don't touch it for the rest of the recording.
 3. The bottom plot shows the swing and the fitted model: ωg² and the pivot's dry
    friction.
-4. Press **USE MEASURED PENDULUM**. From then on every simulation, in every mission,
-   uses your pendulum.
+4. The app asks: *Use this pendulum for the rest of this session?* Press **Use it** and
+   every simulation, in every mission, uses your pendulum until you close the app.
+   ωr² follows from ωg² (ωr² = ωg²·r/g). The pivot friction is taken from the fit only
+   when the swing separates it from the other losses; otherwise the rig's value stays.
 
 ![a free swing and its fit](img/g17_freeswing_fit.png)
 
@@ -379,8 +391,10 @@ The fit finds the moment you let go by itself, even if you held the pendulum at 
 for a second first. On our rig six free swings gave ωg² = 48.0 ± 0.5, against the
 Tutorial's 57.01.
 
-Without a fresh free swing, USE MEASURED PENDULUM applies the values measured on
-the rig this repository was built on (`odyssix.rigParams`).
+You don't have to do this every session. The app starts with the pendulum measured on
+the rig this repository was built on (`odyssix.rigParams`), and **PENDULUM VALUES …**
+switches between this rig, your last free swing and the Tutorial's textbook values.
+The top bar always shows which one is in use, and every saved run records it.
 
 ## 10. From simulation to emulator to rig
 

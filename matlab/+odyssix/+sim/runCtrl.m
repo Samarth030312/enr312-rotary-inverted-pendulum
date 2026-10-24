@@ -4,7 +4,8 @@ function S = runCtrl(cfg, plant, opts)
 %   S = odyssix.sim.runCtrl(cfg, plant)
 %   S = odyssix.sim.runCtrl(cfg, plant, opts)
 %   cfg    odyssix.sim.defaults(exp), exp in 6..10 or 21..23
-%   plant  odyssix.sim.plant(): wg2 Q wr2 nonlinear quant
+%   plant  odyssix.sim.plant(): wg2 Q wr2 nonlinear quant; optional coulomb (rad/s^2),
+%          bias (encoder offset, deg), tiltDeg and tiltPhaseDeg (a tilted motor axis)
 %   opts   (all optional)
 %     psi0      initial encoder angle [deg]; default 0.4 (hanging), 179.4 for
 %               experiments that start upright (6, 7, 8, 23)
@@ -34,6 +35,11 @@ function S = runCtrl(cfg, plant, opts)
     % ---- plant (host/enr312_plant.c) ---------------------------------------
     P.wg2 = plant.wg2; P.gamma = sqrt(plant.wg2) / plant.Q; P.wr2 = plant.wr2;
     P.coulomb = 0; if isfield(plant, 'coulomb'), P.coulomb = plant.coulomb; end   % pivot dry friction, rad/s^2
+    % a tilted motor axis (plant only, default 0): seen from the pendulum's plane, 'up'
+    % leans by tiltDeg*sin(theta - tiltPhaseDeg) as the arm turns, so the balance point moves
+    P.tilt = 0; if isfield(plant, 'tiltDeg'), P.tilt = plant.tiltDeg * pi / 180; end
+    P.tiltPhase = 0; if isfield(plant, 'tiltPhaseDeg'), P.tiltPhase = plant.tiltPhaseDeg; end
+    P.tiltNow = 0;
     psi0 = 0.4; if capture, psi0 = 179.4; end
     if isfield(opts, 'psi0'), psi0 = opts.psi0; end
     psi = psi0 * d2r; psid = 0; held = capture;
@@ -127,9 +133,10 @@ function S = runCtrl(cfg, plant, opts)
             vr = rate / UPD * d2r;
             if held, psid = 0; elseif vr ~= vPrev, psid = psid + P.wr2 * cos(psi) * (vr - vPrev); end
             vPrev = vr;
+            if P.tilt ~= 0, P.tiltNow = P.tilt * sin((pos / UPD - P.tiltPhase) * d2r); end
             if ~held && P.coulomb > 0
                 % stick-slip pivot friction, as host/enr312_plant.c
-                drive = -P.wg2 * sin(psi) + vr * vr * sin(psi) * cos(psi);
+                drive = -P.wg2 * sin(psi - P.tiltNow) + vr * vr * sin(psi) * cos(psi);
                 if ~(psid == 0 && abs(drive) <= P.coulomb)
                     if psid > 0, fs = 1; elseif psid < 0, fs = -1; elseif drive > 0, fs = 1; else, fs = -1; end
                     w0 = psid;
@@ -361,7 +368,7 @@ function a = lpAlpha(fc, dt)
 end
 
 function [p, pd] = rk4(p, pd, vr, h, P, nonlinear)
-    f = @(q, qd) -P.wg2 * sinOrLin(q, nonlinear) + vr^2 * sinOrLin(q, nonlinear) * cosOrOne(q, nonlinear) - P.gamma * qd;
+    f = @(q, qd) -P.wg2 * sinOrLin(q - P.tiltNow, nonlinear) + vr^2 * sinOrLin(q, nonlinear) * cosOrOne(q, nonlinear) - P.gamma * qd;
     k1a = pd;            k1b = f(p, pd);
     k2a = pd + h/2*k1b;  k2b = f(p + h/2*k1a, pd + h/2*k1b);
     k3a = pd + h/2*k2b;  k3b = f(p + h/2*k2a, pd + h/2*k2b);
