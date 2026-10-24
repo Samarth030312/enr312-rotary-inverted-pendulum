@@ -1,6 +1,8 @@
-# Rotary inverted pendulum: from first principles to a balancing rig
+# Wobble
 
-[![CI](https://github.com/Samarth030312/enr312-rotary-inverted-pendulum/actions/workflows/ci.yml/badge.svg)](https://github.com/Samarth030312/enr312-rotary-inverted-pendulum/actions/workflows/ci.yml)
+**A rotary inverted pendulum that learns to stand on its head: from first principles to a balancing rig.**
+
+[![CI](https://github.com/Samarth030312/wobble/actions/workflows/ci.yml/badge.svg)](https://github.com/Samarth030312/wobble/actions/workflows/ci.yml)
 ![MCU](https://img.shields.io/badge/MCU-STM32F401RE-03234B)
 ![Firmware](https://img.shields.io/badge/firmware-bare--metal%20C%2C%20v2.3.3-blue)
 ![MATLAB](https://img.shields.io/badge/MATLAB-base%20only-orange)
@@ -30,6 +32,18 @@ state feedback and LQR, plus an energy-based swing-up.
   firmware in grey. From <code>data/raw</code> by <code>matlab/plotting/plot_session_20261021d.m</code>.</sub>
 </p>
 
+## Get it running
+
+Paste this into the MATLAB Command Window, on Windows, macOS or Linux:
+
+```matlab
+gitclone("https://github.com/Samarth030312/wobble.git", Depth=1); cd wobble; setup open
+```
+
+It downloads the repository, checks the computer, says what is missing, and opens
+the lab. The simulator needs only MATLAB. Drivers, the board, flashing and computer
+requirements for each system: **[install guide](docs/INSTALL.md)**.
+
 ## What we found
 
 - **The simulation predicts the rig where the physics is modelled.** For the hanging
@@ -53,7 +67,9 @@ state feedback and LQR, plus an energy-based swing-up.
 
 | I want to … | Go to |
 |---|---|
+| install it on Windows, macOS or Linux | [install guide](docs/INSTALL.md) |
 | try the simulator, no hardware needed | [the simulator guide](docs/guide/README.md) |
+| run the Simulink model, answer Assignment 3 (PEND) | [Simulink model](docs/SIMULINK.md) |
 | build and run the rig myself | [from an empty bench to a balancing pendulum](docs/REPLICATE.md) |
 | understand the physics | [rotary pendulum dynamics](docs/first_principles/ROTARY_PENDULUM_DYNAMICS.md) |
 | know why it is built this way | [design: decisions, model, metrics, parameters](docs/DESIGN.md) |
@@ -62,12 +78,6 @@ state feedback and LQR, plus an energy-based swing-up.
 | use the data | [data](data/README.md) |
 | answer the ENR312 PEND questions | [PEND answer guide](docs/PEND_ANSWER_GUIDE.md) |
 | see what comes next | [roadmap](ROADMAP.md): MPC, micro-ROS on Zephyr |
-
-```matlab
-% MATLAB (base product), from the repository root
-addpath(genpath('matlab'))
-enr312_lab
-```
 
 <p align="center"><img src="results/figures/app_mission_control.png" width="900"
 alt="The enr312_lab app: missions on the left, the rig in 3-D in the centre, arm, pendulum and input plots on the right, live controls and recorded runs at the bottom."></p>
@@ -105,7 +115,8 @@ for line, in the MATLAB simulation. Details in [architecture](docs/ARCHITECTURE.
 - **Firmware 2.3.3** is on the board.
 - **Not yet on the rig:** the on-off controller (EXP022), upright LQR from a hand
   release (EXP023), and stopping a plucked swing (EXP021).
-- **Tested on:** Ubuntu 22.04 only. The Windows and macOS paths have not been run.
+- **Tested on:** Ubuntu 22.04. On Windows the app has been seen connecting to a board;
+  flashing from Windows and anything on macOS have not been run yet.
 
 ## Repository layout
 

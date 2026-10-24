@@ -7,13 +7,15 @@ MATLAB lab app `enr312_lab`. An optional Python client (`python/`) speaks the sa
 protocol. This guide maps **every task and question** in the handout to the experiment,
 tool, data file or derivation in this repository that answers it.
 
-**Read the status first.** Every simulated number below comes from
-`matlab/experiments/PEND/pend_predictions.m` (tables in `results/tables/PEND_sim_*.csv`)
-with the **Tutorial plant values**, not this rig's measured ones. These numbers are
-predictions to test, not answers to copy. The handout asks for *your measured data*.
-Hardware runs of the new experiments have **not** been made yet (status:
-NOT_EXECUTED); Tutorials 1–5 ran on the rig on 2026-10-12
-(`results/reports/2026-10-12_rig_tutorials_1-5.md`).
+**Status.** The simulated numbers in the tables come from
+`matlab/experiments/PEND/pend_predictions.m` (`results/tables/PEND_sim_*.csv`), made
+with the **Tutorial plant values** before this rig was measured. The rig has since
+been measured (ωg² = 48.0, not 57.01) and run: all ten tutorials, the swing-up (4 of 4
+caught) and a push test (15 of 17 recovered), in [results](RESULTS.md). The Simulink
+model and its answers to Assignment 3 are in [Simulink](SIMULINK.md). The handout
+asks for *your* measured data: the numbers here are what to expect and compare with.
+Not yet on the rig: on-off control (EXP022), upright LQR from a hand release
+(EXP023) and stopping a plucked swing (EXP021).
 
 | Tool | What it is |
 |---|---|
@@ -135,15 +137,18 @@ push to get a 500 Hz record of it.
 
 ### B. Simulation
 
-**S3-8 (B8) Nonlinear model, discrete PID, slowest loop rate.** No Simulink here
-(base MATLAB only). The equivalent is `odyssix.sim.runCtrl`: the nonlinear rigid
-pendulum, the firmware's discrete controller at 500 Hz line for line (proved identical
-to the C code by `matlab/tests/test_sim_matches_firmware.m`), quantisation and limits.
-Measure your pendulum (T1 → FREE SWING) and press **USE MEASURED PENDULUM**.
-Compare the tap recovery with A7. Slowest loop rate: the `div` field (500/div Hz) or
-`gainSweep(6,'div',1:50)`. Prediction: balances down to **16.7 Hz**, fails at 14.3 Hz
-(`PEND_sim_div.csv`); this can be tried on the rig with `$div` as well. If you build a
-Simulink model on a machine that has it, check it against these numbers.
+**S3-8 (B8) Nonlinear model, discrete PID, slowest loop rate.** The Simulink model
+[`matlab/simulink/enr312_pendulum.slx`](SIMULINK.md) is exactly this: the nonlinear
+pendulum, the firmware's discrete dual PID at 500 Hz, the encoder and microstep
+quantisation and the input limit, on the measured pendulum. It agrees with the
+firmware's own control code (`test_simulink_matches_runctrl`). With `P.div` the
+controller runs every div × 2 ms: the dual PID balances down to **14.3 Hz** and falls
+at 12.5 Hz (`results/tables/SIMULINK_loop_rate.csv`). With the Tutorial pendulum
+(ωg² 57) the base-MATLAB simulation gave 16.7 Hz (`PEND_sim_div.csv`). The direction
+is expected: this rig's smaller ωg² means a slower unstable pole (6.87 against 7.29 1/s, see S3-9),
+which tolerates a slower loop. Taps:
+both controllers recover 60 deg/s (`SIMULINK_taps.csv`); compare with A7. This can be
+tried on the rig with `$div` as well.
 
 ### C. Theory
 

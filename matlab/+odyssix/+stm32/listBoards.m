@@ -5,9 +5,9 @@ function B = listBoards()
 %     B.probes  struct array: serial, description   (from STM32_Programmer_CLI -l st,
 %               or st-info --probe as a fallback)
 %     B.ports   cellstr of serial ports that belong to an ST-LINK, best first.
-%               On Linux these come from /dev/serial/by-id; elsewhere every port
-%               from serialportlist is returned (an ST-LINK VCP cannot be told
-%               apart there without the USB IDs).
+%               Linux: /dev/serial/by-id. Windows: the ports whose device name
+%               says STMicroelectronics/STLink (PowerShell, Win32_PnPEntity).
+%               macOS: /dev/cu.usbmodem*. If none is found, every serial port.
 %     B.text    one-line human summary
 %     B.usbStuck true if an ST-LINK is on USB but unconfigured (replug needed)
 %   Reading the probe list does not reset or halt the MCU.
@@ -38,9 +38,21 @@ function B = listBoards()
             end
         end
     end
+    if isempty(B.ports) && ispc
+        % Windows names the port "STMicroelectronics STLink Virtual COM Port (COMn)"
+        try
+            [st, out] = system(['powershell -NoProfile -Command "Get-CimInstance Win32_PnPEntity | ' ...
+                'Where-Object { $_.Name -match ''STLink|STMicroelectronics'' } | ForEach-Object { $_.Name }"']);
+            if st == 0, c = regexp(out, '\((COM\d+)\)', 'tokens'); B.ports = cellfun(@(x) x{1}, c, 'UniformOutput', false); end
+        catch
+        end
+    end
     if isempty(B.ports)
         try, B.ports = cellstr(serialportlist("available")); catch, B.ports = {}; end
         if isunix, B.ports = B.ports(~startsWith(B.ports, '/dev/ttyS')); end   % legacy UARTs
+        if ismac                                                               % the call-out device
+            m = B.ports(startsWith(B.ports, '/dev/cu.usbmodem')); if ~isempty(m), B.ports = m; end
+        end
     end
 
     % Linux: an ST-LINK that enumerated but never got a USB configuration (seen

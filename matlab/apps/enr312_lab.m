@@ -39,7 +39,10 @@ function app = enr312_lab()
     tr = struct();
 
     % =================================================================== window
-    fig = uifigure('Name', 'ENR312 · Pendulum', 'Position', [20 20 1800 1010], 'Color', K.bg, ...
+    % as large as 1800 x 1010, but never larger than the screen (a 1366 x 768 laptop gets
+    % 1326 x 688; the left panel scrolls, the plots shrink)
+    ss = get(groot, 'ScreenSize'); W = min(1800, ss(3) - 40); Hf = min(1010, ss(4) - 80); small = W < 1600;
+    fig = uifigure('Name', 'ENR312 · Pendulum', 'Position', [max(1, (ss(3) - W) / 2), max(40, (ss(4) - Hf) / 2), W, Hf], 'Color', K.bg, ...
                    'CloseRequestFcn', @(~, ~) onClose(), 'WindowKeyPressFcn', @(~, e) onKey(e));
     if exist('theme', 'file'), try, theme(fig, 'dark'); catch, end, end
     G = uigridlayout(fig, [3 3], 'RowHeight', {52, '1x', 196}, 'ColumnWidth', {318, '1x', '1.2x'}, ...
@@ -154,9 +157,10 @@ function app = enr312_lab()
     tr.pS = plot(axP, nan, nan, 'Color', K.ghost, 'LineWidth', 1.6);
     tr.pR = plot(axP, nan, nan, 'Color', K.violet, 'LineWidth', 1.4);
     tr.pH = plot(axP, nan, nan, 'Color', K.orange, 'LineWidth', 1.9);
+    tr.pK = plot(axP, nan, nan, '.', 'Color', K.text, 'MarkerSize', 4);     % 500 Hz records of a replayed run
     tr.cur = [xline(axT, nan, 'Color', K.dim) xline(axP, nan, 'Color', K.dim)];
     legend(axT, [tr.thH tr.thS tr.thR tr.ref], {'rig', 'sim', 'replay', 'ref'}, 'Location', 'northeast', ...
-        'TextColor', K.dim, 'Color', 'none', 'EdgeColor', 'none', 'AutoUpdate', 'off', 'Orientation', 'horizontal');
+        'TextColor', K.dim, 'Color', K.bg, 'EdgeColor', 'none', 'AutoUpdate', 'off', 'Orientation', 'horizontal');   % opaque: traces never run through the text
 
     % ---- bottom: rig control, metrics + live actions, runs -------------------------
     B1 = uigridlayout(G, [4 2], 'RowHeight', {28, 38, 38, 38}, 'ColumnWidth', {'1x', '1x'}, ...
@@ -193,12 +197,13 @@ function app = enr312_lab()
     ui.ptarget = uieditfield(pg_, 'numeric', 'Value', 180, 'Limits', [0 180], 'ValueDisplayFormat', '%.0f°', ...
         'BackgroundColor', K.field, 'FontColor', K.text, ...
         'Tooltip', '180 = swing up and balance  ·  0 < a < 180 = swing to ±a  ·  0 = stop the swing');
-    ui.swing = uibutton(pg_, 'Text', 'SWING  →  180° (UP)', 'FontWeight', 'bold', 'BackgroundColor', K.orangeDim, ...
+    ui.swing = uibutton(pg_, 'Text', 'SWING  →  180°', 'FontWeight', 'bold', 'BackgroundColor', K.orangeDim, ...
         'FontColor', 'w', 'ButtonPushedFcn', @(~, ~) onPendulumTarget(ui.ptarget.Value, false));
     ui.ptarget.ValueChangedFcn = @(~, ~) pendTargetChanged();
     ui.pstop = uibutton(pg_, 'Text', 'STOP SWING', 'ButtonPushedFcn', @(~, ~) onPendulumTarget(0, false));
     ui.push = uibutton(pg_, 'Text', 'PUSH MARK', 'ButtonPushedFcn', @(~, ~) onPushMark(), ...
         'Tooltip', 'Press right after pushing the pendulum on purpose: the push is logged with the run and the firmware sends the last 1.5 s at 500 Hz');
+    if small, set([ui.goto ui.stepBtn ui.home ui.swing ui.pstop ui.push], 'FontSize', 10.5); end   % laptop screens
 
     B3 = uigridlayout(G, [3 4], 'RowHeight', {'1x', 28, 28}, 'ColumnWidth', {150, 100, '1x', 70}, ...
         'Padding', [10 8 10 8], 'RowSpacing', 5, 'ColumnSpacing', 6, 'BackgroundColor', K.panel);
@@ -458,7 +463,7 @@ function app = enr312_lab()
     function clearTrace(kind)
         switch kind
             case 'rig', set([tr.thH tr.pH], 'XData', nan, 'YData', nan);
-            case 'replay', set([tr.thR tr.pR], 'XData', nan, 'YData', nan);
+            case 'replay', set([tr.thR tr.pR tr.pK], 'XData', nan, 'YData', nan);
         end
     end
 
@@ -686,6 +691,12 @@ function app = enr312_lab()
                 return;
             end
             port = B.ports{1};
+            if numel(B.ports) > 1        % more than one candidate (Windows/macOS without a name match): ask
+                sel = uiconfirm(fig, 'Which port is the board?', 'Connect', 'Options', [B.ports(:)' {'Cancel'}], ...
+                    'DefaultOption', 1, 'CancelOption', numel(B.ports) + 1);
+                if strcmp(sel, 'Cancel'), return; end
+                port = sel;
+            end
         end
         connectTo(port);
     end
@@ -702,6 +713,10 @@ function app = enr312_lab()
 
     function onEmulator()
         if ~isempty(emu.pid), connectTo(emu.port); return; end
+        if ispc   % the emulator talks through a pseudo-terminal: Linux and macOS only
+            uialert(fig, ['The emulator needs a POSIX pseudo-terminal (Linux or macOS). On Windows, ' ...
+                'simulate here and connect the real board.'], 'Emulator'); return;
+        end
         try, exe = odyssix.stm32.emulatorBinary(); catch err, uialert(fig, err.message, 'Emulator'); return; end
         f = [tempname '.pty'];
         system(sprintf('"%s" --pty --parent %d > "%s" 2>&1 & echo $! > "%s.pid"', exe, feature('getpid'), f, f));
@@ -758,8 +773,8 @@ function app = enr312_lab()
 
     function pendTargetChanged()
         a = ui.ptarget.Value;
-        if a >= 179, ui.swing.Text = 'SWING  →  180° (UP)';
-        elseif a < 1, ui.swing.Text = 'STOP THE SWING  (0°)';
+        if a >= 179, ui.swing.Text = 'SWING  →  180°';
+        elseif a < 1, ui.swing.Text = 'SWING  →  0° (stop)';
         else, ui.swing.Text = sprintf('SWING  →  ±%.0f°', a); end
         if a > 2 && a < 179
             say(sprintf(['A pendulum can rest only hanging (0°) or upright (180°): to hold %.0f° still the arm would need ' ...
@@ -1200,9 +1215,23 @@ function app = enr312_lab()
             try, fitRes = pendulum_free_swing_fit(D.t, D.psi); catch, end
         end
         replay = D; drawTrace(D, 'replay'); fillTable(); drawAnalysis();
+        nK = drawRecords(id, D);
         player.D = D; player.kind = 'replay'; player.t = D.t(1); player.playing = false; ui.play.Text = '▶  PLAY';
         ui.scrub.Limits = [D.t(1), max(D.t(end), D.t(1) + 0.01)]; ui.scrub.Value = D.t(1);
-        say(sprintf('Overlaid %s  ·  %s  ·  ▶ PLAY', regexprep(id, '^EXP\d+_\d{8}-(\d{2})(\d{2})\d{2}_', '$1:$2 '), getf(M, 'result', '')), 'ok');
+        say(sprintf('Overlaid %s  ·  %s%s  ·  ▶ PLAY', regexprep(id, '^EXP\d+_\d{8}-(\d{2})(\d{2})\d{2}_', '$1:$2 '), getf(M, 'result', ''), ...
+            ternary(nK > 0, sprintf('  ·  %d record(s) at 500 Hz (dots)', nK), '')), 'ok');
+    end
+
+    function n = drawRecords(id, D)
+        % the run's 500 Hz records, as dots on the pendulum plot at their place in the run
+        set(tr.pK, 'XData', nan, 'YData', nan); n = 0;
+        try, Kr = odyssix.data.loadRecords(id, D); catch, return; end
+        x = []; y = [];
+        for r = Kr
+            if r.fit > 2, continue; end               % placement not trustworthy: leave it out
+            x = [x; r.D.t; nan]; y = [y; pendView(r.D); nan]; n = n + 1; %#ok<AGROW>
+        end
+        if n > 0, set(tr.pK, 'XData', x, 'YData', y); end
     end
 
     function plan = sessionPlan()
@@ -1281,7 +1310,7 @@ function app = enr312_lab()
             'HorizontalAlignment', 'center', 'BackgroundColor', K.btn);
     end
     function h = big(parent, col)
-        h = uilabel(parent, 'Text', '—', 'FontSize', 26, 'FontWeight', 'bold', 'FontColor', col, 'FontName', K.mono);
+        h = uilabel(parent, 'Text', '—', 'FontSize', ternary(small, 19, 26), 'FontWeight', 'bold', 'FontColor', col, 'FontName', K.mono);
     end
     function styleButtons(f)
         b = findall(f, 'Type', 'uibutton');

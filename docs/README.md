@@ -2,6 +2,7 @@
 
 | Start with | |
 |---|---|
+| [Install](INSTALL.md) | one line in MATLAB, then drivers and tools for Windows, macOS, Linux |
 | [Simulator guide](guide/README.md) | the lab app, screen by screen, mission by mission |
 | [Build one yourself](REPLICATE.md) | from an empty bench to a balancing pendulum |
 | [Student quickstart](STUDENT_QUICKSTART.md) | one page for a lab session |
@@ -14,10 +15,11 @@
 | [Methodology](first_principles/METHODOLOGY.md) | how an experiment goes from question to conclusion |
 | [Results](RESULTS.md) | every rig result next to its prediction |
 | [PEND answer guide](PEND_ANSWER_GUIDE.md) | each PEND lab question and where it is answered |
+| [Simulink model](SIMULINK.md) | the Simulink pendulum, checked against the firmware; Assignment 3 (PEND) answered |
 
 | Set up and fix | |
 |---|---|
-| [Getting started](GETTING_STARTED.md) | tools and exact versions |
+| [Getting started](GETTING_STARTED.md) | exact tool versions on the development machine |
 | [Wiring and electrical check](hardware/ENR312_WIRING.md) | pin plan and the staged power-up check |
 | [MATLAB ↔ STM32](MATLAB_STM32_INTEGRATION.md) | how MATLAB builds, flashes and talks to the board |
 | [Troubleshooting](TROUBLESHOOTING.md) | every problem met during bring-up, its cause and fix |

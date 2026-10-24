@@ -1,10 +1,8 @@
 # Getting started
 
-> **Tested platform: Ubuntu 22.04.5 LTS, x86-64, only.** Every command, path and
-> result in this repository comes from that machine. The MATLAB code contains
-> search paths for Windows and macOS (see [below](#macos-and-windows)), but none of
-> it has been run there. Treat those sections as a starting point, not as tested
-> instructions.
+The exact tool versions this repository was built and tested with, on Ubuntu
+22.04.5 LTS. For installing on **Windows, macOS or Linux**, start with the
+[install guide](INSTALL.md): one line in MATLAB, then only what your task needs.
 
 ## 1. What you need
 
@@ -82,23 +80,12 @@ enr312_lab
 
 ## macOS and Windows
 
-**Untested.** What should and should not work, from reading the code:
+See the [install guide](INSTALL.md). What remains Linux-only in the code:
 
-| Part | Linux (tested) | macOS (untested) | Windows (untested) |
-|---|---|---|---|
-| Simulation, lab app in sim mode | yes | should work: pure MATLAB | should work: pure MATLAB |
-| Flashing from MATLAB | yes | searched: `/Applications/STM32CubeIDE.app/…/STM32_Programmer_CLI`, CubeProgrammer app bundle | searched: `C:\ST\STM32CubeIDE_*\…\STM32_Programmer_CLI.exe`, `C:\Program Files\STMicroelectronics\…` |
-| Serial link to the board | `/dev/ttyACM0`, ST-LINK found via `/dev/serial/by-id` | `/dev/cu.usbmodem*` from `serialportlist`; pick it in the port list | `COMn` from `serialportlist`; install the ST-LINK driver (ST package STSW-LINK009) first |
-| Rig emulator | yes (pseudo-terminal) | should work (POSIX pty, needs Xcode command-line tools for `gcc`/`make`) | **not supported**: uses a POSIX pseudo-terminal and `kill`; WSL processes are not reachable from Windows MATLAB as a serial port |
-| Rebuilding firmware | yes | Arm toolchain for macOS + `make` | Arm toolchain for Windows + a `make` (e.g. from MSYS2); the Makefiles use POSIX shell syntax, so run them from MSYS2 or WSL |
-| `scripts/*.sh` | yes | bash 3.2 ships with macOS; `sha256sum` is `shasum -a 256` there, so the release script needs a small change | run from WSL or Git Bash |
-
-Known Linux-only details in the code, if you port it:
-
-* `odyssix.stm32.listBoards` uses `/dev/serial/by-id` and `readlink -f` to pick
-  the ST-LINK port; elsewhere it falls back to all serial ports.
-* It also reads `/sys/bus/usb` to detect an ST-LINK whose USB set-up failed.
-* The apps start the emulator with `&` and stop it with `kill`.
-* `scripts/stm32/make_release.sh` and `flash_ready_check.sh` use GNU coreutils.
-
-If you get it running on another platform, the list above is where to start.
+* the rig emulator, which needs a POSIX pseudo-terminal (it also runs on macOS,
+  not on Windows);
+* `scripts/*.sh`, which use GNU coreutils (run them from WSL or Git Bash on
+  Windows; on macOS, `sha256sum` is `shasum -a 256`);
+* reading `/sys/bus/usb` in `odyssix.stm32.listBoards`, used only to explain an
+  ST-LINK whose USB set-up failed. On Windows the ST-LINK's COM port is found
+  through the device list, and on macOS by its `/dev/cu.usbmodem*` name.

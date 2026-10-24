@@ -44,10 +44,13 @@ function R = saveRun(D, info)
 
     csv = fullfile(dDir, [id '.csv']);
     writetable(D, csv);
-    if isunix, fileattrib(csv, '-w', 'a'); end           % raw data is never edited
+    if isunix, fileattrib(csv, '-w', 'a'); else, fileattrib(csv, '-w'); end   % raw data is never edited
 
-    [~, rev] = system(sprintf('git -C "%s" rev-parse --short HEAD', root)); rev = strtrim(rev);
-    [~, dirty] = system(sprintf('git -C "%s" status --porcelain -- firmware matlab', root));
+    % the code version; a copy without git (a downloaded zip) records that instead
+    [st, rev] = system(sprintf('git -C "%s" rev-parse --short HEAD', root)); rev = strtrim(rev);
+    [st2, dirty] = system(sprintf('git -C "%s" status --porcelain -- firmware matlab', root));
+    if st ~= 0, rev = 'unknown (no git)'; end
+    if st2 ~= 0, dirty = ''; end
     M = struct();
     M.run_id = id;
     M.experiment_id = ex;

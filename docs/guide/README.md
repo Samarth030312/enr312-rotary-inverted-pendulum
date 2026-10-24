@@ -20,8 +20,9 @@ through all ten tutorials.
 11. [Recording, replay and PUSH MARK](#11-recording-replay-and-push-mark)
 12. [Working with the data in MATLAB](#12-working-with-the-data-in-matlab)
 13. [What each physical parameter does](#13-what-each-physical-parameter-does)
-14. [Questions and problems](#14-questions-and-problems)
-15. [Symbols](#15-symbols)
+14. [Simulink](#14-simulink)
+15. [Questions and problems](#15-questions-and-problems)
+16. [Symbols](#16-symbols)
 
 ---
 
@@ -55,13 +56,15 @@ same metric computed from the real rig, when you run it.
 
 ## 2. Start in two minutes
 
-You need MATLAB (the base product; no toolboxes) and this repository.
+You need MATLAB (the base product; no toolboxes). Paste this into the Command
+Window; it downloads the repository, checks the computer and opens the app:
 
 ```matlab
-cd <the repository>
-addpath(genpath('matlab'))
-enr312_lab
+gitclone("https://github.com/Samarth030312/wobble.git", Depth=1); cd wobble; setup open
 ```
+
+Next time, `cd` into the folder and run `setup open`. Windows, macOS and drivers:
+[install guide](../INSTALL.md).
 
 The window opens on **T5 · Inverted** with a simulation already run. Nothing is
 connected and nothing moves: the top bar says **OFFLINE** and **simulation**.
@@ -431,7 +434,10 @@ To look at a run again, select it in RUNS, press **OVERLAY RUN**, then **PLAY**.
 2. Press PUSH MARK within about a second.
 
 The push is logged in the run, and the firmware sends the last 1.5 s and the next 0.5 s
-at the full 500 Hz. That record is saved next to the run.
+at the full 500 Hz. That record is saved next to the run. When you overlay the run
+later, its 500 Hz records appear as dots on the pendulum plot, in their place in the
+run, and the status line says how many there are. In MATLAB:
+`K = odyssix.data.loadRecords('<run id>')`.
 
 ## 12. Working with the data in MATLAB
 
@@ -468,7 +474,21 @@ plot(S.t, abs(mod(S.psi + 180, 360) - 180))
 The factor 0.6805 is the Tutorial's rod shape. With a free-swing measurement you don't
 need it: ωg² is measured directly, and ωr² follows from the arm length.
 
-## 14. Questions and problems
+## 14. Simulink
+
+The app needs only MATLAB. If you have Simulink, the same pendulum and the same two
+balancing controllers are also a Simulink model, checked against the firmware's
+code. It answers the five PEND questions of Assignment 3 (equations, open loop,
+balancing, a tap, the largest angle) with figures:
+
+```matlab
+P = enr312_simulink_params();       % measured pendulum, LQR
+open_system('enr312_pendulum')      % press Run
+```
+
+Everything about it: [Simulink model](../SIMULINK.md).
+
+## 15. Questions and problems
 
 **The simulation and the rig disagree.** In this order:
 
@@ -488,7 +508,7 @@ lists every stop rule.
 **The pendulum reads 360° or 720°.** It was turned by hand since the datums were zeroed.
 Let it hang still and press ZERO DATUMS.
 
-## 15. Symbols
+## 16. Symbols
 
 | Symbol | Meaning | Unit |
 |---|---|---|
@@ -497,7 +517,7 @@ Let it hang still and press ZERO DATUMS.
 | α | pendulum angle from upright, 180° − ψ | deg |
 | u | arm acceleration commanded by the controller | deg/s² |
 | ωg² | pendulum gravity constant | rad²/s² |
-| ωr² | arm-to-pendulum coupling | rad²/s² |
+| ωr² | arm-to-pendulum coupling | – (rad/s² of pendulum per rad/s² of arm) |
 | Q | pivot quality factor (viscous loss) | — |
 | E | normalised pendulum energy | — |
 | Kp, Ki, Kd | arm-loop gains | — |

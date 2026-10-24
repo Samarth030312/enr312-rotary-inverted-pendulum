@@ -175,7 +175,7 @@ used for simulation and rig alike.
 | v | arm velocity | deg/s | ±360 (±720 swing-up) | runner |
 | Ts | control period | s | 0.002 (500 Hz) | TIM4 |
 | ωg² | gravity constant | rad²/s² | **48.0 ± 0.5** (Tutorial: 57.01 hanging, 55.85 upright) | six free swings |
-| ωr² | arm coupling | rad²/s² | **0.685** (Tutorial 0.803) | ωg²·r/g |
+| ωr² | arm coupling | – (dimensionless) | **0.685** (Tutorial 0.803) | ωg²·r/g |
 | r | arm length | m | 0.14 | STEVAL-EDUKIT01 manual, Table 2 |
 | L | rod length | m | 0.26 | measured with a ruler |
 | — | tip accessory | | a small paper holder clipped at the rod end | the likely reason ωg² is 48, not 56.6 |

@@ -33,8 +33,14 @@ function T = tools()
         globAll('/Applications/STMicroelectronics/STM32Cube/STM32CubeProgrammer/STM32CubeProgrammer.app/Contents/MacOs/bin/STM32_Programmer_CLI'), ...
         globAll('/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.cubeprogrammer.*/tools/bin/STM32_Programmer_CLI')]);
     T.stflash = firstExisting(onPath(['st-flash' exe]));
-    T.armGccBin = firstExisting([{getenv('ARM_GCC_BIN')}, ...
-        globAll(fullfile(getenv('HOME'), '.local', 'arm-gnu-toolchain-*', 'bin'))]);
+    % the toolchain's bin folder (dir() on a pattern ending in a folder name lists
+    % that folder's files, so the folders are globbed first and bin appended)
+    home = getenv('HOME'); if isempty(home), home = getenv('USERPROFILE'); end
+    tc = [globAll(fullfile(home, '.local', 'arm-gnu-toolchain-*')), ...
+          globAll('C:\Program Files (x86)\Arm GNU Toolchain arm-none-eabi\*'), ...
+          globAll('C:\Program Files\Arm GNU Toolchain arm-none-eabi\*'), ...
+          globAll('/Applications/ArmGNUToolchain/*/arm-none-eabi')];
+    T.armGccBin = firstExisting([{getenv('ARM_GCC_BIN')}, cellfun(@(d) fullfile(d, 'bin'), tc, 'UniformOutput', false)]);
     if isempty(T.armGccBin)
         g = onPath(['arm-none-eabi-gcc' exe]);
         if ~isempty(g), T.armGccBin = fileparts(g{1}); end
